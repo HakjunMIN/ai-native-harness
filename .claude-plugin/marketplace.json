@@ -1,0 +1,7 @@
+{
+  "name": "ai-native-sdlc-marketplace",
+  "owner": { "name": "ai-native-sdlc contributors" },
+  "plugins": [
+    { "name": "ai-native-sdlc", "source": "./", "description": "Local observability SDLC workflow" }
+  ]
+}

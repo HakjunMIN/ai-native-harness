@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "language": { "skills": "en", "artifacts": "ko" },
+  "artifactRoot": "docs/sdlc",
+  "jira": {
+    "projectKey": null,
+    "transport": "atlassian-mcp",
+    "statuses": {
+      "intake": "To Do", "discover": "Discovery", "G1": "In Design",
+      "G2": "In Progress", "G3": "In Review", "G4": "Ready for Release", "G5b": "Done"
+    }
+  },
+  "modules": {},
+  "commands": {},
+  "models": {},
+  "capabilities": { "localSubagents": null, "crossFamilyRouting": null, "browser": null, "hooks": null },
+  "review": { "requireDifferentFamily": true },
+  "release": {
+    "environments": ["dev", "staging", "prod"],
+    "production": "human-only",
+    "protectedBranches": ["main", "master", "release/*"],
+    "productionPaths": ["deploy/prod", "deploy/production", "values-prod.yaml", "values-production.yaml"],
+    "applications": {}
+  }
+}

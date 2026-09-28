@@ -1,0 +1,35 @@
+---
+name: sdlc-release
+description: Use when a verified ticket needs release PR preparation, CI evidence, GitOps promotion, or production handoff.
+---
+
+# Release
+
+Read [protocol](../sdlc/references/protocol.md). Require `next=release`, valid G4,
+unchanged source and fresh verification. Invoke `helm-argocd-release` and `jira-sync`;
+dispatch `sdlc-release-engineer` with the handoff and production denylist.
+
+1. Prepare PR title/body with ticket link, AC/test/UX reports, compatibility,
+   release artifact and rollback. Human publishes the branch; v1 hooks deny
+   shell push and merge. Agents may create a draft PR only on an already-published,
+   explicitly selected non-production branch with authorization.
+2. Inspect GitHub Actions required checks for the exact PR head SHA, including
+   dependency/security/build/chart checks required by repository rules. Pending,
+   skipped required jobs or a green result from another SHA do not qualify.
+3. Prepare dev/staging Helm promotion changes with immutable image digest. Any
+   source/chart edit invalidates G3/G4; reverify the final revision. Human merges
+   promotion PRs; observe ArgoCD desired revision, Synced/Healthy and smoke tests.
+   ArgoCD auto-sync means merge is a deployment action.
+4. Record G5a only after current-SHA CI and both dev/staging promotion evidence.
+5. Write production proposed patch and PR text ONLY under
+   `docs/sdlc/<KEY>/production-proposal/`. Do not edit live prod values, push,
+   merge, sync, kubectl patch or assume chat approval grants deployment authority.
+   Human applies/reviews/merges the prod PR and controls ArgoCD.
+6. On resumption, observe the human approval/merge, deployed digest, sync/health and
+   smoke evidence. Only then record G5b and mark Jira Done. Until then keep release
+   pending and explicitly say “production handoff prepared,” not “deployed.”
+
+Write `05-release.md` including every environment's revision/digest/status, PRs,
+CI links, approvals, rollback target and Jira pending outbox. If health regresses,
+stop promotion and hand off rollback via GitOps to the human operator; never
+perform an emergency direct cluster mutation.
