@@ -25,12 +25,15 @@ Node.js 22 이상이 필요합니다. 패키지 검증에는 외부 npm 의존�
 bash /absolute/path/to/ai-native-harness/install.sh /absolute/path/to/target-repo
 ```
 
-리포를 아직 내려받지 않았다면, 다운로드한 스크립트를 **검토한 뒤** 실행하세요.
-스크립트가 공개 GitHub 저장소를 내려받아 `~/.cache/ai-native-sdlc/main`에
-보관하고 대상 프로젝트를 연결합니다.
+리포를 아직 내려받지 않았다면, **비공개 저장소 접근 권한**과 `gh` 인증,
+Git SSH 접근을 준비하세요. 인증된 `curl`로 스크립트를 내려받아 **검토한 뒤**
+실행합니다. 토큰은 curl 인수가 아닌 표준입력 설정으로 전달합니다. 스크립트는
+Git SSH로 리포를 내려받아 `~/.cache/ai-native-sdlc/main`에 보관하고 대상
+프로젝트를 연결합니다.
 
 ```bash
-curl -fsSLo install.sh https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install.sh
+printf 'header = "Authorization: Bearer %s"\nheader = "Accept: application/vnd.github.raw+json"\n' "$(gh auth token)" |
+  curl --config - -fsSLo install.sh 'https://api.github.com/repos/HakjunMIN/ai-native-harness/contents/install.sh?ref=main'
 bash install.sh /absolute/path/to/target-repo
 ```
 
@@ -48,7 +51,9 @@ curl 경로에서 재실행하면 같은 캐시를 사용하며 자동으로 업
 다른 리비전을 설치하려면 다운로드할 스크립트 URL과 `AI_NATIVE_SDLC_REF`(브랜치/
 태그 이름), `AI_NATIVE_SDLC_CACHE_DIR`를 함께 맞추고 기존 링크 충돌을 먼저
 해결하세요. `AI_NATIVE_SDLC_REPO_URL`로 저장소 URL도 지정할 수 있습니다.
-캐시에는 설치된 실행 코드가 남으므로 신뢰할 수 있는 리포에서만 설치하세요.
+캐시에는 비공개 리포의 실행 코드가 남습니다. 새 캐시는 사용자 전용 권한으로
+만들며, 기존 캐시를 사용할 때도 권한과 출처를 확인하세요. Git SSH 대신 다른
+인증된 원격 URL을 사용하려면 `AI_NATIVE_SDLC_REPO_URL`을 설정하세요.
 
 두 CLI를 **대상 저장소에서 새 세션**으로 실행해 Copilot `/skills`, `/agent`와
 Codex `/skills`, `/agent`, `/hooks`에서 발견 상태를 확인하세요. Copilot은

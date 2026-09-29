@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 fail() {
   printf 'Installation failed: %s\n' "$*" >&2
@@ -13,7 +14,7 @@ fi
 target=$(cd "$1" && pwd -P) || fail "Target directory not found: $1"
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 cache_dir=${AI_NATIVE_SDLC_CACHE_DIR:-"${HOME}/.cache/ai-native-sdlc"}
-repo_url=${AI_NATIVE_SDLC_REPO_URL:-https://github.com/HakjunMIN/ai-native-harness.git}
+repo_url=${AI_NATIVE_SDLC_REPO_URL:-git@github.com:HakjunMIN/ai-native-harness.git}
 ref=${AI_NATIVE_SDLC_REF:-main}
 [[ "$ref" =~ ^[a-zA-Z0-9._-]+$ && "$ref" != "." && "$ref" != ".." ]] ||
   fail "Invalid source ref: $ref"
