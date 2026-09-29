@@ -8,6 +8,12 @@ Jira 티켓 또는 자연어 요청에서 시작해 **Discovery → Plan → Imp
 (Gradle) → SigNoz query-service** 모노레포입니다. BFF가 ClickHouse에 직접
 접근하지 않으며 SigNoz 자체 UI는 노출하지 않습니다.
 
+## 전체 개발 워크플로우
+
+![단계별 필수·조건부 스킬과 G1/G2/G5b 사람 승인 게이트](docs/assets/ai-native-sdlc-skills.svg)
+
+[다이어그램 정의](docs/diagrams/ai-native-sdlc-skills.json)
+
 ## 설치
 
 ```bash
@@ -15,12 +21,6 @@ set -o pipefail; printf 'header = "Authorization: Bearer %s"\nheader = "Accept: 
 ```
 
 [설치 조건·호스트별 설정](docs/install.md)
-
-## 게이트 개요
-
-![단계별 필수·조건부 스킬과 G1/G2/G5b 사람 승인 게이트](docs/assets/ai-native-sdlc-skills.svg)
-
-[다이어그램 정의](docs/diagrams/ai-native-sdlc-skills.json)
 
 ## 시작
 
@@ -49,15 +49,7 @@ setup은 실제 모듈 경로, 빌드/테스트 명령, Jira 상태, 모델과 �
 `ai-native-sdlc.config.json`에 기록합니다. 토큰은 저장하지 않습니다.
 Jira 경로에서만 Atlassian Rovo MCP를 별도로 연결·인증해야 합니다.
 
-| 개별 스킬 | 결과 |
-|---|---|
-| sdlc-discover | Jira/로컬 요청 AC, 도메인 용어, HTML 비교 → 필요 시 Grafana 샌드박스, FE Gherkin |
-| sdlc-plan | 필요한 설계/계약 → 위험 기반 정책·구현 태스크 정의 → G2 승인 |
-| sdlc-tickets | 구현 태스크 정의에서 manifest/문서 생성; Jira strict/legacy만 G2 이후 Jira 자식 티켓 발행 |
-| sdlc-implement | 변경 종류별 검증, light 통합 작성/리뷰 또는 strict 역할 분리 |
-| sdlc-verify | 해당 범위 테스트·UX 검증과 독립 spec/standards/security 리뷰 |
-| sdlc-release | CI·GitOps 프로모션 확인과 사람이 실행할 운영 배포 제안 |
-| sdlc-handoff | 새 세션/에이전트를 위한 증거 기반 인수인계 |
+## 구현과 검증
 
 구현 시 준비된 단일 구현 태스크는 현재 checkout의 브랜치에서, 편집 범위와 계약이
 독립적인 여러 구현 태스크는 각각 별도의 Git 워크트리에서 진행합니다.
