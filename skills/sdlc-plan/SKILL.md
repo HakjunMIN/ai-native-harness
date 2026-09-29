@@ -1,6 +1,6 @@
 ---
 name: sdlc-plan
-description: Use when a ticket has approved discovery and needs an implementation design, API contracts, vertical slices, and a test matrix.
+description: Use when a Jira ticket or local request has approved discovery and needs an implementation design, contracts, outcomes, and a test matrix.
 ---
 
 # Plan
@@ -8,9 +8,13 @@ description: Use when a ticket has approved discovery and needs an implementatio
 Read [protocol](../sdlc/references/protocol.md). Run state check; require `next=plan`
 and G1 passed with unchanged artifact hashes. An urgent ticket is not an exception.
 
-Dispatch `sdlc-architect` with discovery and versioned module context; require
-`domain-context`, `api-contract`, and relevant stack skills. Architect writes
+Use `sdlc-architect` for architecture/decomposition; a light plan may be written
+directly by the conductor. Load domain/API/stack references only when relevant.
+The author writes
 `02-plan.md`, ticket ADRs and `openapi.yaml` when contracts change.
+For SigNoz lifecycle/collector/schema work, include `signoz-oss`; for explicit
+ClickStack/HyperDX research or an existing in-scope deployment, include `clickstack`.
+An alternative-stack study does not authorize changing the product boundary.
 
 The plan includes:
 
@@ -18,20 +22,32 @@ The plan includes:
 |---|---|
 | Architecture | alternatives, chosen boundary, C4 where architectural, BFF -> query-service |
 | Contracts | plugin/BFF payloads, auth/tenant handling, error/time semantics, pinned upstream mapping |
-| Slices | ordered IDs, blocking dependencies, exact file scope, RED command/expected failure, GREEN command |
+| Tickets | canonical outcome/AC definitions and blockers; light uses one parent-only outcome, strict generates detailed views |
 | Test matrix | each AC -> unit/integration/API or FE Gherkin/E2E test, environment and fixtures |
 | UX | chosen variant, real Grafana evidence, accessibility/visual checks |
 | Release | immutable artifact, chart changes, compatibility, rollback and human-owned prod step |
 
-Each slice delivers observable behavior, not separate all-tests/all-code batches.
-Reuse repository Gradle/JS commands and verify their selectors. Do not schedule a
-backend Gherkin stack or direct ClickHouse shortcut.
+After the design, use `sdlc-tickets` draft mode. Write one authoring definition and
+run `tickets.mjs prepare`; it snapshots config/risk policy, generates immutable
+manifest/documents and records hashes/pending slices. Do not hand-copy ACs into
+Markdown. Review policy, granularity, AC coverage and blockers with the
+human. Small bounded work can be one ticket; DB/API/UI-only division is not a
+vertical outcome. Resolve precise file allowlists and commands at implementation
+handoff from current code, keeping long-lived tickets behavior/contract focused.
+Reuse Gradle/JS tooling. Do not schedule backend Gherkin or direct ClickHouse.
 
-Invoke `code-review` with `sdlc-cross-reviewer` using a confirmed family different
-from the architect. Resolve blocking findings, attach provenance and report.
-Unavailable model diversity means BLOCKED; a different alias is not diversity.
+Strict/legacy plans require independent `code-review`. For new strict policy,
+different-family review is recommended; a same-model independent session is valid
+when `requireDifferentFamily` is false. Enforce explicit true and legacy requirements;
+human review needs policy permission. Resolve blocking findings and attach provenance. Light plans do not
+require a separate model review; the human still approves policy and scope at G2.
 
-Present plan and review to the human for G2. Approval binds to the current discovery,
-contracts and plan hashes. Populate pending slices without fabricated RED evidence.
-Update state/Jira and return an implement handoff. A changed requirement first
+Present plan, detailed ticket set, dependency graph and review to the human for G2.
+Approval binds to current discovery, contracts, plan, policy and `ticketPlan` hashes;
+Jira strict approval authorizes that ticket set's configured publication; local
+plans do not authorize or require Jira publication. G2 evidence
+must contain the manifest reference; its document hashes are checked transitively.
+No creation or implementation before approval. After G2, use `state.mjs next`:
+local and Jira light go to implement, Jira strict/legacy to publish. A changed
+requirement first
 invalidates G1; changing a reviewed plan invalidates G2 and all downstream evidence.

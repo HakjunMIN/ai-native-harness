@@ -7,7 +7,11 @@ description: Use when a UI design question needs visual comparison or validation
 
 Prototypes answer design questions; they are never production implementation.
 
-Read the [shared protocol](../sdlc/references/protocol.md). Import this plugin's `visual-companion`, `grafana-plugin-dev`, and `grafana-plugin-testing` references using the native tool or exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files. Reuse already-active references; if `visual-companion` invoked this skill, reuse its current session and selection channel. Never dispatch it recursively.
+This skill applies only to product UI decisions. For an architecture diagram or
+non-UI comparison, return to `visual-companion` diagram/comparison mode without
+starting a Grafana sandbox or treating missing Grafana/Docker as a blocker.
+
+Read the [shared principles](../sdlc/references/principles.md). Import this plugin's `visual-companion`, `grafana-plugin-dev`, and `grafana-plugin-testing` references using the native tool or exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files. Reuse already-active references; if `visual-companion` invoked this skill, reuse its current session and selection channel. Never dispatch it recursively.
 
 Imports supply guidance, not permission to execute another workflow. Use only sandbox API/theme guidance and prototype-only testing here; approved production contracts, production implementation, step generation, and RED evidence are not prerequisites. Do not run setup or provisioning merely because a reference was loaded.
 
@@ -27,4 +31,4 @@ A human selects a threshold badge in an already-active visual companion. Reuse t
 
 Output the comparison, selection record, sandbox evidence, UX issues, and approved behavior specification. **Never copy, translate, or promote HTML or sandbox prototype code into production**, even when it appears complete. Screenshots and decisions are inputs, not reusable implementation.
 
-Mock sandbox success does not prove real BFF integration. If Grafana/Docker is unavailable, return `BLOCKED` with the failed command and recovery prerequisite; HTML alone does not complete sandbox validation. Missing human approval is `NEEDS_HUMAN`. Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+Mock sandbox success does not prove real BFF integration. If Grafana/Docker is unavailable, return `BLOCKED` with the failed command and recovery prerequisite; HTML alone does not complete sandbox validation. Missing human approval is `NEEDS_HUMAN`. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

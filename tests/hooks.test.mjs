@@ -25,6 +25,46 @@ test('supports Claude format and JSON-encoded Copilot tool arguments', () => {
   assert.equal(hook({tool_name:'Bash',tool_input:{command:'gh pr merge 42'}}, 'claude').permissionDecision, 'deny');
   assert.equal(hook({toolName:'bash',toolArgs:JSON.stringify({command:'git push'})}).permissionDecision, 'deny');
 });
+test('keeps deployment observation and in-memory rendering neutral in both adapters', () => {
+  for (const adapter of ['copilot','claude']) {
+    for (const command of [
+      'kubectl rollout status deployment/bff -n staging',
+      'kubectl rollout history deployment/bff -n prod',
+      'kubectl get deployment -n prod -o json',
+      'helm template preview ./charts -f deploy/prod/values.yaml',
+      'helm template preview ./charts -f deploy/prod/values.yaml --set image.tag=test',
+      'argocd app get platform-prod --output json'
+    ]) {
+      assert.equal(hook(shell(command),adapter).permissionDecision,undefined,command);
+    }
+  }
+});
+test('read-only exceptions cannot authorize mutations, shell composition or output files', () => {
+  for (const command of [
+    'kubectl rollout restart deployment/bff -n staging',
+    'kubectl rollout undo deployment/bff -n staging',
+    'helm template preview ./charts -f deploy/prod/values.yaml --output-dir deploy/prod',
+    'helm template preview ./charts -f deploy/prod/values.yaml --post-renderer ./renderer',
+    'helm template preview ./charts -f deploy/prod/values.yaml --dependency-update',
+    'helm template preview ./charts -f deploy/prod/values.yaml > deploy/prod/rendered.yaml',
+    'helm template preview ./charts -f deploy/prod/values.yaml | sh',
+    'helm template preview ./charts -f deploy/prod/values.yaml; kubectl apply -f app.yaml',
+    'kubectl rollout status deployment/bff -n staging && git push origin main',
+    'helm template preview ./charts -f deploy/prod/values.yaml --set tag=$(./mutate)',
+    'helm template preview ./charts -f deploy/prod/values.yaml\nkubectl apply -f app.yaml'
+  ]) {
+    assert.equal(hook(shell(command)).permissionDecision,'deny',command);
+  }
+});
+test('read-only deployment commands respect configured paths without exempting edits', t => {
+  const cwd = mkdtempSync(join(tmpdir(),'sdlc-hook-'));
+  t.after(() => rmSync(cwd,{recursive:true}));
+  writeFileSync(join(cwd,'ai-native-sdlc.config.json'),JSON.stringify({release:{productionPaths:['ops/live']}}));
+  const command = 'helm template preview ./charts -f ops/live/values.yaml';
+  assert.equal(hook({...shell(command),cwd}).permissionDecision,undefined);
+  assert.equal(hook({...shell(`${command} --output-dir ops/live`),cwd}).permissionDecision,'deny');
+  assert.equal(hook({...shell(command),toolArgs:{command,path:'ops/live/values.yaml'},cwd}).permissionDecision,'deny');
+});
 test('denies production edits including patch strings but allows draft proposals', () => {
   for (const args of [{path:'deploy/prod/values.yaml'}, {file_path:'/repo/deploy/production/values.yaml'},
     {patch:'*** Begin Patch\n*** Update File: deploy/prod/values.yaml\n*** End Patch'}]) {

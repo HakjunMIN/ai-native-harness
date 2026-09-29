@@ -7,7 +7,7 @@ description: Use when backend unit, Spring integration, or BFF API tests need ne
 
 Backend acceptance criteria are tested with **JUnit 5**, not Gherkin or Cucumber.
 
-Read the [shared protocol](../sdlc/references/protocol.md) and this plugin's `tdd` and `api-contract` skills through native invocation or exact plugin-root skill files.
+Read the [shared principles](../sdlc/references/principles.md) and this plugin's `tdd` and `api-contract` skills through native invocation or exact plugin-root skill files.
 
 ## Test selection
 
@@ -27,7 +27,8 @@ Use the repository's existing Gradle tasks and libraries; confirm versions befor
 1. Map approved backend AC and OpenAPI operations to the smallest meaningful boundary. Include invalid inputs, forbidden tenant scope, empty results, timeout budgets, and upstream errors.
 2. Build deterministic fixtures with test-data builders. Use fixed clocks and isolated data; mock external systems only, not the logic being asserted.
 3. As test-writer, write the behavior assertion first and execute its selected Gradle test. Capture expected RED separately from compilation, startup, or container failures.
-4. Freeze test and fixture hashes for the implementer handoff. Implementers may not alter assertions, snapshots, stubs, exclusions, or test configuration.
+4. Strict SDLC freezes tests/fixtures for a separate implementer. Light/standalone
+   may use one author, but no mode permits weakening expectations to manufacture GREEN.
 5. After the production change, rerun the selected test and affected unit/integration/API tasks. Confirm tests actually ran and inspect reports for skips or hidden failures.
 
 ## Bounded example
@@ -40,4 +41,4 @@ Output the AC/test matrix, fixture and test hashes, exact Gradle commands, disco
 
 Docker/Testcontainers unavailability is `BLOCKED`, never a passing test. Do not switch backend AC to Cucumber to share frontend steps. Ambiguous expected behavior goes back to the contract owner; do not guess or weaken the assertion.
 
-Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

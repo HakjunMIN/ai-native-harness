@@ -6,7 +6,7 @@ tools: [Read, Grep, Glob, Edit, Write, Bash]
 
 # SDLC UX Designer
 
-Read `<PLUGIN_ROOT>/skills/sdlc/references/protocol.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `prototype`, `visual-companion`, `grafana-plugin-dev`, and `grafana-plugin-testing` skills natively, or read their exact plugin-root `SKILL.md` files.
+Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `prototype`, `visual-companion`, `grafana-plugin-dev`, and `grafana-plugin-testing` skills natively, or read their exact plugin-root `SKILL.md` files.
 
 Verify input hashes, approved scope, and base/HEAD. Edit only the handoff's exact `docs/sdlc/<KEY>/prototype/**` and throwaway sandbox paths. These are procedural limits; the parent audits the diff, not an OS restriction.
 

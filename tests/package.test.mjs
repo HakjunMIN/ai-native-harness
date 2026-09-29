@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, cpSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, basename, resolve } from 'node:path';
 import { validatePackage } from '../scripts/validate.mjs';
@@ -35,4 +35,27 @@ test('rejects nonexistent manifest component path', t => {
   manifest.hooks = './hooks/missing.json';
   writeFileSync(file,JSON.stringify(manifest));
   assert.match(validatePackage(root).join('\n'),/missing.json/);
+});
+for (const name of ['signoz-oss', 'clickstack', 'sdlc-tickets']) {
+  test(`requires ${name} in the distributable skill catalog`, t => {
+    const root = copy(t);
+    rmSync(join(root, `skills/${name}`), {recursive:true, force:true});
+    assert.match(validatePackage(root).join('\n'), new RegExp(name));
+  });
+}
+test('checks local links inside skill reference guides, not just entrypoints', t => {
+  const root = copy(t);
+  const path = join(root, 'skills/sdlc/references/source-map.md');
+  writeFileSync(path, '[Missing deeper source](missing-source.md)\n');
+  assert.match(validatePackage(root).join('\n'), /missing-source.md/);
+});
+test('checks nested reference guides and accepts their relative links', t => {
+  const root = copy(t);
+  const directory = join(root, 'skills/signoz-oss/references/nested');
+  mkdirSync(directory);
+  const path = join(directory, 'guide.md');
+  writeFileSync(path, '[Source map](../sources.md)\n');
+  assert.deepEqual(validatePackage(root), []);
+  writeFileSync(path, '[Missing](missing-nested.md)\n');
+  assert.match(validatePackage(root).join('\n'), /missing-nested.md/);
 });

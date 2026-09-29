@@ -7,13 +7,14 @@ description: Use when building or changing Grafana datasource, panel, or app plu
 
 Implement native Grafana behavior against approved tests and contracts.
 
-Read the [shared protocol](../sdlc/references/protocol.md). Import this plugin's `react-ts`, `api-contract`, and `grafana-plugin-testing` references natively or via their exact plugin-root skill files. Reuse active references; loading guidance does not execute their workflows.
+Read the [shared principles](../sdlc/references/principles.md). Import this plugin's `react-ts`, `api-contract`, and `grafana-plugin-testing` references natively or via their exact plugin-root skill files. Reuse active references; loading guidance does not execute their workflows.
 
 ## Scope
 
 When imported for discovery/prototyping, apply only installed Grafana API, component, theme, and sandbox guidance. A throwaway mock-data sandbox does not require approved production contracts, production implementation, executable Gherkin, or RED. Use prototype-only testing; do not trigger setup, dependency installation, or production work from a reference import.
 
-The following production procedure applies after G2, not during discovery.
+The production procedure applies to authorized implementation, not discovery.
+In SDLC the conductor supplies G2/policy; standalone work needs no Jira/state.
 
 ## Production procedure
 
@@ -36,4 +37,4 @@ A query editor needs a bearer token. Configure the supported secure field and pr
 
 Return the plugin boundary, changed paths, approved-design references, contract/DataFrame mapping, and test evidence. Missing sandbox approval, incompatible Grafana APIs, or unresolved authentication is `BLOCKED` or `NEEDS_HUMAN` as appropriate.
 
-Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

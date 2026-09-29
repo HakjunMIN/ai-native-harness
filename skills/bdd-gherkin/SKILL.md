@@ -7,7 +7,7 @@ description: Use when frontend acceptance behavior needs Gherkin scenarios or re
 
 Gherkin belongs to frontend E2E behavior only. Backend acceptance criteria become JUnit 5 unit, integration, and API tests—not Cucumber.
 
-Read the [shared protocol](../sdlc/references/protocol.md). Import `grafana-plugin-testing` as a reference through the native tool or exact `<PLUGIN_ROOT>/skills/grafana-plugin-testing/SKILL.md`; reuse it if already active. Importing a reference does not execute its workflow or recursively dispatch another skill.
+Read the [shared principles](../sdlc/references/principles.md). Import `grafana-plugin-testing` as a reference through the native tool or exact `<PLUGIN_ROOT>/skills/grafana-plugin-testing/SKILL.md`; reuse it if already active. Importing a reference does not execute its workflow or recursively dispatch another skill.
 
 ## Select the caller's mode
 
@@ -19,9 +19,11 @@ Read the [shared protocol](../sdlc/references/protocol.md). Import `grafana-plug
 
 **No approved discovery, approved BFF contract, step implementations, generated tests, or executed RED is required in draft mode.** Missing future implementation is not a blocker. Do not install tools, provision services, or execute E2E merely to draft scenarios.
 
-### Implementation mode: after G2
+### Implementation mode: authorized test implementation
 
-1. Verify approved discovery, plan, relevant contract, and test-writer scope. Bind AC IDs to approved scenarios.
+1. Use agreed behavior/contracts and assigned test scope. In SDLC the conductor
+   supplies valid G2, manifest and policy (light parent, strict published child).
+   Standalone use requires no publication or state. Map scenarios to relevant ACs.
 2. Inspect pinned versions/configuration. Where supported, extend the exported `@grafana/plugin-e2e` fixture with playwright-bdd `test.extend` and bind steps to that fixture. Never substitute bare Playwright.
 3. Implement reusable steps and run configured BDD generation plus selected E2E. Capture the expected behavior failure before production implementation. Broken fixtures, unavailable dependencies, or zero discovered scenarios are not RED.
 
@@ -35,10 +37,13 @@ Scenario: Identify a service above the error threshold
   Then that service shows a high-error-rate status
 ```
 
-Before G1, return this draft and threshold questions without demanding RED. After G2, its step assertion checks the approved accessible state.
+Before G1, return this draft and threshold questions without demanding RED. After
+G2 (and strict publication), its step assertion checks the approved accessible state.
+For unchanged scenarios under G3 revalidation, use the historical-RED procedure
+in `sdlc-tickets`; changed steps/scenarios require new RED.
 
 ## Stop and output
 
 Draft output: AC-to-scenario map, feature paths, unresolved decisions, and approval request. Implementation output additionally includes step paths, fixture/version evidence, and generation/RED results. Implementers cannot weaken assertions.
 
-In implementation mode, unsupported fixture integration or unavailable required live dependencies is `BLOCKED`; label mocks. Unresolved human behavior decisions are `NEEDS_HUMAN`. Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+In implementation mode, unsupported fixture integration or unavailable required live dependencies is `BLOCKED`; label mocks. Unresolved human behavior decisions are `NEEDS_HUMAN`. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

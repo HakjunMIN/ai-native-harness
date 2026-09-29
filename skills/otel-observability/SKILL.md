@@ -7,7 +7,11 @@ description: Use when BFF tracing, telemetry semantics, log correlation, or obse
 
 Trace the supported request path without leaking sensitive data or duplicating instrumentation.
 
-Read the [shared protocol](../sdlc/references/protocol.md) and this plugin's `spring-boot-bff` and `signoz-query-service` skills through native invocation or exact plugin-root files.
+Read the [shared principles](../sdlc/references/principles.md) and this plugin's `spring-boot-bff` and `signoz-query-service` skills through native invocation or exact plugin-root files.
+
+For collector distribution/schema compatibility load `signoz-oss`. Load
+`clickstack` only for explicit comparison or an existing in-scope ClickStack
+pipeline; shared OTLP does not imply interchangeable exporters or physical tables.
 
 ## Procedure
 
@@ -29,4 +33,4 @@ Output instrumentation scope, pinned convention references, redaction/cardinalit
 
 An in-memory exporter test proves instrumentation behavior, not collector delivery. If the required collector/query-service is unavailable, report `BLOCKED` for live evidence rather than claiming observability is operational. Avoid exposing sensitive spans in artifacts; preserve only sanitized evidence and hashes.
 
-Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

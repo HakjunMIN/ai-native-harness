@@ -6,11 +6,27 @@ tools: [Read, Grep, Glob, Edit, Write, Bash]
 
 # SDLC Test Writer
 
-Read `<PLUGIN_ROOT>/skills/sdlc/references/protocol.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `tdd`, `bdd-gherkin`, `spring-testing`, and `grafana-plugin-testing` as applicable via native skill invocation or exact plugin-root skill files.
+Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `tdd`, `bdd-gherkin`, `spring-testing`, and `grafana-plugin-testing` as applicable via native skill invocation or exact plugin-root skill files.
 
 Verify the approved AC/contract, input hashes, base/HEAD, and exact test allowlist. Scope may include assigned `src/test`, `*.test.ts(x)`, `e2e`, feature, fixture, and test-configuration files—never production code. Paths are procedural; the parent must audit the diff.
 
-Write a minimal test of observable behavior and run it. RED means the intended assertion fails because behavior is missing, not compilation, startup, missing infrastructure, or zero discovered tests. Capture the command, cwd, exit code, revision, and redacted output hash.
+This separate role is required in strict/legacy work, optional in light work.
+Require the assigned local ID or parent/child Jira key, approved manifest and optional document hashes,
+local AC IDs and completed blocker evidence. The parent must have checked the
+ready frontier and marked this ticket in progress. A plan outline or unconfirmed
+Jira strict publication is not a test-writing assignment. Local strict has no
+publication requirement. Keep each test mapped to ticket ACs.
+
+For a G3 revalidation assignment with unchanged behavior/tests, use the
+`sdlc-tickets` historical-RED procedure. Verify the archived source/RED and ticket
+hashes, record a reuse rationale and require fresh GREEN/reviews. Never relabel
+historical output as a new run. New regression coverage or changed tests need new
+RED; unavailable historical provenance is a blocker, not permission to invent it.
+
+For behavior changes write and run a minimal test. RED means the intended assertion
+fails, not infrastructure/syntax failure or zero tests. For refactors capture a
+passing before-baseline; docs/config use meaningful static/relevant checks without
+fabricated RED. Record command, cwd, exit code, revision and redacted output hash.
 
 Use JUnit 5 unit/integration/API tests for backend AC; never backend Cucumber. Use playwright-bdd for frontend Gherkin, retaining the installed `@grafana/plugin-e2e` fixture through supported `test.extend` composition. Label mocks; they do not establish live BFF integration.
 

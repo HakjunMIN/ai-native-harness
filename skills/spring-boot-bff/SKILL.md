@@ -7,7 +7,7 @@ description: Use when Spring Boot BFF controllers, services, upstream clients, a
 
 The supported path is Grafana plugin → Spring BFF → SigNoz query-service. **The BFF never accesses ClickHouse directly.**
 
-Read the [shared protocol](../sdlc/references/protocol.md). Load this plugin's `api-contract`, `spring-testing`, and `signoz-query-service` skills natively or from their exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files.
+Read the [shared principles](../sdlc/references/principles.md). Load this plugin's `api-contract`, `spring-testing`, and `signoz-query-service` skills natively or from their exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files.
 
 ## Procedure
 
@@ -17,7 +17,9 @@ Read the [shared protocol](../sdlc/references/protocol.md). Load this plugin's `
 4. Derive user and tenant identity from verified authentication and authorized server-side context. Reject or overwrite untrusted identity headers; a browser's claimed tenant is never sufficient. Keep upstream credentials in server configuration/secret storage.
 5. Define connect/response deadlines, cancellation, and bounded concurrency. Retry only classified transient failures for safe/idempotent operations within the total request budget; avoid retry multiplication. Follow the existing circuit-breaker policy.
 6. Map validation, authorization, upstream timeout/unavailability, and unexpected errors to the agreed ProblemDetail contract without leaking SQL, credentials, or internal endpoints.
-7. Use profile-specific endpoints and externalized secrets. Implement only against observed RED tests; preserve test-writer ownership and verify the relevant Gradle module tasks.
+7. Use profile-specific endpoints and externalized secrets. Behavior changes need
+   observed RED/GREEN; refactors use before/after checks. Preserve test-writer
+   ownership when strict policy requires it; run relevant Gradle tasks.
 
 ## Bounded example
 
@@ -29,4 +31,4 @@ Output changed production paths, operation-to-upstream mapping, identity/resilie
 
 Unknown query-service schema, unverifiable tenant context, or unavailable required integration infrastructure is `BLOCKED`. If contract expectations appear wrong, return the discrepancy to the test-writer/architect; do not edit assertions or bypass validation.
 
-Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

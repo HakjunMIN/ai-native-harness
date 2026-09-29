@@ -11,6 +11,27 @@ function configAt(cwd) {
   }
 }
 
+function isReadOnlyDeploymentCommand(command) {
+  if (!/^[\w \t./:=,@%+-]+$/.test(command)) return false;
+  const [executable, ...args] = command.trim().split(/\s+/);
+  const verbs = {
+    kubectl: ['get','describe','rollout status','rollout history'],
+    helm: ['template','status','history','get values','get manifest'],
+    argocd: ['app get','app diff','app history']
+  };
+  const verb = verbs[executable]?.find(candidate => args.slice(0,candidate.split(' ').length).join(' ') === candidate);
+  if (!verb) return false;
+  const flags = {
+    kubectl: ['-n','--namespace','--context','--kubeconfig','-o','--output','-l','--selector',
+      '--field-selector','--timeout','--request-timeout','--watch','--revision'],
+    helm: ['-n','--namespace','--kube-context','--kubeconfig','-f','--values','--set','--set-string',
+      '--version','--timeout','-o','--output','--revision','--show-only','--include-crds','--debug'],
+    argocd: ['-o','--output','--server','--grpc-web','--revision','--refresh','--hard-refresh']
+  };
+  return args.slice(verb.split(' ').length).every(argument =>
+    !argument.startsWith('-') || flags[executable].includes(argument.split('=')[0]));
+}
+
 function decide(payload) {
   const name = payload?.toolName ?? payload?.tool_name;
   let args = payload?.toolArgs ?? payload?.tool_input;
@@ -40,11 +61,12 @@ function decide(payload) {
       paths.some(p => normalized.includes(p.replaceAll('\\','/')));
   };
   const reasons = [];
+  const readOnlyDeployment = isReadOnlyDeploymentCommand(command);
   if (/\bgit\b[^;\n]*\bpush\b|\bgh\b[^;\n]*\bpr\s+merge\b/i.test(command)) reasons.push('Remote push/merge requires the human operator in v1');
-  if (/\b(?:argocd|kubectl|helm)\b[^;\n]*\b(?:sync|apply|create|delete|patch|edit|upgrade|install|rollback|set|scale|rollout|exec)\b/i.test(command)) reasons.push('Direct deployment mutation is not allowed; prepare GitOps proposals');
+  if (!readOnlyDeployment && /\b(?:argocd|kubectl|helm)\b[^;\n]*\b(?:sync|apply|create|delete|patch|edit|upgrade|install|rollback|set|scale|rollout|exec)\b/i.test(command)) reasons.push('Direct deployment mutation is not allowed; prepare GitOps proposals');
   if (targets.some(protectedPath) ||
-      /(?:\/|\s)(?:prod|production)(?:\/|\s)|values[-.]prod(?:uction)?\.ya?ml/i.test(command) ||
-      paths.some(p => command.includes(p.replaceAll('\\','/')))) reasons.push('Production desired-state edits require a human; write a production-proposal instead');
+      (!readOnlyDeployment && (/(?:\/|\s)(?:prod|production)(?:\/|\s)|values[-.]prod(?:uction)?\.ya?ml/i.test(command) ||
+      paths.some(p => command.includes(p.replaceAll('\\','/')))))) reasons.push('Production desired-state edits require a human; write a production-proposal instead');
   // A neutral result must not pre-authorize a call in the host's permission system.
   return reasons.length ? {permissionDecision:'deny',permissionDecisionReason:reasons.join('; ')} : {};
 }

@@ -5,6 +5,12 @@
   "jira": {
     "projectKey": null,
     "transport": "atlassian-mcp",
+    "tickets": {
+      "issueTypeId": null,
+      "parentRelation": null,
+      "blocksRelation": null,
+      "requiredFields": {}
+    },
     "statuses": {
       "intake": "To Do", "discover": "Discovery", "G1": "In Design",
       "G2": "In Progress", "G3": "In Review", "G4": "Ready for Release", "G5b": "Done"
@@ -14,7 +20,8 @@
   "commands": {},
   "models": {},
   "capabilities": { "localSubagents": null, "crossFamilyRouting": null, "browser": null, "hooks": null },
-  "review": { "requireDifferentFamily": true },
+  "workflow": { "boundedProfile": "light" },
+  "review": { "requireDifferentFamily": false, "allowHumanReview": true },
   "release": {
     "environments": ["dev", "staging", "prod"],
     "production": "human-only",

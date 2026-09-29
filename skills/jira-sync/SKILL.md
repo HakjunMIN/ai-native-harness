@@ -1,13 +1,38 @@
 ---
 name: jira-sync
-description: Use when ticket intake, Jira comments, transitions, links, or queued Jira updates are required.
+description: Use when ticket intake, approved child-ticket publication, Jira comments, transitions, links, or queued Jira updates are required.
 ---
 
 # Jira Sync
 
 Synchronize verified facts without duplicate writes or false delivery claims.
 
-Read the [shared protocol](../sdlc/references/protocol.md) for intake snapshots, evidence, and outbox handling. Load related skills natively or from this plugin's exact `SKILL.md` files.
+Read [shared principles](../sdlc/references/principles.md). Follow this skill's
+intake/outbox procedure for authorized Jira effects; importing it does not create
+an SDLC run. Jira light SDLC syncs the parent, not children. Local intake does
+not use this skill or silently establish a remote Jira link.
+
+## Child-ticket creation and reconciliation
+
+For publication, require `sdlc-tickets` publish mode and its
+[persistent contract](../sdlc-tickets/references/ticket-contract.md). Check G2 and
+document hashes before each effect. Discover project creation fields, permissions,
+issue type, parent relation and blocking-link IDs; never guess subtask support.
+
+Persist intent before sending, with marker `sdlc:<PARENT>:ticket:<id>` in the initial
+create payload. Search/read that marker before create; retain the returned key
+immediately. Set `unknown` before sending so crash/timeout requires reconciliation.
+After creation, establish/read back approved content, parent and blocker links
+before confirming the publication receipt. A created issue with failed links
+remains unknown; repair the same key, not a replacement issue.
+
+Read-back evidence must compare actual content/AC against the approved document
+and record parent, marker and blocking keys. Multiple matches or zero matches
+after an ambiguous timeout require reconciliation/operator help, not blind retry.
+Existing issue edits by another user are conflicts, not permission to overwrite.
+After G2 invalidation preserve old keys and markers; only update/reconcile after
+new approval. Removed tickets need a human disposition. Never auto-close parent
+or children as a side effect of publishing. No local-only publication fallback.
 
 ## Procedure
 
@@ -28,4 +53,4 @@ Output intake provenance and per-operation `confirmed`, `queued`, or `blocked` s
 
 A valid prior snapshot may permit only the work allowed by the protocol; queued later updates remain visibly pending. Permission or transition conflicts require `NEEDS_HUMAN`, not repeated mutations. Never transition to Done just because a PR exists.
 
-Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

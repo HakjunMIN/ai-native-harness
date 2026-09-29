@@ -3,9 +3,9 @@ import { resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const skillNames = [
-  'sdlc','sdlc-setup','sdlc-discover','sdlc-plan','sdlc-implement','sdlc-verify','sdlc-release','sdlc-handoff',
+  'sdlc','sdlc-setup','sdlc-discover','sdlc-plan','sdlc-tickets','sdlc-implement','sdlc-verify','sdlc-release','sdlc-handoff',
   'grilling','domain-context','visual-companion','prototype','bdd-gherkin','tdd','api-contract','code-review',
-  'verification-gate','jira-sync','diagnosing-bugs','spring-boot-bff','spring-testing','signoz-query-service',
+  'verification-gate','jira-sync','diagnosing-bugs','spring-boot-bff','spring-testing','signoz-query-service','signoz-oss','clickstack',
   'grafana-plugin-dev','grafana-plugin-testing','react-ts','otel-observability','helm-argocd-release'
 ];
 const agents = ['architect','ux-designer','test-writer','implementer','spec-reviewer','code-reviewer','cross-reviewer','verifier','release-engineer'];
@@ -31,6 +31,14 @@ export function validatePackage(root) {
       checkPath(relative(root,resolve(root,dirname(file),link)), file);
     }
   }
+  function referenceLinks(directory) {
+    if (!existsSync(resolve(root,directory))) return;
+    for (const entry of readdirSync(resolve(root,directory),{withFileTypes:true})) {
+      const path = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) referenceLinks(path);
+      else if (entry.isFile() && entry.name.endsWith('.md')) links(path,read(path));
+    }
+  }
   for (const name of skillNames) {
     const path = `skills/${name}/SKILL.md`;
     const body = read(path);
@@ -40,6 +48,7 @@ export function validatePackage(root) {
     if (!new RegExp(`^name: ${name}$`,'m').test(fm[1])) errors.push(`${path}: name must match directory`);
     if (!/^description: ["']?Use when .+/m.test(fm[1])) errors.push(`${path}: description needs use conditions`);
     links(path,body);
+    referenceLinks(`skills/${name}/references`);
   }
   if (existsSync(resolve(root,'skills'))) {
     const discovered = readdirSync(resolve(root,'skills'),{withFileTypes:true}).filter(d => d.isDirectory()).map(d => d.name);
@@ -67,7 +76,7 @@ export function validatePackage(root) {
     checkPath(file,'executable');
     if (existsSync(resolve(root,file)) && !(statSync(resolve(root,file)).mode & 0o111)) errors.push(`${file}: executable permission missing`);
   }
-  for (const file of ['skills/sdlc/references/protocol.md','README.md','docs/compatibility.md','docs/operations.md','templates/handoff.md']) {
+  for (const file of ['README.md','docs/compatibility.md','docs/operations.md','templates/handoff.md']) {
     links(file,read(file));
   }
   return errors;
@@ -75,5 +84,5 @@ export function validatePackage(root) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const errors = validatePackage(resolve(dirname(fileURLToPath(import.meta.url)),'..'));
   if (errors.length) { console.error(errors.join('\n')); process.exitCode = 1; }
-  else console.log('Package valid: 27 skills, 9 agents, manifests, hooks and links');
+  else console.log(`Package valid: ${skillNames.length} skills, ${agents.length} agents, manifests, hooks and links`);
 }

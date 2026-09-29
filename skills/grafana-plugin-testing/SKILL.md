@@ -7,7 +7,7 @@ description: Use when Grafana plugin behavior, frontend Gherkin, accessibility, 
 
 Test both isolated UI behavior and its actual Grafana environment.
 
-Read the [shared protocol](../sdlc/references/protocol.md). Import `bdd-gherkin` natively or from `<PLUGIN_ROOT>/skills/bdd-gherkin/SKILL.md` as a reference only; reuse an already-active reference without recursive dispatch.
+Read the [shared principles](../sdlc/references/principles.md). Import `bdd-gherkin` natively or from `<PLUGIN_ROOT>/skills/bdd-gherkin/SKILL.md` as a reference only; reuse an already-active reference without recursive dispatch.
 
 ## Select the caller's mode
 
@@ -39,4 +39,4 @@ Return the mode, its scoped outputs, evidence, mock/live labels, and blockers. F
 
 Unsupported fixtures or missing required infrastructure are `BLOCKED` only for applicable executable checks. A missing sandbox blocks sandbox review; a missing real BFF does not. Mock success cannot satisfy required live integration.
 
-Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.

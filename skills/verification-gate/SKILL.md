@@ -7,16 +7,23 @@ description: Use when claiming completion, recording a gate result, resuming tic
 
 A claim is only as current as its evidence and tested subject.
 
-Read the [shared protocol](../sdlc/references/protocol.md), including its evidence schema and human-approval rules. Use this plugin's exact skill files when native discovery is ambiguous.
+Read [shared principles](../sdlc/references/principles.md). Use the caller's policy
+and evidence requirements; standalone verification does not require ticket state.
 
 ## Procedure
 
-1. Run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>` before phase progression. Treat JSON state as an assertion to verify, not authority. Stop if evidence files, SHA256 hashes, subject HEAD, approvals, or prerequisites fail validation.
+1. Establish the actual subject and expected checks. For SDLC gate progression the
+   conductor runs `state.mjs check`; specialists validate assigned evidence, not
+   the entire workflow. State claims do not override stale hashes or changed source.
 2. Build a requirement-to-evidence matrix from the approved plan and repository configuration. Include applicable Gradle/JUnit unit, integration and API tests; Jest/RTL; playwright-bdd in Grafana; axe; manual keyboard checks; light/dark screenshots; and required reviews.
 3. Run actual repository commands against the intended revision. Record command, working directory, exit code, timestamps, relevant output, environment, base/HEAD, and evidence-file SHA256. Distinguish a failed assertion from startup failure, skipped tests, and zero discovered tests.
 4. Label mocks and stubs explicitly. Real BFF integration must exercise the real Grafana → BFF → query-service path in the required environment; mock-only E2E cannot satisfy it.
-5. Inspect screenshot differences and obtain human baseline approval. Require genuine G1/G2/G5b human records and actual different-family review identity where required; do not self-approve or silently substitute.
-6. Write the Korean report in `docs/sdlc/<KEY>/04-verify-report.md`. The conductor alone applies protocol-supported state updates after auditing returned diffs/evidence, then reruns the checker. Later subject changes invalidate affected evidence.
+5. For UI changes inspect screenshot differences and obtain baseline approval.
+   In SDLC require genuine G1/G2/G5b records and policy-compliant review provenance;
+   standalone verification does not invent gate requirements or self-approve.
+6. Return the requested report (SDLC: `04-verify-report.md`). The conductor alone
+   updates SDLC state. Later subject changes invalidate affected evidence; scope
+   revalidation by impact, but rerun final integrated checks before G3/G4.
 
 ## Bounded example
 

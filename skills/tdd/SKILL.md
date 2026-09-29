@@ -1,32 +1,38 @@
 ---
 name: tdd
-description: Use when implementing a feature, changing behavior, fixing a regression, or encountering pressure to code before tests.
+description: Use when implementing a feature, changing behavior, fixing a regression, or selecting verification for a non-behavior change.
 ---
 
 # Test-Driven Development
 
-Each vertical slice must have observed RED, GREEN, and reviewed evidence.
+Read [shared principles](../sdlc/references/principles.md). This technical skill
+works standalone; it does not require Jira or initiate SDLC. In an SDLC assignment,
+use the supplied approved policy, ACs and allowlist; phase entry is the conductor's job.
 
-Read the [shared protocol](../sdlc/references/protocol.md). Resolve this plugin's skills by native invocation or exact plugin-root `SKILL.md` paths to avoid same-name collisions.
+## Select verification by actual change
 
-## Procedure
+- **Behavior/regression:** write the smallest public-interface test, observe the
+  expected assertion fail, implement GREEN, refactor and rerun affected tests.
+  Infrastructure/syntax failure and zero discovered tests do not qualify as RED.
+- **Refactor:** capture a passing before-baseline and rerun relevant behavior tests
+  after editing. Do not fabricate a failure for behavior that must remain unchanged.
+- **Documentation/config:** use meaningful link/schema/render/lint or relevant
+  runtime checks. Record why RED is inapplicable; behavioral configuration changes
+  still need behavioral testing.
 
-1. Read the approved slice, acceptance criteria, contract, and handoff. Fix the production/test path allowlists and record input hashes plus base/HEAD.
-2. **Test-writer:** write the smallest behavioral test at a public interface. Mock only external boundaries. Use JUnit 5 for backend unit/integration/API tests; use playwright-bdd Gherkin only for frontend E2E.
-3. Run the selected test and inspect its failure. Record command, exit code, relevant output, timestamp, tested revision, and test-file hashes. RED must demonstrate the missing behavior—not a syntax error, unavailable container, or zero tests.
-4. **Implementer:** verify the RED evidence and frozen test hashes; edit production paths only until the same test passes. Then refactor production code while preserving behavior and rerun the affected tests.
-5. Obtain separate spec and standards findings under this plugin's `code-review` skill. The parent audits the diff against both allowlists and verifies tests/fixtures/assertions remained unchanged by the implementer.
+Use existing tools: backend JUnit unit/integration/API tests, frontend unit tests
+or playwright-bdd for relevant E2E behavior. Mock external boundaries, and label
+mock coverage separately from live integration. Record commands, cwd, exit codes,
+revision and useful output; preserve hashed evidence when the caller requires it.
 
-## Bounded example
+Light/standalone work may use one author for tests and implementation. Strict SDLC
+assigns tests to a test-writer and freezes them for the production implementer.
+Never weaken assertions, fixtures, snapshots, tolerances or skips to make GREEN.
+Disputed expected behavior needs contract evidence and review, not silent edits.
 
-A new BFF timeout test expects a stable gateway error. The implementer sees a different status and wants to change the assertion. Return `BLOCKED` with actual versus expected behavior and contract evidence; route the test question to the test-writer or human. Do not edit the assertion, fixture, snapshot, test configuration, or skips to make GREEN.
-
-## Stop and output
-
-Output RED/GREEN command evidence, artifact hashes, changed paths, slice status, actual author/reviewer model and family, and unresolved findings.
-
-Deadline pressure does not allow tests-after or self-review. Production code written prematurely is not RED evidence; isolate unverified work and re-establish the test-first handoff without deleting others' changes.
-
-After three failed slice attempts, use this plugin's `diagnosing-bugs` skill. If diagnosis cannot establish a safe next step, return `NEEDS_HUMAN`; do not loop indefinitely. Infrastructure failure is `BLOCKED`, never GREEN.
-
-Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`; stale evidence must be regenerated.
+For approved G3 revalidation, historical RED can establish unchanged test-first
+provenance after inspection, not current success. Always run fresh GREEN/review;
+new regression tests require new RED. Obtain the caller's independent review
+(combined in light SDLC, separate axes in strict); never claim self-review as
+independent. After three failed attempts use bounded diagnosis, then escalate if
+no supported next step emerges.

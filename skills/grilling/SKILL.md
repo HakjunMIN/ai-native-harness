@@ -7,15 +7,20 @@ description: Use when a ticket leaves behavior, scope, acceptance criteria, or d
 
 Turn uncertainty into explicit decisions before implementation.
 
-Read the [shared protocol](../sdlc/references/protocol.md). Use its artifact and human-approval records; an interview is not approval.
+Read [shared principles](../sdlc/references/principles.md). An interview is not
+approval. Standalone clarification needs no Jira ticket or gate record.
 
 ## Procedure
 
 1. Read the intake snapshot, acceptance criteria, affected modules, and existing discovery decisions. List unresolved branches: actor, permissions, happy path, empty/error states, limits, and exclusions.
-2. Ask **one question per turn**, prioritizing the branch that changes scope or architecture most. Offer two or three concrete choices and an “other” option when useful.
+2. Ask only material unresolved questions; prioritize those changing correctness,
+   scope, authority or architecture. Group related questions when clearer. Do not
+   force an interview for settled intent; record reversible low-risk assumptions.
 3. Explain the consequence of each choice without steering the person toward the easiest implementation. For visual choices, load this plugin's `visual-companion` skill through the native skill tool, or read its exact `SKILL.md` under `<PLUGIN_ROOT>/skills/visual-companion/`.
-4. Record the answer, source, affected acceptance criteria, and remaining branches in `docs/sdlc/<KEY>/01-discovery.md`. Use Korean for the artifact.
-5. Continue until every material branch is answered or explicitly deferred with an owner and a blocking consequence. Restate the resulting behavior for human confirmation.
+4. Record consequential answers and sources in the caller's artifact (SDLC:
+   `01-discovery.md`). Keep the ledger proportional to the decision.
+5. Stop questioning once decisions needed for the authorized task are clear.
+   Deferred questions block only dependent work; never invent customer decisions.
 
 ## Bounded example
 
@@ -27,4 +32,5 @@ Record the selected meaning and its accessibility wording, not merely “badge a
 
 Return a decision ledger, acceptance-criteria changes, and the next unresolved question. Under deadline pressure, do not invent answers or convert silence into consent. If the decision-maker is unavailable, return `NEEDS_HUMAN` with the single highest-impact question.
 
-Missing intake evidence is `BLOCKED`; an outbox request does not satisfy G0. G1/G2/G5b require genuine human records. Before phase progression, run `node <PLUGIN_ROOT>/scripts/state.mjs check <ticket-state>`; a recorded `passed` string alone is insufficient.
+In an SDLC run, return decisions to the conductor; it owns intake validation and
+human gate records. Standalone clarification does not create an SDLC run.

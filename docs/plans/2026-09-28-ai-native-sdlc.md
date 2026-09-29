@@ -1,5 +1,8 @@
 # ai-native-sdlc Implementation Plan
 
+> 초기 구현의 이력 문서입니다. 현재 규범은 [통합 설계 명세](../specs/2026-09-28-ai-native-sdlc-design.md)와
+> [위험 기반 변경 계획](2026-09-28-risk-based-workflow.md)을 따릅니다. 아래 과거 지시를 추가 정책으로 적용하지 않습니다.
+
 **Goal:** Jira 기반 SDLC를 개별 스킬과 컨덕터로 실행하는 로컬 플러그인 제공.
 
 **Architecture:** 공통 스킬과 상태/핸드오프 계약을 공유한다. Node 표준 라이브러리로 상태 검사, 훅, 비주얼 컴패니언을 구현하고 하네스 어댑터는 별도로 둔다.

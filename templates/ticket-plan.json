@@ -1,0 +1,23 @@
+{
+  "changeKind": "behavior",
+  "risks": [],
+  "tickets": [
+    {
+      "id": 1,
+      "title": "<observable outcome>",
+      "goal": "<end-to-end user or operator behavior>",
+      "scope": ["<included behavior>"],
+      "nonGoals": ["<excluded behavior>"],
+      "blockedBy": [],
+      "acceptanceCriteria": [
+        {
+          "id": "T1-AC1",
+          "requirement": "<parent discovery AC reference>",
+          "text": "<measurable result>",
+          "checks": ["junit"]
+        }
+      ],
+      "details": "<applicable contract/UX references, fixtures and verification rationale>"
+    }
+  ]
+}
