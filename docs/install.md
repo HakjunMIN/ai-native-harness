@@ -2,11 +2,9 @@
 
 ## Copilot CLI + Codex
 
-이 저장소는 비공개입니다. `gh` 로그인과 Git SSH 접근 권한, curl, Git, Bash가
-필요하며 대상 디렉터리는 미리 존재해야 합니다. Bash/zsh 터미널에서 `pipefail`을
-켜고 README의 `curl | bash` 명령을 실행하세요. `curl` 인증 토큰은 명령 인수가
-아닌 표준입력 설정으로 전달됩니다. 인증 없는 `raw.githubusercontent.com` URL은
-404를 반환합니다.
+이 저장소는 공개되어 있어 GitHub 인증 없이 설치할 수 있습니다. curl, Git,
+Bash가 필요하며 대상 디렉터리는 미리 존재해야 합니다. Bash/zsh 터미널에서
+`pipefail`을 켜고 README의 `curl | bash` 명령을 실행하세요.
 
 파이프로 받은 코드를 바로 실행하는 것이 부담스럽다면 README 명령의 `curl` 부분에
 `-o install.sh`를 추가해 스크립트를 저장하고 내용을 검토한 후
@@ -20,11 +18,11 @@ bash /absolute/path/to/ai-native-harness/install.sh /absolute/path/to/target-rep
 ```
 
 설치 후 훅과 SDLC 스크립트에는 **Node.js 22 이상**이 필요합니다.
-curl 경로에서 스크립트를 스트리밍하면 매번 Git SSH로 지정한 ref의 최신
+curl 경로에서 스크립트를 스트리밍하면 매번 공개 HTTPS Git 저장소에서 지정한 ref의 최신
 하네스 소스를 가져옵니다. 같은 명령을 다시 실행하면 대상 프로젝트의
 관리 파일을 새 버전으로 갱신합니다. 다른 브랜치·태그를 사용한다면
-스크립트 URL의 `ref`와 `AI_NATIVE_SDLC_REF`를 함께 맞추세요.
-인증된 다른 Git 원격은 `AI_NATIVE_SDLC_REPO_URL`로 지정합니다.
+스크립트 URL의 브랜치 경로와 `AI_NATIVE_SDLC_REF`를 함께 맞추세요.
+다른 Git 원격을 사용할 때는 `AI_NATIVE_SDLC_REPO_URL`로 지정합니다.
 
 설치 결과는 대상의 실제 `.ai-native-sdlc/` 파일, `.agents/skills/` 스킬 링크,
 Copilot용 `.github/agents/`와 `.github/hooks/ai-native-sdlc.json`,

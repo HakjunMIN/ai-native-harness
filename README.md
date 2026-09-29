@@ -10,6 +10,7 @@ Jira 티켓 또는 자연어 요청에서 시작하며, 30개 스킬과 9개 전
 | 원칙 | 워크플로우에 적용하는 방식 |
 |---|---|
 | **작은 수직 단위로 전달** | DB/API/UI 계층별 작업 대신, 사용자 결과와 수용 기준(AC)을 갖춘 구현 태스크로 나눕니다. |
+| **AC 기반 Verification & Validation** | 사용자 스토리·Jira 티켓 또는 요청에서 AC를 도출합니다. 프런트엔드 관찰 가능 동작은 AC에 연결된 Gherkin 시나리오로, 백엔드 AC는 API 예시와 JUnit 단위·통합·API 테스트로 연결합니다. 구현 전 G1에서 사람이 AC·시나리오(UI는 프로토타입 포함)로 요구 의도를 확인(Validation)하고, 최종 검증에서 AC별 테스트 결과로 구현 충족을 확인(Verification)합니다. |
 | **계약과 경계 우선** | 도메인 용어·API 계약·테스트 기대값을 맞추고, 인증·테넌트·제품 경계를 보존합니다. |
 | **위험 기반 검증** | 작고 저위험인 단일 결과는 light, 고위험·아키텍처 변경·다중 결과는 strict로 진행합니다. |
 | **변경에 맞는 테스트** | 동작 변경은 TDD(RED → GREEN), 리팩터링은 전후 비교, 문서·설정은 관련 정적 검증을 적용합니다. 동작을 바꾸는 설정은 동작 테스트가 필요합니다. |
@@ -35,13 +36,13 @@ BFF는 ClickHouse에 직접 접근하지 않으며, SigNoz 자체 UI는 노출�
 
 ## 설치
 
-`gh` 로그인, Git SSH 접근 권한, curl, Bash, **Node.js 22 이상**이 필요합니다.
+공개 저장소이므로 인증 없이 설치할 수 있습니다. curl, Git, Bash와
+설치 후 실행에 사용할 **Node.js 22 이상**이 필요합니다.
 기존 대상 저장소 경로를 지정하세요.
 
 ```bash
 set -o pipefail
-printf 'header = "Authorization: Bearer %s"\nheader = "Accept: application/vnd.github.raw+json"\n' "$(gh auth token)" |
-  curl --config - -fsSL 'https://api.github.com/repos/HakjunMIN/ai-native-harness/contents/install.sh?ref=main' |
+curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install.sh' |
   bash -s -- /absolute/path/to/target-repo
 ```
 

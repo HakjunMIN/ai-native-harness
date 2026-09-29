@@ -356,6 +356,21 @@ test('local install.sh installs from its checked-out source', t => {
     readdirSync(join(source,'skills')).length);
 });
 
+test('public bootstrap clones over HTTPS without GitHub credentials by default', t => {
+  const target = fixture(t);
+  const tools = fixture(t);
+  const script = join(tools,'install.sh');
+  writeFileSync(script,readFileSync(shellInstaller));
+  writeFileSync(join(tools,'git'),'#!/bin/sh\nprintf "%s\\n" "$*" >&2\nexit 55\n',{mode:0o755});
+  const result = spawnSync('bash',[script,target],{encoding:'utf8',env:{
+    ...process.env,PATH:`${tools}:${process.env.PATH}`,
+    AI_NATIVE_SDLC_REPO_URL:'',AI_NATIVE_SDLC_REF:'main'
+  }});
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/clone .*https:\/\/github\.com\/HakjunMIN\/ai-native-harness\.git/);
+  assert.equal(existsSync(join(target,'.ai-native-sdlc')),false);
+});
+
 test('hook commands remain valid for quoted and non-ASCII target paths', t => {
   const parent = fixture(t);
   const target = join(parent,"project's 한글");
