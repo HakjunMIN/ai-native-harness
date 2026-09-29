@@ -18,18 +18,9 @@ set -o pipefail; printf 'header = "Authorization: Bearer %s"\nheader = "Accept: 
 
 ## 게이트 개요
 
-전체 워크플로우는 아래 게이트를 순서대로 통과합니다. G1/G2/G5b는 사람 승인이
-필수이며, 나머지는 에이전트가 증거를 통해 통과시킵니다.
+![단계별 필수·조건부 스킬과 G1/G2/G5b 사람 승인 게이트](docs/assets/ai-native-sdlc-skills.svg)
 
-| 게이트 | 단계 | 승인 주체 | 의미 |
-|---|---|---|---|
-| G0 | discover | 에이전트 | 요구사항/AC/모듈 맵 확정 |
-| G1 | discover | **사람** | 요구사항, UI/BE/FE 결정 승인 |
-| G2 | plan | **사람** | 계획, 정책, 구현 태스크 정의 승인 |
-| G3 | implement | 에이전트 | 구현 태스크의 구현·검증·리뷰 완료 |
-| G4 | verify | 에이전트 | 통합 검증, spec/standards/security 리뷰 |
-| G5a | release | 에이전트 | CI/이미지 digest, dev·staging 프로모션 확인 |
-| G5b | release | **사람** | 운영 승인/머지, 배포 상태 확인 |
+[다이어그램 정의](docs/diagrams/ai-native-sdlc-skills.json)
 
 ## 시작
 

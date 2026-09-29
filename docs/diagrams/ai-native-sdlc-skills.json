@@ -1,0 +1,282 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ai-native-sdlc · 단계별 스킬 맵",
+    "output": "docs/diagrams/ai-native-sdlc-skills.html",
+    "quality_profile": "showcase",
+    "legend": { "mode": "hidden" },
+    "repository": {
+      "url": "git@github.com:HakjunMIN/ai-native-harness.git",
+      "link_mode": "local-only",
+      "revision": "5409335164538d720206acfa043b4ab8447ef3fe"
+    }
+  },
+  "lanes": [
+    { "id": "flow", "label": "진행 단계 · sdlc가 순서대로 호출" },
+    { "id": "required", "label": "필수 / 해당 범위이면 호출" },
+    { "id": "optional", "label": "상황별 선택" },
+    { "id": "technical", "label": "스택별 기술 스킬 · 실제 영향 범위에만 적용" }
+  ],
+  "mainPath": ["start", "discover", "plan", "implement", "verify", "release"],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "flow",
+      "col": 0,
+      "type": "backend",
+      "label": "sdlc <ID>",
+      "sublabel": "설정 · 진행 · 재개",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc/SKILL.md", "line": 10, "end_line": 33 }]
+    },
+    {
+      "id": "discover",
+      "lane": "flow",
+      "col": 1,
+      "type": "backend",
+      "label": "sdlc-discover · G0",
+      "sublabel": "FE BDD 초안 · G1 사람",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-discover/SKILL.md", "line": 35, "end_line": 41 }]
+    },
+    {
+      "id": "plan",
+      "lane": "flow",
+      "col": 2,
+      "type": "backend",
+      "label": "sdlc-plan · G2",
+      "sublabel": "설계 · 태스크 · 사람 승인",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-plan/SKILL.md", "line": 30, "end_line": 50 }]
+    },
+    {
+      "id": "implement",
+      "lane": "flow",
+      "col": 3,
+      "type": "backend",
+      "label": "sdlc-implement · G3",
+      "sublabel": "3회 실패: diagnosing-bugs",
+      "width": 140,
+      "sources": [
+        { "path": "skills/sdlc-implement/SKILL.md", "line": 20, "end_line": 36 },
+        { "path": "skills/diagnosing-bugs/SKILL.md", "line": 2, "end_line": 3 }
+      ]
+    },
+    {
+      "id": "verify",
+      "lane": "flow",
+      "col": 4,
+      "type": "backend",
+      "label": "sdlc-verify · G4",
+      "sublabel": "E2E · UX · 독립 리뷰",
+      "width": 154,
+      "sources": [{ "path": "skills/sdlc-verify/SKILL.md", "line": 9, "end_line": 32 }]
+    },
+    {
+      "id": "release",
+      "lane": "flow",
+      "col": 5,
+      "type": "backend",
+      "label": "sdlc-release · G5a",
+      "sublabel": "CI · GitOps · G5b 사람 승인",
+      "width": 154,
+      "sources": [{ "path": "skills/sdlc-release/SKILL.md", "line": 9, "end_line": 33 }]
+    },
+    {
+      "id": "required-start",
+      "lane": "required",
+      "col": 0,
+      "type": "security",
+      "label": "sdlc-setup",
+      "sublabel": "최초 1회 · 변경 시 재설정",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-setup/SKILL.md", "line": 2, "end_line": 11 }]
+    },
+    {
+      "id": "required-discover",
+      "lane": "required",
+      "col": 1,
+      "type": "frontend",
+      "label": "bdd-gherkin",
+      "sublabel": "FE: AC별 Gherkin 초안",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-discover/SKILL.md", "line": 35, "end_line": 40 }]
+    },
+    {
+      "id": "required-plan",
+      "lane": "required",
+      "col": 2,
+      "type": "messagebus",
+      "label": "sdlc-tickets · 초안",
+      "sublabel": "G2 전 태스크 정의",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-plan/SKILL.md", "line": 30, "end_line": 35 }]
+    },
+    {
+      "id": "required-implement",
+      "lane": "required",
+      "col": 3,
+      "type": "frontend",
+      "label": "tdd · bdd-gherkin",
+      "sublabel": "RED/GREEN · FE steps",
+      "width": 140,
+      "sources": [
+        { "path": "skills/tdd/SKILL.md", "line": 12, "end_line": 20 },
+        { "path": "skills/bdd-gherkin/SKILL.md", "line": 22, "end_line": 28 }
+      ]
+    },
+    {
+      "id": "required-verify",
+      "lane": "required",
+      "col": 4,
+      "type": "security",
+      "label": "verification-gate",
+      "sublabel": "검증 · 증거 점검",
+      "width": 154,
+      "sources": [{ "path": "skills/sdlc-verify/SKILL.md", "line": 6, "end_line": 11 }]
+    },
+    {
+      "id": "required-release",
+      "lane": "required",
+      "col": 5,
+      "type": "security",
+      "label": "helm-argocd-release",
+      "sublabel": "CI · GitOps · 운영 제안",
+      "width": 154,
+      "sources": [{ "path": "skills/sdlc-release/SKILL.md", "line": 6, "end_line": 25 }]
+    },
+    {
+      "id": "optional-start",
+      "lane": "optional",
+      "col": 0,
+      "type": "external",
+      "label": "sdlc-handoff",
+      "sublabel": "세션 변경·중단 시",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc/SKILL.md", "line": 58, "end_line": 59 }]
+    },
+    {
+      "id": "optional-discover",
+      "lane": "optional",
+      "col": 1,
+      "type": "external",
+      "label": "jira-sync · grilling",
+      "sublabel": "UI: prototype · Jira",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-discover/SKILL.md", "line": 9, "end_line": 35 }]
+    },
+    {
+      "id": "optional-plan",
+      "lane": "optional",
+      "col": 2,
+      "type": "external",
+      "label": "api-contract",
+      "sublabel": "strict: code-review",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-plan/SKILL.md", "line": 11, "end_line": 45 }]
+    },
+    {
+      "id": "optional-implement",
+      "lane": "optional",
+      "col": 3,
+      "type": "messagebus",
+      "label": "sdlc-tickets · 발행",
+      "sublabel": "strict/legacy · G2 후",
+      "width": 140,
+      "sources": [{ "path": "skills/sdlc-tickets/SKILL.md", "line": 39, "end_line": 45 }]
+    },
+    {
+      "id": "optional-verify",
+      "lane": "optional",
+      "col": 4,
+      "type": "frontend",
+      "label": "grafana-plugin-testing",
+      "sublabel": "UI: E2E · axe · 키보드",
+      "width": 154,
+      "sources": [{ "path": "skills/sdlc-verify/SKILL.md", "line": 18, "end_line": 22 }]
+    },
+    {
+      "id": "optional-release",
+      "lane": "optional",
+      "col": 5,
+      "type": "external",
+      "label": "jira-sync",
+      "sublabel": "Jira만 상태 동기화",
+      "width": 154,
+      "sources": [{ "path": "skills/sdlc-release/SKILL.md", "line": 9, "end_line": 10 }]
+    },
+    {
+      "id": "technical-start",
+      "lane": "technical",
+      "col": 0,
+      "type": "cloud",
+      "label": "signoz-oss",
+      "sublabel": "clickstack: 명시적 평가 시",
+      "width": 140,
+      "sources": [
+        { "path": "skills/sdlc-setup/SKILL.md", "line": 9, "end_line": 15 },
+        { "path": "skills/clickstack/SKILL.md", "line": 2, "end_line": 3 }
+      ]
+    },
+    {
+      "id": "technical-discover",
+      "lane": "technical",
+      "col": 1,
+      "type": "frontend",
+      "label": "domain-context",
+      "sublabel": "visual-companion: UI 비교",
+      "width": 140,
+      "sources": [
+        { "path": "skills/sdlc-discover/SKILL.md", "line": 26, "end_line": 30 },
+        { "path": "skills/visual-companion/SKILL.md", "line": 2, "end_line": 3 }
+      ]
+    },
+    {
+      "id": "technical-plan",
+      "lane": "technical",
+      "col": 2,
+      "type": "cloud",
+      "label": "spring-boot-bff",
+      "sublabel": "signoz-query-service: 연계",
+      "width": 140,
+      "sources": [
+        { "path": "skills/spring-boot-bff/SKILL.md", "line": 2, "end_line": 3 },
+        { "path": "skills/signoz-query-service/SKILL.md", "line": 2, "end_line": 3 }
+      ]
+    },
+    {
+      "id": "technical-implement",
+      "lane": "technical",
+      "col": 3,
+      "type": "frontend",
+      "label": "react-ts",
+      "sublabel": "grafana-plugin-dev: FE",
+      "width": 140,
+      "sources": [
+        { "path": "skills/react-ts/SKILL.md", "line": 2, "end_line": 3 },
+        { "path": "skills/grafana-plugin-dev/SKILL.md", "line": 2, "end_line": 3 }
+      ]
+    },
+    {
+      "id": "technical-verify",
+      "lane": "technical",
+      "col": 4,
+      "type": "frontend",
+      "label": "spring-testing",
+      "sublabel": "otel-observability: 계측",
+      "width": 154,
+      "sources": [
+        { "path": "skills/spring-testing/SKILL.md", "line": 2, "end_line": 3 },
+        { "path": "skills/otel-observability/SKILL.md", "line": 2, "end_line": 3 }
+      ]
+    }
+  ],
+  "edges": [
+    { "from": "start", "to": "discover", "variant": "emphasis" },
+    { "from": "discover", "to": "plan", "label": "G1 사람 승인 후", "variant": "security" },
+    { "from": "plan", "to": "implement", "label": "G2 사람 승인 후", "variant": "security" },
+    { "from": "implement", "to": "verify", "variant": "emphasis" },
+    { "from": "verify", "to": "release", "variant": "emphasis" }
+  ]
+}
