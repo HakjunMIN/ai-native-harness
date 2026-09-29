@@ -36,6 +36,10 @@ function decide(payload) {
   const name = payload?.toolName ?? payload?.tool_name;
   let args = payload?.toolArgs ?? payload?.tool_input;
   if (typeof name !== 'string' || args === undefined) throw new Error('Unknown hook payload');
+  if (process.argv[2] === 'codex' && name.toLowerCase() === 'apply_patch'
+      && typeof args?.command === 'string') {
+    args = {...args, patch:args.command};
+  }
   if (typeof args === 'string') {
     // apply_patch may be a raw patch rather than JSON.
     if (args.startsWith('*** Begin Patch')) args = {patch:args};
@@ -75,4 +79,7 @@ let result;
 try { result = decide(JSON.parse(readFileSync(0, 'utf8'))); }
 catch (error) { result = {permissionDecision:'deny',permissionDecisionReason:`SDLC guard could not evaluate input: ${error.message}`}; }
 console.log(JSON.stringify(process.argv[2] === 'claude'
-  ? {hookSpecificOutput:{hookEventName:'PreToolUse',...result}} : result));
+  ? {hookSpecificOutput:{hookEventName:'PreToolUse',...result}}
+  : process.argv[2] === 'codex' && Object.keys(result).length
+    ? {hookSpecificOutput:{hookEventName:'PreToolUse',...result}}
+    : result));

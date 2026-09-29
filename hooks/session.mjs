@@ -18,7 +18,7 @@ try {
     }
   }
   const context = lines.join('\n');
-  console.log(JSON.stringify(process.argv[2] === 'claude'
+  console.log(JSON.stringify(['claude','codex'].includes(process.argv[2])
     ? {hookSpecificOutput:{hookEventName:'SessionStart',additionalContext:context}}
     : {additionalContext:context}));
 } catch (error) { console.error(`SDLC bootstrap failed: ${error.message}`); process.exitCode = 1; }

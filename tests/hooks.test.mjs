@@ -25,6 +25,26 @@ test('supports Claude format and JSON-encoded Copilot tool arguments', () => {
   assert.equal(hook({tool_name:'Bash',tool_input:{command:'gh pr merge 42'}}, 'claude').permissionDecision, 'deny');
   assert.equal(hook({toolName:'bash',toolArgs:JSON.stringify({command:'git push'})}).permissionDecision, 'deny');
 });
+test('Codex denies prohibited commands and patches without granting neutral calls', () => {
+  const codex = (tool_name, tool_input) =>
+    ({hook_event_name:'PreToolUse', tool_name, tool_input, cwd:process.cwd()});
+  for (const [name, input] of [
+    ['Bash', {command:'git push origin main'}],
+    ['apply_patch', {command:'*** Begin Patch\n*** Update File: deploy/prod/values.yaml\n*** End Patch'}]
+  ]) {
+    const result = hook(codex(name,input),'codex');
+    assert.equal(result.hookSpecificOutput.hookEventName,'PreToolUse');
+    assert.equal(result.hookSpecificOutput.permissionDecision,'deny');
+  }
+  assert.equal(hook(codex('Bash',{command:'git status'}),'codex').hookSpecificOutput?.permissionDecision,undefined);
+  assert.equal(hook({},'codex').hookSpecificOutput.permissionDecision,'deny');
+});
+test('Codex session start provides additional context', () => {
+  const result = spawnSync(process.execPath,[resolve('hooks/session.mjs'),'codex'],
+    {input:JSON.stringify({cwd:process.cwd(),hook_event_name:'SessionStart'}),encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  assert.equal(JSON.parse(result.stdout).hookSpecificOutput.hookEventName,'SessionStart');
+});
 test('keeps deployment observation and in-memory rendering neutral in both adapters', () => {
   for (const adapter of ['copilot','claude']) {
     for (const command of [

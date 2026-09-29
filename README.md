@@ -13,37 +13,47 @@ Jira 티켓 또는 로컬 요청서에서 시작해 **Discovery → Plan → Imp
 Node.js 22 이상과 Bash가 필요합니다. 패키지 검증에는 외부 npm 의존성이 없습니다.
 대상 서비스의 Java/Grafana/SigNoz 버전과 테스트 명령은 setup에서 확인합니다.
 
-### GitHub Copilot CLI
+### Copilot CLI + Codex: 프로젝트에 한 번 설치
 
-팀 마켓플레이스 방식으로 GitHub 저장소를 등록합니다.
+두 CLI를 같은 대상 저장소에서 사용하려면 **플러그인 설치 대신** 한 번의 프로젝트
+설치 명령을 사용합니다. 원본 스킬 리포와 대상 저장소를 서로 다른 디렉터리에 두고
+실행하세요.
+
+```bash
+node /absolute/path/to/ai-native-harness/scripts/install-project.mjs /absolute/path/to/target-repo
+```
+
+대상에 `.ai-native-sdlc` 링크(원본 리포 전체), `.agents/skills/` 링크,
+Copilot용 `.github/agents/` 및 `.github/hooks/ai-native-sdlc.json`,
+Codex용 `.codex/agents/` 및 `.codex/hooks.json`을 생성합니다.
+`scripts/`와 `templates/`는 링크된 스킬의 실행에 필요한 자산입니다.
+`tests/`와 `examples/`는 원본 개발 자료로, 대상 프로젝트 루트에는 복사되지 않습니다.
+기존 파일과 충돌하면 덮어쓰지 않고 설치를 중단합니다. 같은 설치 명령을 다시 실행해도
+내용이 동일하면 변경하지 않습니다. **원본을 이동하거나 생성 설정 형식이 바뀌면**
+링크/설정 경로를 확인하고 다시 설치해야 합니다. 기존 생성 설정과 새 설정이 충돌하면
+내용을 검토한 뒤 해당 생성 파일만 직접 교체하세요. 다른 프로젝트 설정이나 `AGENTS.md`
+는 변경하지 않습니다. 원본 리포를 지우면 링크도 동작하지 않습니다.
+
+두 CLI를 **대상 저장소에서 새 세션**으로 실행해 Copilot `/skills`, `/agent`와
+Codex `/skills`, `/agent`, `/hooks`에서 발견 상태를 확인하세요. Copilot은
+`copilot skill list`로도 확인할 수 있습니다. Codex는 프로젝트 구성 계층을
+신뢰하고 각 훅 정의를 `/hooks`에서 검토·승인해야 실행됩니다. 양쪽에서 스킬
+30개·전문 에이전트 9개의 발견 및 훅의 실제 차단 동작을 확인하기 전에는 설치
+완료로 간주하지 마세요. 훅은 OS 권한 경계가 아니며 Codex 에이전트가 Markdown의
+`tools` 목록을 네이티브 권한으로 강제하는 것도 아닙니다.
+
+### Copilot CLI 전용 플러그인 설치 (선택)
+
+Copilot CLI에서만 쓰는 경우에는 팀 마켓플레이스를 통한 플러그인 설치도 가능합니다.
+이 방법은 Codex 프로젝트의 스킬·에이전트·훅을 설정하지 않습니다.
 
 ```bash
 copilot plugin marketplace add HakjunMIN/ai-native-harness
 copilot plugin install ai-native-sdlc@ai-native-sdlc-marketplace
 ```
 
-현재 CLI의 직접 경로 설치(`copilot plugin install <절대 경로>`)도 가능하지만
-deprecated 경고가 있으므로 위 마켓플레이스 방식을 권장합니다.
-
-현재 저장소에서만 플러그인을 활성화하려면 대상 저장소의
-`.github/copilot/settings.json`에 다음 설정을 추가합니다. Copilot CLI는 이
-저장소에 들어왔을 때 플러그인을 자동 설치·활성화하고, 다른 저장소에서는
-비활성화합니다.
-
-```json
-{
-  "enabledPlugins": {
-    "HakjunMIN/ai-native-harness": true
-  }
-}
-```
-
-팀과 설정을 공유하려면 이 파일을 커밋합니다. 개인에게만 적용하려면 같은 내용을
-`.github/copilot/settings.local.json`에 저장하고 해당 파일을 대상 저장소의
-`.gitignore`에 추가합니다.
-
-새 세션에서 대상 모노레포를 열고 `/skills`, `/agent`, `/plugin`에서 로딩을
-확인합니다. 명령 표시가 namespace를 포함하면 표시된 이름을 사용합니다.
+대상 저장소에서 Copilot 프로젝트 설치와 플러그인 설치를 동시에 활성화하면
+동일 스킬/훅이 중복될 수 있으므로 한 방식만 사용하세요.
 
 ### Claude Code
 
@@ -57,25 +67,12 @@ claude --plugin-dir /absolute/path/to/ai-native-harness
 
 ### Codex
 
-`.codex-plugin/plugin.json`은 스킬 패키지 호환 매니페스트입니다. 조직에서
-설정한 Codex 마켓플레이스로 설치하거나, 아래처럼 모든 스킬을 프로젝트에서
-발견하게 할 수 있습니다. 기존 경로는 덮어쓰지 않고 건너뜁니다.
+위 프로젝트 설치 명령을 사용하세요. `.codex-plugin/plugin.json`은 별도
+패키징 매니페스트로 유지하지만, 이것만으로 대상 저장소의 Codex 훅이나
+9개 네이티브 에이전트가 등록되지는 않습니다.
 
-```bash
-# 대상 모노레포에서 실행
-mkdir -p .agents/skills
-for skill in /absolute/path/to/ai-native-harness/skills/*; do
-  name="$(basename "$skill")"
-  if [ -e ".agents/skills/$name" ] || [ -L ".agents/skills/$name" ]; then
-    printf '기존 경로 유지: %s\n' "$name"
-  else
-    ln -s "$skill" ".agents/skills/$name"
-  fi
-done
-```
-
-공통 스킬은 이식 가능하지만 **훅·전문
-에이전트 등록·교차 모델 실행까지 자동 호환되는 것은 아닙니다.**
+공통 스킬은 이식 가능하지만 **훅의 신뢰 승인·도구 권한·교차 모델 실행까지
+자동 호환되는 것은 아닙니다.**
 신규 light/strict에서 교차 모델 리뷰는 권고이며 같은 모델의 독립 세션을 사용할 수 있습니다.
 명시적 강제 정책 또는 policy 없는 기존 기록은 교차 모델 미지원 시 해당 리뷰가 BLOCKED입니다.
 인간 리뷰는 정책이 허용할 때만 사용할 수 있습니다. [호환성](docs/compatibility.md)을

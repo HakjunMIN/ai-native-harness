@@ -4,10 +4,10 @@
 
 | 기능 | Copilot CLI | Claude Code | Codex |
 |---|---|---|---|
-| SKILL.md | 플러그인 로딩 | 플러그인 namespace | 스킬 설치/연결 |
-| 전문 에이전트 | agents/*.agent.md | 같은 Markdown 프로필 | 로컬 역할 프롬프트로 읽기; native 등록 아님 |
+| SKILL.md | 프로젝트 `.agents/skills` 또는 플러그인 | 플러그인 namespace | 프로젝트 `.agents/skills` |
+| 전문 에이전트 | 프로젝트 `.github/agents` 또는 플러그인 | 같은 Markdown 프로필 | 설치 시 `.codex/agents/*.toml` 생성 |
 | 역할별 도구 선언 | 공식 호환 alias | native 도구 이름 | Markdown `tools` 미적용 |
-| 훅 | hooks/copilot.json | hooks/hooks.json | 자동 등록하지 않음 |
+| 훅 | 프로젝트 `.github/hooks` 또는 플러그인 | hooks/hooks.json | 프로젝트 `.codex/hooks.json`, 신뢰 승인 필요 |
 | 모델 선택 | 런타임 지원 + 사용자 설정 확인 | 지원 모델 범위 확인 | 지원 모델 범위 확인 |
 | 정책 기반 독립 리뷰 | 실제 독립 세션/도구 확인 | 동일 모델 독립 세션 가능 | 동일 모델 독립 세션 가능 |
 | 외부 CLI 호출 | 사용 안 함 | 사용 안 함 | 사용 안 함 |
@@ -48,9 +48,9 @@ Claude Code는 `tools`에 YAML 배열을 지원하고 Copilot은 이 이름들�
 허용 경로와 “테스트 파일 수정 금지” 같은 세부 범위는 이 선언만으로 강제되지
 않으므로 컨덕터의 diff 감사와 실제 호스트 권한 설정이 별도로 필요합니다.
 
-Codex의 native custom agent는 `.codex/agents/*.toml` 등의 별도 설정을 사용합니다.
-이 패키지는 그 파일을 생성하지 않으며 `.agents/skills` 연결도 에이전트 등록이
-아닙니다. Markdown 본문을 로컬 역할 프롬프트로 전달할 수 있지만 `tools` 배열이
+Codex의 native custom agent는 `.codex/agents/*.toml` 설정을 사용합니다.
+프로젝트 설치 스크립트가 이 파일을 생성하고 각 Markdown 프로필을 읽도록 지시합니다.
+`.agents/skills` 연결만으로는 에이전트가 등록되지 않으며 `tools` 배열이
 native allowlist가 되지는 않습니다. 기본 도구 동작은 이식 가능해도 **동일한
 도구 제한까지 자동 호환되지는 않습니다.** `sandbox_mode: "read-only"`도
 shell 도구 자체를 제거한다는 뜻은 아니며 부모의 런타임 권한도 확인해야 합니다.
@@ -74,7 +74,8 @@ shell 도구 자체를 제거한다는 뜻은 아니며 부모의 런타임 권�
 `npm test`는 각 훅 입력/출력 어댑터와 loopback 서버, 증거/상태 계약을 검사합니다.
 매니페스트의 구조 검사와 실제 설치 로딩은 구별합니다. 조직의 인증/허용 모델/
 정책까지 동일하다고 보장하지 않으며 setup에서 실제 환경을 확인해야 합니다.
-Codex에는 native hook·agent 변환기를 추측해서 제공하지 않습니다.
+Codex 프로젝트 설치는 native 훅 설정과 에이전트 TOML을 생성하지만 실제 로딩,
+훅 신뢰 승인 및 명령 차단 여부는 Codex 세션에서 별도로 확인해야 합니다.
 
 이 저장소 구현 시에는 별도 `COPILOT_HOME`으로 로컬 경로 설치를 실행해 당시
 스킬 27개의 발견과 로컬 마켓플레이스 등록을 확인했습니다. 이후 `sdlc-tickets`,
@@ -94,9 +95,18 @@ Claude/Codex 실환경 실행은 검증되지 않았으며 구조/어댑터 테�
 - 세 하네스에서 9개 에이전트의 실제 도구 호출을 모두 실행한 end-to-end 검증은 하지 않았습니다.
   명세 호환, 플러그인 발견, 실제 실행 보장을 구분합니다.
 
-Copilot legacy manifest를 유지합니다. Agent Plugins 1.0의 고정 component
-경로와 섞지 않습니다. Claude는 기본 `agents/`, `skills/`, `hooks/hooks.json`
-검색을 사용하고 Copilot은 명시된 `hooks/copilot.json`을 사용합니다.
+프로젝트 설치 추가 점검:
+- 임시 프로젝트에서 Copilot `skill list --json`으로 프로젝트 스킬 30개를 확인했고,
+  Copilot `--agent sdlc-architect` 실행과 pre-tool 훅의 안전한 `echo` 차단을 확인했습니다.
+- Codex `debug prompt-input`에 프로젝트 스킬 30개가 나타났습니다. Codex
+  `doctor`는 구성 로딩에 성공했지만 인증 실패를 보고했습니다. 따라서 native
+  에이전트 9개의 실행과 Codex 훅 신뢰 승인/실제 차단은 아직 검증되지 않았습니다.
+  생성된 JSON 및 훅 명령 테스트가 이 실환경 검증을 대신하지 않습니다.
+
+Copilot legacy manifest는 선택적 플러그인 설치용으로 유지합니다. Agent Plugins
+1.0의 고정 component 경로와 섞지 않습니다. Claude는 기본 `agents/`, `skills/`,
+`hooks/hooks.json` 검색을 사용하고 프로젝트 설치의 Copilot은 `.github/agents`,
+`.github/hooks` 및 `.agents/skills` 경로를 사용합니다.
 
 ## 문서 근거
 
