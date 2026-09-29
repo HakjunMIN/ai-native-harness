@@ -12,7 +12,10 @@ if [[ $# -lt 1 || $# -gt 2 ]]; then
 fi
 
 target=$(cd "$1" && pwd -P) || fail "Target directory not found: $1"
-script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+script_dir=
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+fi
 cache_dir=${AI_NATIVE_SDLC_CACHE_DIR:-"${HOME}/.cache/ai-native-sdlc"}
 repo_url=${AI_NATIVE_SDLC_REPO_URL:-git@github.com:HakjunMIN/ai-native-harness.git}
 ref=${AI_NATIVE_SDLC_REF:-main}

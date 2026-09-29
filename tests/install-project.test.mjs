@@ -170,3 +170,33 @@ test('HTTP curl-downloaded install.sh bootstraps a reusable checkout without mod
     ...process.env,AI_NATIVE_SDLC_CACHE_DIR:cache,AI_NATIVE_SDLC_REPO_URL:`file://${repository}`
   }}).status,0);
 });
+
+test('curl piped directly into bash installs without an install.sh file on disk', async t => {
+  const target = fixture(t);
+  const cache = fixture(t);
+  const server = createServer((request,response) => {
+    if (request.url !== '/install.sh') { response.writeHead(404).end(); return; }
+    response.writeHead(200,{'content-type':'text/plain'}).end(readFileSync(shellInstaller));
+  });
+  await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
+  t.after(() => server.close());
+  const gitDir = spawnSync('git',['rev-parse','--git-common-dir'],{cwd:source,encoding:'utf8'});
+  assert.equal(gitDir.status,0,gitDir.stderr);
+  const repository = resolve(source,gitDir.stdout.trim(),'..');
+  const env = {...process.env,AI_NATIVE_SDLC_CACHE_DIR:cache,
+    AI_NATIVE_SDLC_REPO_URL:`file://${repository}`};
+  const fetched = spawn('curl',['-fsSL',`http://127.0.0.1:${server.address().port}/install.sh`]);
+  const installed = spawn('bash',['-s','--',target],{env});
+  fetched.stdout.pipe(installed.stdin);
+  let error = '';
+  installed.stderr.on('data',chunk => { error += chunk; });
+  const done = child => new Promise((resolve,reject) => {
+    child.on('error',reject);
+    child.on('close',resolve);
+  });
+  const [curlStatus, bashStatus] = await Promise.all([done(fetched),done(installed)]);
+  assert.equal(curlStatus,0);
+  assert.equal(bashStatus,0,error);
+  assert.equal(readdirSync(join(target,'.agents/skills')).length,30);
+  assert.equal(realpathSync(join(target,'.ai-native-sdlc')),realpathSync(join(cache,'main')));
+});

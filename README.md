@@ -10,94 +10,11 @@ Jira 티켓 또는 로컬 요청서에서 시작해 **Discovery → Plan → Imp
 
 ## 설치
 
-설치에는 Bash가 필요하며, `curl` 설치에는 Git과 curl도 필요합니다.
-**설치기 자체는 Node.js를 사용하지 않지만**, 설치 후 SDLC 훅과 스크립트 실행에는
-Node.js 22 이상이 필요합니다. 패키지 검증에는 외부 npm 의존성이 없습니다.
-대상 서비스의 Java/Grafana/SigNoz 버전과 테스트 명령은 setup에서 확인합니다.
-
-### Copilot CLI + Codex: 프로젝트에 한 번 설치
-
-두 CLI를 같은 대상 저장소에서 사용하려면 **플러그인 설치 대신** Bash 설치기를
-실행합니다. 이미 스킬 리포를 내려받았다면 원본과 대상 저장소를 서로 다른
-디렉터리에 두고 다음처럼 설치하세요.
-
 ```bash
-bash /absolute/path/to/ai-native-harness/install.sh /absolute/path/to/target-repo
+set -o pipefail; printf 'header = "Authorization: Bearer %s"\nheader = "Accept: application/vnd.github.raw+json"\n' "$(gh auth token)" | curl --config - -fsSL 'https://api.github.com/repos/HakjunMIN/ai-native-harness/contents/install.sh?ref=main' | bash -s -- /absolute/path/to/target-repo
 ```
 
-리포를 아직 내려받지 않았다면, **비공개 저장소 접근 권한**과 `gh` 인증,
-Git SSH 접근을 준비하세요. 인증된 `curl`로 스크립트를 내려받아 **검토한 뒤**
-실행합니다. 토큰은 curl 인수가 아닌 표준입력 설정으로 전달합니다. 스크립트는
-Git SSH로 리포를 내려받아 `~/.cache/ai-native-sdlc/main`에 보관하고 대상
-프로젝트를 연결합니다.
-
-```bash
-printf 'header = "Authorization: Bearer %s"\nheader = "Accept: application/vnd.github.raw+json"\n' "$(gh auth token)" |
-  curl --config - -fsSLo install.sh 'https://api.github.com/repos/HakjunMIN/ai-native-harness/contents/install.sh?ref=main'
-bash install.sh /absolute/path/to/target-repo
-```
-
-대상에 `.ai-native-sdlc` 링크(원본 리포 전체), `.agents/skills/` 링크,
-Copilot용 `.github/agents/` 및 `.github/hooks/ai-native-sdlc.json`,
-Codex용 `.codex/agents/` 및 `.codex/hooks.json`을 생성합니다.
-`scripts/`와 `templates/`는 링크된 스킬의 실행에 필요한 자산입니다.
-`tests/`와 `examples/`는 원본 개발 자료로, 대상 프로젝트 루트에는 복사되지 않습니다.
-기존 파일과 충돌하면 덮어쓰지 않고 설치를 중단합니다. 같은 설치 명령을 다시 실행해도
-내용이 동일하면 변경하지 않습니다. **원본을 이동하거나 생성 설정 형식이 바뀌면**
-링크/설정 경로를 확인하고 다시 설치해야 합니다. 기존 생성 설정과 새 설정이 충돌하면
-내용을 검토한 뒤 해당 생성 파일만 직접 교체하세요. 다른 프로젝트 설정이나 `AGENTS.md`
-는 변경하지 않습니다. 원본 리포를 지우면 링크도 동작하지 않습니다.
-curl 경로에서 재실행하면 같은 캐시를 사용하며 자동으로 업데이트하지 않습니다.
-다른 리비전을 설치하려면 다운로드할 스크립트 URL과 `AI_NATIVE_SDLC_REF`(브랜치/
-태그 이름), `AI_NATIVE_SDLC_CACHE_DIR`를 함께 맞추고 기존 링크 충돌을 먼저
-해결하세요. `AI_NATIVE_SDLC_REPO_URL`로 저장소 URL도 지정할 수 있습니다.
-캐시에는 비공개 리포의 실행 코드가 남습니다. 새 캐시는 사용자 전용 권한으로
-만들며, 기존 캐시를 사용할 때도 권한과 출처를 확인하세요. Git SSH 대신 다른
-인증된 원격 URL을 사용하려면 `AI_NATIVE_SDLC_REPO_URL`을 설정하세요.
-
-두 CLI를 **대상 저장소에서 새 세션**으로 실행해 Copilot `/skills`, `/agent`와
-Codex `/skills`, `/agent`, `/hooks`에서 발견 상태를 확인하세요. Copilot은
-`copilot skill list`로도 확인할 수 있습니다. Codex는 프로젝트 구성 계층을
-신뢰하고 각 훅 정의를 `/hooks`에서 검토·승인해야 실행됩니다. 양쪽에서 스킬
-30개·전문 에이전트 9개의 발견 및 훅의 실제 차단 동작을 확인하기 전에는 설치
-완료로 간주하지 마세요. 훅은 OS 권한 경계가 아니며 Codex 에이전트가 Markdown의
-`tools` 목록을 네이티브 권한으로 강제하는 것도 아닙니다.
-
-### Copilot CLI 전용 플러그인 설치 (선택)
-
-Copilot CLI에서만 쓰는 경우에는 팀 마켓플레이스를 통한 플러그인 설치도 가능합니다.
-이 방법은 Codex 프로젝트의 스킬·에이전트·훅을 설정하지 않습니다.
-
-```bash
-copilot plugin marketplace add HakjunMIN/ai-native-harness
-copilot plugin install ai-native-sdlc@ai-native-sdlc-marketplace
-```
-
-대상 저장소에서 Copilot 프로젝트 설치와 플러그인 설치를 동시에 활성화하면
-동일 스킬/훅이 중복될 수 있으므로 한 방식만 사용하세요.
-
-### Claude Code
-
-```bash
-claude --plugin-dir /absolute/path/to/ai-native-harness
-```
-
-또는 `/plugin marketplace add <경로>` 후
-`/plugin install ai-native-sdlc@ai-native-sdlc-marketplace`.
-스킬은 `/ai-native-sdlc:sdlc-setup`처럼 호출합니다.
-
-### Codex
-
-위 프로젝트 설치 명령을 사용하세요. `.codex-plugin/plugin.json`은 별도
-패키징 매니페스트로 유지하지만, 이것만으로 대상 저장소의 Codex 훅이나
-9개 네이티브 에이전트가 등록되지는 않습니다.
-
-공통 스킬은 이식 가능하지만 **훅의 신뢰 승인·도구 권한·교차 모델 실행까지
-자동 호환되는 것은 아닙니다.**
-신규 light/strict에서 교차 모델 리뷰는 권고이며 같은 모델의 독립 세션을 사용할 수 있습니다.
-명시적 강제 정책 또는 policy 없는 기존 기록은 교차 모델 미지원 시 해당 리뷰가 BLOCKED입니다.
-인간 리뷰는 정책이 허용할 때만 사용할 수 있습니다. [호환성](docs/compatibility.md)을
-확인하세요.
+[설치 조건·호스트별 설정](docs/install.md)
 
 ## 게이트 개요
 
