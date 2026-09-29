@@ -31,4 +31,4 @@ Output version provenance, operation/schema mapping, sanitized request/response 
 
 Unknown version/schema or unavailable real query-service is `BLOCKED` for the affected verification. If the API cannot safely express the requirement, return a design decision request; performance measurements do not authorize direct BFF-to-ClickHouse access.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

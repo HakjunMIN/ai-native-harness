@@ -53,4 +53,4 @@ Output intake provenance and per-operation `confirmed`, `queued`, or `blocked` s
 
 A valid prior snapshot may permit only the work allowed by the protocol; queued later updates remain visibly pending. Permission or transition conflicts require `NEEDS_HUMAN`, not repeated mutations. Never transition to Done just because a PR exists.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

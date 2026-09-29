@@ -32,4 +32,4 @@ applicable, and never alter contract expectations merely to fit implementation.
 
 Unknown upstream schema, missing identity verification, or incompatible generation tooling is `BLOCKED`. A breaking semantic change without the required human decision is `NEEDS_HUMAN`; do not quietly reuse stale G2 approval.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

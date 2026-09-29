@@ -2,7 +2,7 @@
 
 - 갱신일: 2026-09-29
 - 범위: 기존 기능과 요청된 점검 항목 4–8의 통합 명세. 9번 모델 평가 도구는 제외.
-- 상태: 구현과 함께 갱신한 명세이며 개별 티켓의 승인·실행 증거를 대신하지 않는다.
+- 상태: 구현과 함께 갱신한 명세이며 개별 구현 태스크의 승인·실행 증거를 대신하지 않는다.
 
 ## 목적과 제품 경계
 
@@ -26,8 +26,8 @@ Jira 또는 해시로 묶인 로컬 사용자 요청에서 시작하는 Discover
 |---|---|
 | [공통 원칙](../../skills/sdlc/references/principles.md) | 독립 기술 스킬의 범위·증거·제품/권한 경계 |
 | [단계 프로토콜](../../skills/sdlc/references/protocol.md) | 단계 진입, 게이트, 리뷰/검증 증거, 무효화 |
-| [티켓 계약](../../skills/sdlc-tickets/references/ticket-contract.md) | 정규 정의, 생성 뷰, 발행 ledger와 준비 frontier |
-| [workflow.mjs](../../scripts/workflow.mjs) | 정책·티켓 구조 규칙과 결정적 문서 렌더링 |
+| [구현 태스크 계약](../../skills/sdlc-tickets/references/ticket-contract.md) | 정규 정의, 생성 뷰, Jira 발행 ledger와 준비 frontier |
+| [workflow.mjs](../../scripts/workflow.mjs) | 정책·구현 태스크 구조 규칙과 결정적 문서 렌더링 |
 | [state.mjs](../../scripts/state.mjs) | 증거/상태 검사, 라우팅, 무효화 |
 | [tickets.mjs](../../scripts/tickets.mjs) | 정규 manifest/문서 생성과 원자적 상태 등록 |
 | [운영 절차](../operations.md) | 명령 사용법·재개·장애·마이그레이션 |
@@ -43,7 +43,7 @@ Jira 또는 해시로 묶인 로컬 사용자 요청에서 시작하는 Discover
 | Jira | Jira 시작 시 부모 이슈 사용; 로컬은 Jira 미사용 | Jira 시작 시 승인 후 자식 발행/관계 readback; 로컬은 발행 생략 |
 | 테스트/구현 작성 | 한 작성자 가능 | 별도 test-writer / implementer |
 | 계획 리뷰 | 인간 G2, 별도 모델 리뷰는 선택 | 독립 계획 리뷰 + 인간 G2 |
-| 슬라이스 리뷰 | 독립 combined(spec/standards) | spec/standards 축별 독립 리뷰 |
+| 구현 태스크 리뷰 | 독립 combined(spec/standards) | spec/standards 축별 독립 리뷰 |
 | 최종 리뷰 | combined + security, 동일 revision/범위는 재사용 가능 | 독립 final + security 검토 |
 | 인간 게이트·배포 권한 | G1/G2/G5b·인간 운영 통제 유지 | 동일 |
 
@@ -68,10 +68,12 @@ Policy 변경은 G2 무효화·재생성·재승인이 필요하다. 기존 기�
 
 ## 단계와 산출물
 
-`sdlc`는 현재 단계 하나만 라우팅한다. Jira 없이 시작하면 `intake.mjs start`가
-사용자 요청서 사본과 `intake.kind: "local"`인 상태를 만들고 게이트는 pending으로
-남긴다. G0는 요청서 해시 및 발견한 AC·모듈 맵을 확인한다. 안전한 소문자 로컬 ID를
-사용하며 Jira 키나 원격 발행으로 오인하지 않는다. `sdlc-setup`은 실제 모듈/명령/
+`sdlc`는 현재 단계 하나만 라우팅한다. Jira 없는 자연어 요청은 인터뷰 후
+`intake.mjs start-text`로 Markdown을 기록한다. 이미 작성된 요청서에는 선택적으로
+`intake.mjs start`를 사용한다. 두 방식 모두 `intake.kind: "local"`인 상태를
+만들고 게이트는 pending으로 남긴다. G0는 요청서 해시 및 발견한 AC·모듈 맵을
+확인한다. 안전한 소문자 로컬 ID를 사용하며 Jira 키나 원격 발행으로 오인하지
+않는다. `sdlc-setup`은 실제 모듈/명령/
 호스트 기능을 조사하고 기존 설정을 보존한다. Jira 매핑은 Jira 실행에서만 필요하다.
 
 1. **Discover:** 관측된 인테이크, AC·영향 모듈·변경 종류·위험을 정리한다.
@@ -104,11 +106,13 @@ Spike는 인간 G1의 연구 결과 승인으로 별도 종료한다. 구현/릴
 Grafana → BFF → query-service 통합 증거를 구별한다. 이미지 baseline 변경은 실제
 diff에 대한 인간 승인이 필요하다. 누락된 인프라는 성공도 N/A도 아니다.
 
-## 정규 티켓과 재검증
+## 구현 태스크와 재검증
 
 AC·목표·범위·의존성은 구조화된 정의 하나에서 작성한다. Strict 상세 Markdown은
-생성 뷰이며 별도 수동 원본이 아니다. 생성기는 immutable revision 경로와 해시를
-만들고 마지막에 state를 원자적으로 갱신한다. G2 승인·Jira 호출은 생성과 분리한다.
+생성 뷰이며 별도 수동 원본이 아니다. `ticketPlan`·`tickets.json`은 기존
+상태와의 호환성을 위한 내부 이름이지 Jira 발행을 뜻하지 않는다. 생성기는
+immutable revision 경로와 해시를 만들고 마지막에 state를 원자적으로 갱신한다.
+G2 승인·Jira 호출은 생성과 분리한다.
 
 코드만 바뀌면 G3부터 무효화한다. 해시로 검증되는 영향 분석과 의존 그래프가 있으면
 변경 슬라이스 및 전이 의존자만 초기화하고 무관한 완료 증거는 보존한다. 공통 영향이

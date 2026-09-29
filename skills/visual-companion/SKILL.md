@@ -6,7 +6,7 @@ description: Use when discovery or architecture decisions are clearer as mockups
 # Visual companion
 
 Read [shared principles](../sdlc/references/principles.md). Offer the browser companion when
-a specific visual decision arises, not automatically for every UI ticket.
+a specific visual decision arises, not automatically for every UI task.
 Require consent before opening a browser/server. Text questions stay in chat.
 
 ## Select the mode
@@ -18,12 +18,12 @@ Require consent before opening a browser/server. Text questions stay in chat.
   selection, invoke `prototype` for actual Grafana sandbox and UX validation.
 
 Choose from the decision being evaluated, not merely the presence of HTML or
-`uiChange` on the ticket. For mixed requests, separate the diagram and UI outputs;
+`uiChange` on the run. For mixed requests, separate the diagram and UI outputs;
 apply sandbox requirements only to the product UI. Selection never passes a gate.
 
 ## Procedure
 
-1. Use an isolated ticket `prototype/html/` containing only shareable synthetic
+1. Use an isolated run's `prototype/html/` containing only shareable synthetic
    assets. Copy [index.html](templates/index.html) and
    [options.json](templates/options.json); replace variants with the real decision.
    Keep option IDs consistent. Do not serve the repository root or credentials.

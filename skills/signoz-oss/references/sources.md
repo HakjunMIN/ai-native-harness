@@ -1,7 +1,7 @@
 # SigNoz primary-source map
 
 Reviewed: 2026-09-28. Links to `main` and current docs are discovery entrypoints,
-not proof of compatibility with a deployed fork. For a ticket, record fetched
+not proof of compatibility with a deployed fork. For a run, record fetched
 URL, heading, access date, resolved upstream commit/tag, deployed version and
 what claim the source supports. Replace branch links with commit permalinks in
 the final handoff when code behavior matters. Inspect only relevant files.
@@ -19,7 +19,7 @@ This package does not vendor, install, or silently update that plugin.
 | [signoz-searching-docs](https://github.com/SigNoz/agent-skills/blob/main/plugins/signoz/skills/signoz-searching-docs/SKILL.md) | Canonical documentation discovery, narrow fetch, truncation handling | Discover live MCP tool schemas first; otherwise fetch public docs directly |
 | [signoz-generating-queries](https://github.com/SigNoz/agent-skills/blob/main/plugins/signoz/skills/signoz-generating-queries/SKILL.md) | Ad-hoc metrics/logs/traces queries, not dashboard panels | Requires compatible live MCP tools; missing access blocks execution, not permission to auto-setup |
 | [signoz-writing-clickhouse-queries](https://github.com/SigNoz/agent-skills/blob/main/plugins/signoz/skills/signoz-writing-clickhouse-queries/SKILL.md) | Signal-specific SQL reference and result shapes | Targets SigNoz dashboard panels; its table names/macros are versioned, not universal Grafana/BFF syntax |
-| [Alert/dashboard/view skills](https://signoz.io/docs/ai/agent-skills/) | Product operations when explicitly requested and authorized | Do not expose SigNoz UI or create hidden product dashboards for a Grafana ticket |
+| [Alert/dashboard/view skills](https://signoz.io/docs/ai/agent-skills/) | Product operations when explicitly requested and authorized | Do not expose SigNoz UI or create hidden product dashboards for a Grafana run |
 | [SigNoz MCP server](https://signoz.io/docs/ai/signoz-mcp-server/) | Self-hosted stdio/HTTP and access requirements | Self-hosted MCP is separately operated; never send private instance data to a Cloud MCP endpoint by default |
 
 Prefer the existing qualified upstream skill if installed, scope-compatible and

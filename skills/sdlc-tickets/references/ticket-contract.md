@@ -1,4 +1,11 @@
-# Ticket lifecycle and persistence contract
+# Implementation task and Jira publication contract
+
+An implementation task is defined locally before G2 and approved at G2; a Jira
+ticket is a remote issue (the originating parent or a child published from an
+approved task for Jira strict/legacy runs).
+Existing `tickets`, `ticketPlan`, `tickets.json`, `tickets/<id>.md`, and
+`sdlc-tickets` names are stable persistence and tool interfaces, not a
+requirement to create a Jira ticket for every task.
 
 ## Sequence and ownership
 
@@ -13,7 +20,7 @@ The conductor owns state, preparation and publication; specialists return drafts
 
 Write one draft using the [definition template](../../../templates/ticket-plan.json).
 It contains changeKind, risks, tickets and (for non-behavior work) verificationReason.
-Each outcome requires stable positive id, title, goal, nonempty scope/nonGoals,
+Each implementation task requires stable positive id, title, goal, nonempty scope/nonGoals,
 blockedBy IDs and acceptanceCriteria. Each AC has a locally unique id, parent
 requirement reference, observable text and checks. Supported kinds: junit, jest,
 playwright-bdd, go, chart, manual, static. Select applicable checks; manual cannot
@@ -44,7 +51,7 @@ renderer, not merely have a matching hash. Never manually synchronize two copies
 of ACs. Edit the draft and prepare a new revision; old artifacts remain for audit.
 Generation rejects unsafe/symlinked output paths and conflicting immutable files.
 
-G2 evidence includes the exact ticketPlan reference and current design/contract
+G2 evidence includes the exact `ticketPlan` reference and current design/contract
 artifacts. Approval binds the policy and graph transitively. Config changes cannot
 weaken an approved snapshot. Existing schema-2 manifests without policy retain
 strict/manual-document semantics; they are not silently migrated. For a new
@@ -66,8 +73,9 @@ This section applies to Jira strict/legacy work only. Jira light uses the parent
 key and may retain historical stale records. Local work must not create any Jira
 publication receipts, outbox, or remote writes.
 
-`publications` holds one durable record per local ID. Never recycle an ID for a
-different outcome or discard old records when a ticket is removed. A record uses:
+`publications` holds one durable record per implementation task ID. Never recycle
+an ID for a different outcome or discard old records when a task is removed.
+A Jira publication record uses:
 
 ```json
 {
@@ -115,7 +123,7 @@ children to Jira Done merely because publication or implementation completed.
 
 ## Execution frontier and revisions
 
-After local or Jira light G2, or after all Jira strict tickets are confirmed, `next` becomes
+After local or Jira light G2, or after all Jira strict child tickets are confirmed, `next` becomes
 `implement`. Run:
 
 ```bash
@@ -124,9 +132,9 @@ node "$PLUGIN_ROOT/scripts/state.mjs" ready "docs/sdlc/ABC-123/state.json"
 
 This checks state and emits JSON such as `[{"id":1,"key":"ABC-124"}]` (Jira light:
 parent key `ABC-123`; local: local ID in `key` for CLI compatibility), only for
-pending tickets whose blockers have evidenced `done` slices and, for workspace
+pending implementation tasks whose blockers have evidenced `done` slices and, for workspace
 assignments, commits integrated into the current source. It does not dispatch.
-An empty array means no pending ready ticket; inspect running assignments or,
+An empty array means no pending ready task; inspect running assignments or,
 if all slices are done, perform integrated G3 checks. It does not mean success.
 
 Use the [workspace protocol](../../sdlc/references/protocol.md#source-workspaces)
@@ -150,12 +158,12 @@ All old slice records are archived under the invalidation history's `previous`.
 This record alone cannot restore done or unlock a dependent.
 
 For unchanged behavior/tests, the assigned author (strict: test-writer) checks historical RED against the
-unchanged approved ticket, previous source and current tests, and records the
+unchanged approved task, previous source and current tests, and records the
 reuse rationale. Use that historical RED reference (never relabel it as freshly
 executed), run fresh GREEN on current code and obtain policy-required fresh reviews.
 Changed tests, added behavior or a regression fix require a new relevant failing
 test before that implementation. Missing valid historical RED blocks reuse;
-do not make an already-correct test fail artificially. Ticket scope changes still
+do not make an already-correct test fail artificially. Task scope changes still
 invalidate G2. All execution completion evidence must be rebuilt before a
 dependent can run; historical RED is only one input.
 Write fresh results to new evidence paths; do not overwrite the retained RED log.
@@ -166,13 +174,13 @@ G0/G1/G2 invalidation clears slices, archives the old manifest reference in
 repairing already-stale/missing documents without passing an old hash check;
 it grants no approval. Rebuild and hash the draft set before new G2. Re-approve changed
 drafts, update/reconcile the same issues after G2, then refresh receipts for the
-new manifest. Retired tickets remain stale; do not recreate or close them
+new manifest. Retired Jira tickets remain stale; do not recreate or close them
 automatically. Removed or merged work requires a human disposition.
 
 ## Reference and limits
 
 The [upstream ticket decomposition reference](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md)
-informs independently verifiable outcomes, dependency edges and separate tickets.
+informs independently verifiable outcomes, dependency edges and separate tasks.
 This package adds Jira reconciliation, approval hashes, BDD/TDD evidence and its
 existing runtime gates; it does not import upstream tracker setup or permissions.
 The JSON ledger is auditable evidence, not authenticated remote truth: the

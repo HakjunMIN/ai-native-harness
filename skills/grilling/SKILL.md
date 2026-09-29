@@ -1,6 +1,6 @@
 ---
 name: grilling
-description: Use when a ticket leaves behavior, scope, acceptance criteria, or design choices ambiguous.
+description: Use when a Jira ticket or local request leaves behavior, scope, acceptance criteria, or design choices ambiguous.
 ---
 
 # Grilling

@@ -41,4 +41,4 @@ Output the AC/test matrix, fixture and test hashes, exact Gradle commands, disco
 
 Docker/Testcontainers unavailability is `BLOCKED`, never a passing test. Do not switch backend AC to Cucumber to share frontend steps. Ambiguous expected behavior goes back to the contract owner; do not guess or weaken the assertion.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

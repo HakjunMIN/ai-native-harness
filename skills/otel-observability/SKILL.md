@@ -21,7 +21,7 @@ pipeline; shared OTLP does not imply interchangeable exporters or physical table
 4. Correlate application logs with trace/span IDs. Exclude tokens, raw SQL, request bodies, personal data, and unbounded identifiers from logs and metric labels. Never trust a propagated tenant label as authorization.
 5. Measure latency, error outcomes, and saturation using bounded-cardinality dimensions. Document sampling and redaction behavior; do not disable them broadly to make a demo visible.
 6. Validate propagation and semantic attributes with existing tests or a controlled exporter. Separately observe a sanitized request in the configured real telemetry pipeline when required by the plan.
-7. Record service names, signal ownership, dashboard/query references, expected failure signals, and operational follow-up in the ticket's Korean verification artifacts.
+7. Record service names, signal ownership, dashboard/query references, expected failure signals, and operational follow-up in the run's Korean verification artifacts.
 
 ## Bounded example
 
@@ -33,4 +33,4 @@ Output instrumentation scope, pinned convention references, redaction/cardinalit
 
 An in-memory exporter test proves instrumentation behavior, not collector delivery. If the required collector/query-service is unavailable, report `BLOCKED` for live evidence rather than claiming observability is operational. Avoid exposing sensitive spans in artifacts; preserve only sanitized evidence and hashes.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

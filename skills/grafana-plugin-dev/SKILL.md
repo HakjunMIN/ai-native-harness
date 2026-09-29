@@ -37,4 +37,4 @@ A query editor needs a bearer token. Configure the supported secure field and pr
 
 Return the plugin boundary, changed paths, approved-design references, contract/DataFrame mapping, and test evidence. Missing sandbox approval, incompatible Grafana APIs, or unresolved authentication is `BLOCKED` or `NEEDS_HUMAN` as appropriate.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

@@ -14,7 +14,7 @@ Read the [shared principles](../sdlc/references/principles.md). Import `grafana-
 ### Discovery/draft mode: before G1 or during planning
 
 1. Read available intake AC, `CONTEXT.md`, and current design answers. Assign stable AC IDs and record unresolved behavior as questions.
-2. Draft declarative scenarios in `docs/sdlc/<KEY>/features/*.feature`, with an AC tag/map, one behavior each, domain vocabulary, minimal Background, and explicit outcomes. Write ticket artifacts in Korean.
+2. Draft declarative scenarios in `docs/sdlc/<KEY>/features/*.feature`, with an AC tag/map, one behavior each, domain vocabulary, minimal Background, and explicit outcomes. Write run artifacts in Korean.
 3. Reuse existing vocabulary where available; keep selectors and HTTP plumbing out of scenarios. Review the drafts with the human as G1 inputs.
 
 **No approved discovery, approved BFF contract, step implementations, generated tests, or executed RED is required in draft mode.** Missing future implementation is not a blocker. Do not install tools, provision services, or execute E2E merely to draft scenarios.
@@ -46,4 +46,4 @@ in `sdlc-tickets`; changed steps/scenarios require new RED.
 
 Draft output: AC-to-scenario map, feature paths, unresolved decisions, and approval request. Implementation output additionally includes step paths, fixture/version evidence, and generation/RED results. Implementers cannot weaken assertions.
 
-In implementation mode, unsupported fixture integration or unavailable required live dependencies is `BLOCKED`; label mocks. Unresolved human behavior decisions are `NEEDS_HUMAN`. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In implementation mode, unsupported fixture integration or unavailable required live dependencies is `BLOCKED`; label mocks. Unresolved human behavior decisions are `NEEDS_HUMAN`. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

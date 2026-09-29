@@ -39,4 +39,4 @@ Return the mode, its scoped outputs, evidence, mock/live labels, and blockers. F
 
 Unsupported fixtures or missing required infrastructure are `BLOCKED` only for applicable executable checks. A missing sandbox blocks sandbox review; a missing real BFF does not. Mock success cannot satisfy required live integration.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

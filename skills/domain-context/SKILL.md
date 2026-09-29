@@ -5,9 +5,9 @@ description: Use when domain terms are new or conflicting, names drift across mo
 
 # Domain Context
 
-Use one agreed vocabulary across tickets, contracts, tests, and code.
+Use one agreed vocabulary across implementation tasks, contracts, tests, and code.
 
-Read the [shared principles](../sdlc/references/principles.md) before changing ticket artifacts. Load related skills with the native tool when available; otherwise read this plugin's exact skill file, not a same-name external skill.
+Read the [shared principles](../sdlc/references/principles.md) before changing task artifacts. Load related skills with the native tool when available; otherwise read this plugin's exact skill file, not a same-name external skill.
 
 ## Procedure
 
@@ -17,7 +17,7 @@ Read the [shared principles](../sdlc/references/principles.md) before changing t
 3. Record confirmed definitions and their decision sources in `CONTEXT.md`; label unresolved definitions as proposals. Use Korean explanations while preserving exact code identifiers.
 4. Map canonical terms to API fields, UI labels, Gherkin steps, and Java/TypeScript identifiers. Identify migration impact before renaming public fields; use this plugin's `api-contract` skill for contract changes.
 5. Use an ADR for consequential, durable choices, not routine local changes. Follow
-   repository conventions; SDLC may use a ticket-local ADR. Preserve superseded history.
+   repository conventions; SDLC may use a run-local ADR. Preserve superseded history.
 
 ## Bounded example
 
@@ -27,4 +27,4 @@ Read the [shared principles](../sdlc/references/principles.md) before changing t
 
 Output the glossary delta, unresolved terms and owners, naming map, and ADR status. Conflicting ownership or a contract-breaking interpretation is `NEEDS_HUMAN`; do not mass-rename code to force agreement.
 
-Keep edits within the assigned paths; request a separate implementation handoff for code changes. Record artifact hashes and decision sources. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+Keep edits within the assigned paths; request a separate implementation handoff for code changes. Record artifact hashes and decision sources. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

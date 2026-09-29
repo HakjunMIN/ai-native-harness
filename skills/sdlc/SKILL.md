@@ -47,9 +47,9 @@ it through the protocol, preserving the audit trail. Do not repair by marking pa
 Route one phase at a time. Continue automatically only across agent-owned gates.
 Plan snapshots risk/review policy before G2. Local work uses its local ID and
 routes directly to implementation, even when strict. Jira light uses the parent
-issue; Jira strict/legacy publishes child tickets.
+issue; Jira strict/legacy publishes child Jira tickets for approved implementation tasks.
 `publish` is a phase, not a new human gate. Never treat
-local ticket drafts or an outbox as successfully published work.
+local implementation task drafts or an outbox as successfully published Jira tickets.
 At G1/G2/G5b request explicit human approval through the host question tool and
 stop dependent work if absent. Return BLOCKED for required unavailable dependencies
 or routing, without stopping unrelated authorized work.

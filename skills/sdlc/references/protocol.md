@@ -3,7 +3,7 @@
 This is the phase-owner contract, not a prerequisite for standalone technical
 skills. Follow [shared principles](principles.md). Resolve `PLUGIN_ROOT` from the
 installed plugin and `REPO_ROOT` from the selected repository. Never edit the
-installed plugin while implementing a ticket. Invoke exact plugin skills, not
+installed plugin while implementing a task. Invoke exact plugin skills, not
 unrelated same-name skills. Loading a reference does not execute its procedure.
 
 ## State and routing
@@ -38,7 +38,7 @@ There is no automatic human approval command.
 |---|---|---|
 | G0 | discover | Jira snapshot or hashed local user request, AC, module map |
 | G1 | human | approved requirements, relevant UI/BE/FE decisions |
-| G2 | human | plan, policy snapshot, canonical ticket manifest, applicable contracts/test matrix; strict plan review |
+| G2 | human | plan, policy snapshot, canonical implementation task manifest, applicable contracts/test matrix; strict plan review |
 | G3 | implement | completed slices, change-appropriate verification and independent reviews; integrated checks |
 | G4 | verify | applicable fresh checks, integrated spec/standards/security coverage, UX evidence when relevant |
 | G5a | release | exact-SHA required CI, immutable digest, dev/staging health and promotion evidence |
@@ -51,7 +51,7 @@ never use N/A for human gates or unavailable required checks.
 ## Risk-based policy
 
 The canonical manifest and state contain the same policy, bound by G2 evidence.
-See [ticket contract](../../sdlc-tickets/references/ticket-contract.md) for drafting,
+See [implementation task contract](../../sdlc-tickets/references/ticket-contract.md) for drafting,
 generation and publication. Config changes do not alter an approved snapshot.
 
 - **Light:** newly configured bounded, low-risk work with one independent outcome.
@@ -59,8 +59,8 @@ generation and publication. Config changes do not alter an approved snapshot.
   implement directly.
   One author may write tests and implementation; one independent combined review
   covers spec and standards. G2 still requires human approval, not a model review.
-- **Strict:** architectural/high-risk or decomposed work. Detailed generated tickets,
-  Jira child publication (not for local work), separate test-writer/implementer
+- **Strict:** architectural/high-risk or decomposed work. Detailed generated task views,
+  Jira child-ticket publication (not for local work), separate test-writer/implementer
   assignments, spec/standards
   axes and independent plan/final reviews remain required.
 - **Legacy:** records without `policy` retain their existing strict semantics.
@@ -83,7 +83,7 @@ invalidate G2 (G1 for requirements), regenerate and reapprove.
 ## Evidence and review records
 
 Write actual sanitized evidence, then hash with `state.mjs hash FILE`. References
-are `{path, sha256}`, relative to the ticket directory, with actual SHA256; no
+are `{path, sha256}`, relative to the run directory, with actual SHA256; no
 parent traversal or external symlinks. Gates have `status` and nonempty `evidence`.
 G1/G2/G5b also require `approval: {actor: "human", reference, at}` from an observed,
 artifact-scoped decision. Silence, selection clicks and autopilot are not approval.
@@ -161,7 +161,7 @@ Use G1 for requirements/UX, G2 for plan/policy/contracts, G3 for code, G4 for fr
 integrated verification, G5a for changed promotion artifacts. Invalidation clears
 the named gate and downstream gates. G0–G2 archive active plan/slices in history,
 clear the manifest and mark publications stale; reconcile existing keys later.
-G3 preserves approved ticket identity and publication. By default it resets all
+G3 preserves approved task identity and any Jira publication. By default it resets all
 slices; with known slice IDs, complete graph and hashed impact analysis it resets
 only selected slices and transitive dependents. Explain changed paths, dependencies
 and why retained slices remain valid. Shared/uncertain impact requires full reset.

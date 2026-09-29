@@ -30,4 +30,4 @@ Output state ownership, boundary types, race/large-data decisions, production di
 
 Ambiguous API semantics or missing regression coverage is `BLOCKED`; return to the contract owner/test-writer rather than weakening assertions. Never promote throwaway prototype code, store credentials in browser state, or treat browser tenant claims as verified identity.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

@@ -31,4 +31,4 @@ Output changed production paths, operation-to-upstream mapping, identity/resilie
 
 Unknown query-service schema, unverifiable tenant context, or unavailable required integration infrastructure is `BLOCKED`. If contract expectations appear wrong, return the discrepancy to the test-writer/architect; do not edit assertions or bypass validation.
 
-In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.

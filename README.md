@@ -25,8 +25,8 @@ set -o pipefail; printf 'header = "Authorization: Bearer %s"\nheader = "Accept: 
 |---|---|---|---|
 | G0 | discover | 에이전트 | 요구사항/AC/모듈 맵 확정 |
 | G1 | discover | **사람** | 요구사항, UI/BE/FE 결정 승인 |
-| G2 | plan | **사람** | 계획, 정책, 티켓 manifest 승인 |
-| G3 | implement | 에이전트 | 슬라이스 구현·검증·리뷰 완료 |
+| G2 | plan | **사람** | 계획, 정책, 구현 태스크 정의 승인 |
+| G3 | implement | 에이전트 | 구현 태스크의 구현·검증·리뷰 완료 |
 | G4 | verify | 에이전트 | 통합 검증, spec/standards/security 리뷰 |
 | G5a | release | 에이전트 | CI/이미지 digest, dev·staging 프로모션 확인 |
 | G5b | release | **사람** | 운영 승인/머지, 배포 상태 확인 |
@@ -61,15 +61,15 @@ Jira 경로에서만 Atlassian Rovo MCP를 별도로 연결·인증해야 합니
 | 개별 스킬 | 결과 |
 |---|---|
 | sdlc-discover | Jira/로컬 요청 AC, 도메인 용어, HTML 비교 → 필요 시 Grafana 샌드박스, FE Gherkin |
-| sdlc-plan | 필요한 설계/계약 → 위험 기반 정책·정규 티켓 정의 → G2 승인 |
-| sdlc-tickets | 단일 정의에서 manifest/문서 생성; strict만 G2 이후 자식 발행 |
+| sdlc-plan | 필요한 설계/계약 → 위험 기반 정책·구현 태스크 정의 → G2 승인 |
+| sdlc-tickets | 구현 태스크 정의에서 manifest/문서 생성; Jira strict/legacy만 G2 이후 Jira 자식 티켓 발행 |
 | sdlc-implement | 변경 종류별 검증, light 통합 작성/리뷰 또는 strict 역할 분리 |
 | sdlc-verify | 해당 범위 테스트·UX 검증과 독립 spec/standards/security 리뷰 |
 | sdlc-release | CI·GitOps 프로모션 확인과 사람이 실행할 운영 배포 제안 |
 | sdlc-handoff | 새 세션/에이전트를 위한 증거 기반 인수인계 |
 
-구현 시 준비된 단일 티켓은 현재 checkout의 브랜치에서, 편집 범위와 계약이
-독립적인 여러 티켓은 각각 별도의 Git 워크트리에서 진행합니다.
+구현 시 준비된 단일 구현 태스크는 현재 checkout의 브랜치에서, 편집 범위와 계약이
+독립적인 여러 구현 태스크는 각각 별도의 Git 워크트리에서 진행합니다.
 `scripts/workspaces.mjs plan|start`가 준비 상태와 경로 충돌을 확인하고 배정을
 기록합니다. 소스 병합과 최종 검증은 컨덕터가 통합 브랜치에서 수행합니다.
 명령·재개/정리 절차는 [운영 문서](docs/operations.md#브랜치와-병렬-워크트리)를 참조하세요.
@@ -116,15 +116,19 @@ setup·설계·검증·릴리스에서 해당 범위에만 로드하고 기존 �
 
 ## 승인과 재개
 
-Jira light는 **Plan → 정규 결과 정의·G2 승인 → 부모 이슈 구현**, Jira strict/legacy는
-**Plan → 상세 티켓 분해·G2 승인 → 자식 발행 → 티켓별 구현**입니다. 로컬 실행은
-light/strict 모두 G2 승인 후 자식 발행 없이 로컬 ID로 구현합니다.
-결과별 AC·범위·검증 기준·필수 의존성을 기록하고 DB/API/UI 계층만 나누지 않습니다.
+**구현 태스크**는 목표·AC·범위·검증 기준·의존성을 가진 실행 단위이며,
+**Jira 티켓**은 Jira에 있는 원격 이슈입니다(기존 부모 또는 승인된 태스크에서
+발행된 자식).
+기존 `sdlc-tickets` 스킬과 `ticketPlan`·`tickets.json`은 호환성을 위해
+이름을 유지합니다. Jira light는 **Plan → 구현 태스크 하나·G2 승인 → 부모 이슈 구현**,
+Jira strict/legacy는 **Plan → 구현 태스크 분해·G2 승인 → Jira 자식 티켓 발행 →
+태스크별 구현**입니다. 로컬 실행은 light/strict 모두 G2 승인 후 Jira 발행 없이
+로컬 ID로 구현합니다. DB/API/UI 계층만 나누지 않습니다.
 
 Policy/manifest와 필요한 생성 문서가 G2 승인에 함께 묶입니다. Strict의 `publish`
 단계는 자식 Jira 티켓과 부모·의존 관계의 실제 반영을 확인합니다. 필수 발행이
-미완료·불명확하면 구현하지 않습니다. 선행 티켓의 변경 종류별 검증·리뷰
-완료 증거가 있어야 다음 티켓이 실행 가능합니다. 구체적인 수정 경로·명령은
+미완료·불명확하면 구현하지 않습니다. 선행 구현 태스크의 변경 종류별 검증·리뷰
+완료 증거가 있어야 다음 태스크가 실행 가능합니다. 구체적인 수정 경로·명령은
 착수 시점의 에이전트 handoff에서 확정합니다.
 
 G1(디스커버리), G2(플랜), G5b(운영 반영)는 사람 승인이 필수입니다.
@@ -133,10 +137,10 @@ HTML 클릭, 문서 존재, 이전 세션의 “통과” 요약은 승인이 �
 
 산출물은 `docs/sdlc/<ID>/`에 저장합니다. `state.json`은 증거 파일의 SHA256,
 코드 revision과 승인 참조를 연결합니다. 새 세션에서는 동일 ID로 재개합니다.
-[운영 절차](docs/operations.md)와 [예시 티켓](examples/ABC-123/README.md)을 참고하세요.
+[운영 절차](docs/operations.md)와 [구현 태스크 예시](examples/ABC-123/README.md)를 참고하세요.
 상태 형식은 schema 2입니다. 기존 schema 1 실행 기록은
 [마이그레이션 절차](docs/operations.md#기존-상태-마이그레이션)를 거쳐야 하며,
-기존 G2 승인을 새 상세 티켓 승인으로 간주하지 않습니다.
+기존 G2 승인을 새 구현 태스크 정의의 승인으로 간주하지 않습니다.
 
 ## 배포 안전 범위
 

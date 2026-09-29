@@ -3,7 +3,7 @@
 Run: <Jira key or local ID> | Intake: <Jira snapshot or hashed local request> | Phase: <phase> | Slice: <id or N/A>
 Policy: <approved snapshot/profile, verification mode and review flags; legacy strict if absent>
 Implementation reference: <local ID, Jira parent key for light, or Jira child key for strict>
-Ticket definition: <manifest path/hash and optional generated document path/hash>
+Implementation task definition: <manifest path/hash and optional generated document path/hash>
 Acceptance criteria: <local AC IDs -> parent requirement references>
 Goal: <one observable result>
 Base: <commit> | Head: <commit>
@@ -17,7 +17,7 @@ Impact: <affected slices/dependents, retained-evidence rationale and impact hash
 
 | Artifact path | SHA256 | Purpose |
 |---|---|---|
-| <ticket-relative or repo-relative path, explicitly labelled> | <hash> | <purpose> |
+| <run-relative or repo-relative path, explicitly labelled> | <hash> | <purpose> |
 
 ## Constraints
 

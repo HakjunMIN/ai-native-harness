@@ -5,7 +5,7 @@ description: Use when starting discovery for a Jira ticket or local request, cla
 
 # Discovery
 
-Read [protocol](../sdlc/references/protocol.md). Entry: new ticket or `next=discover`.
+Read [protocol](../sdlc/references/protocol.md). Entry: new Jira ticket/local request or `next=discover`.
 For Jira work, invoke `jira-sync` for authorized ticket, links and attachments;
 save a redacted provenance-bearing snapshot. Without MCP or an approved prior
 snapshot stop before G0. For local work, use the immutable `intake.md` copied from a file or recorded

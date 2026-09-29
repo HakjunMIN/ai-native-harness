@@ -1,6 +1,6 @@
 ---
 name: verification-gate
-description: Use when claiming completion, recording a gate result, resuming ticket state, or evaluating test and review evidence.
+description: Use when claiming completion, recording a gate result, resuming SDLC run state, or evaluating test and review evidence.
 ---
 
 # Verification Gate
@@ -8,7 +8,7 @@ description: Use when claiming completion, recording a gate result, resuming tic
 A claim is only as current as its evidence and tested subject.
 
 Read [shared principles](../sdlc/references/principles.md). Use the caller's policy
-and evidence requirements; standalone verification does not require ticket state.
+and evidence requirements; standalone verification does not require SDLC run state.
 
 ## Procedure
 

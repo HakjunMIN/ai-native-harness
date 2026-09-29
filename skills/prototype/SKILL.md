@@ -31,4 +31,4 @@ A human selects a threshold badge in an already-active visual companion. Reuse t
 
 Output the comparison, selection record, sandbox evidence, UX issues, and approved behavior specification. **Never copy, translate, or promote HTML or sandbox prototype code into production**, even when it appears complete. Screenshots and decisions are inputs, not reusable implementation.
 
-Mock sandbox success does not prove real BFF integration. If Grafana/Docker is unavailable, return `BLOCKED` with the failed command and recovery prerequisite; HTML alone does not complete sandbox validation. Missing human approval is `NEEDS_HUMAN`. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no ticket state.
+Mock sandbox success does not prove real BFF integration. If Grafana/Docker is unavailable, return `BLOCKED` with the failed command and recovery prerequisite; HTML alone does not complete sandbox validation. Missing human approval is `NEEDS_HUMAN`. In an SDLC run, return evidence to the conductor for state validation; standalone use needs no run state.
