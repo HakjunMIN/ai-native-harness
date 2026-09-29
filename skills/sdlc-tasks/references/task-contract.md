@@ -3,9 +3,9 @@
 An implementation task is defined locally before G2 and approved at G2; a Jira
 ticket is a remote issue (the originating parent or a child published from an
 approved task for Jira strict/legacy runs).
-Existing `tickets`, `ticketPlan`, `tickets.json`, `tickets/<id>.md`, and
-`sdlc-tickets` names are stable persistence and tool interfaces, not a
-requirement to create a Jira ticket for every task.
+The `sdlc-tasks` skill owns this workflow. Local `tasks`, `taskPlan`,
+`tasks.json`, and `tasks/<id>.md` describe implementation work; only published
+Jira issues are tickets.
 
 ## Sequence and ownership
 
@@ -18,8 +18,8 @@ The conductor owns state, preparation and publication; specialists return drafts
 
 ## Canonical definitions and policy
 
-Write one draft using the [definition template](../../../templates/ticket-plan.json).
-It contains changeKind, risks, tickets and (for non-behavior work) verificationReason.
+Write one draft using the [definition template](../../../templates/task-plan.json).
+It contains changeKind, risks, tasks and (for non-behavior work) verificationReason.
 Each implementation task requires stable positive id, title, goal, nonempty scope/nonGoals,
 blockedBy IDs and acceptanceCriteria. Each AC has a locally unique id, parent
 requirement reference, observable text and checks. Supported kinds: junit, jest,
@@ -35,15 +35,15 @@ current execution handoff, not long-lived tracker text.
 The conductor runs:
 
 ```bash
-node "$PLUGIN_ROOT/scripts/tickets.mjs" prepare STATE CONFIG DRAFT
+node "$PLUGIN_ROOT/scripts/tasks.mjs" prepare STATE CONFIG DRAFT
 ```
 
 Requires valid G1, plan phase and unapproved G2. The tool resolves config/risk
-policy and creates immutable content-addressed plans/<revision>/tickets.json.
-Strict additionally generates tickets/<id>.md views under that revision, with
+policy and creates immutable content-addressed plans/<revision>/tasks.json.
+Strict additionally generates tasks/<id>.md views under that revision, with
 hashes embedded in the manifest. Light has one independent outcome and no required
 child document. The canonical manifest contains format: canonical-v1, parent,
-policy and tickets. State receives the same policy, ticketPlan reference and pending
+policy and tasks. State receives the same policy, taskPlan reference and pending
 slices, atomically after validation. No human approval or Jira call occurs.
 
 The manifest is the source of truth; generated Markdown must exactly match the
@@ -51,7 +51,7 @@ renderer, not merely have a matching hash. Never manually synchronize two copies
 of ACs. Edit the draft and prepare a new revision; old artifacts remain for audit.
 Generation rejects unsafe/symlinked output paths and conflicting immutable files.
 
-G2 evidence includes the exact `ticketPlan` reference and current design/contract
+G2 evidence includes the exact `taskPlan` reference and current design/contract
 artifacts. Approval binds the policy and graph transitively. Config changes cannot
 weaken an approved snapshot. Existing schema-2 manifests without policy retain
 strict/manual-document semantics; they are not silently migrated. For a new
@@ -169,7 +169,7 @@ dependent can run; historical RED is only one input.
 Write fresh results to new evidence paths; do not overwrite the retained RED log.
 
 G0/G1/G2 invalidation clears slices, archives the old manifest reference in
-`history[].previous.ticketPlan`, sets active `ticketPlan: null`, and marks receipts
+`history[].previous.taskPlan`, sets active `taskPlan: null`, and marks receipts
 `stale`, retaining keys/markers/evidence. Clearing the active reference allows
 repairing already-stale/missing documents without passing an old hash check;
 it grants no approval. Rebuild and hash the draft set before new G2. Re-approve changed

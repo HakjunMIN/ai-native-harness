@@ -26,10 +26,10 @@ Jira 또는 해시로 묶인 로컬 사용자 요청에서 시작하는 Discover
 |---|---|
 | [공통 원칙](../../skills/sdlc/references/principles.md) | 독립 기술 스킬의 범위·증거·제품/권한 경계 |
 | [단계 프로토콜](../../skills/sdlc/references/protocol.md) | 단계 진입, 게이트, 리뷰/검증 증거, 무효화 |
-| [구현 태스크 계약](../../skills/sdlc-tickets/references/ticket-contract.md) | 정규 정의, 생성 뷰, Jira 발행 ledger와 준비 frontier |
+| [구현 태스크 계약](../../skills/sdlc-tasks/references/task-contract.md) | 정규 정의, 생성 뷰, Jira 발행 ledger와 준비 frontier |
 | [workflow.mjs](../../scripts/workflow.mjs) | 정책·구현 태스크 구조 규칙과 결정적 문서 렌더링 |
 | [state.mjs](../../scripts/state.mjs) | 증거/상태 검사, 라우팅, 무효화 |
-| [tickets.mjs](../../scripts/tickets.mjs) | 정규 manifest/문서 생성과 원자적 상태 등록 |
+| [tasks.mjs](../../scripts/tasks.mjs) | 정규 manifest/문서 생성과 원자적 상태 등록 |
 | [운영 절차](../operations.md) | 명령 사용법·재개·장애·마이그레이션 |
 
 이 명세는 위 계약의 개요다. 같은 필드 스키마나 단계별 지시를 여러 문서에 복제하지
@@ -109,8 +109,8 @@ diff에 대한 인간 승인이 필요하다. 누락된 인프라는 성공도 N
 ## 구현 태스크와 재검증
 
 AC·목표·범위·의존성은 구조화된 정의 하나에서 작성한다. Strict 상세 Markdown은
-생성 뷰이며 별도 수동 원본이 아니다. `ticketPlan`·`tickets.json`은 기존
-상태와의 호환성을 위한 내부 이름이지 Jira 발행을 뜻하지 않는다. 생성기는
+생성 뷰이며 별도 수동 원본이 아니다. `taskPlan`·`tasks.json`은
+구현 태스크의 내부 이름이지 Jira 발행을 뜻하지 않는다. 생성기는
 immutable revision 경로와 해시를 만들고 마지막에 state를 원자적으로 갱신한다.
 G2 승인·Jira 호출은 생성과 분리한다.
 

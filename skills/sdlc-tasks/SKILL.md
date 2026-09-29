@@ -1,12 +1,12 @@
 ---
-name: sdlc-tickets
+name: sdlc-tasks
 description: Use when a plan needs implementation tasks before G2 approval, or approved tasks need Jira publication and reconciliation before implementation.
 ---
 
 # Implementation tasks and Jira publication
 
 **Required:** Read the [protocol](../sdlc/references/protocol.md) and
-[ticket contract](references/ticket-contract.md). Use `jira-sync` only for Jira
+[ticket contract](references/task-contract.md). Use `jira-sync` only for Jira
 publication; local work has no remote writes.
 This skill has draft and publish modes, not a new human approval gate.
 
@@ -20,14 +20,14 @@ Read the complete discovery, plan, contracts, UX decisions and relevant code.
    remain one implementation task. Do not split a feature into DB/API/UI-only assignments.
    Necessary preparatory work must have its own verifiable result; broad refactors
    use green expand/migrate/contract steps, with genuine blocking edges.
-2. Write one draft JSON using the [definition template](../../templates/ticket-plan.json).
+2. Write one draft JSON using the [definition template](../../templates/task-plan.json).
    Include changeKind, risks, goal, scope/non-goals, parent AC references, local AC
    IDs, contract/UX references in details, verification and blockers. Non-behavior
    changes require verificationReason; do not relabel behavior to avoid RED.
    Keep exact edit allowlists and executable commands in implementation handoffs,
    resolved against current code, not in long-lived tracker prose.
 3. Preserve stable positive IDs; never recycle retired IDs. Map ACs to applicable
-   checks. The conductor runs `node <PLUGIN_ROOT>/scripts/tickets.mjs prepare
+   checks. The conductor runs `node <PLUGIN_ROOT>/scripts/tasks.mjs prepare
    <state> <config> <draft>`; it generates the canonical manifest, optional detailed
    Markdown and hashes, then updates state last. No approval or Jira effect occurs.
    Light requires one independent outcome and generates no child document. Use

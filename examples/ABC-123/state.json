@@ -11,7 +11,7 @@
     "G4": { "status": "pending" }, "G5a": { "status": "pending" },
     "G5b": { "status": "pending" }
   },
-  "ticketPlan": null,
+  "taskPlan": null,
   "publications": [],
   "slices": [],
   "history": [],

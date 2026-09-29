@@ -38,7 +38,7 @@ it through the protocol, preserving the audit trail. Do not repair by marking pa
 |---|---|
 | discover | sdlc-discover |
 | plan | sdlc-plan |
-| publish | sdlc-tickets (publish mode) |
+| publish | sdlc-tasks (publish mode) |
 | implement | sdlc-implement |
 | verify | sdlc-verify |
 | release | sdlc-release |

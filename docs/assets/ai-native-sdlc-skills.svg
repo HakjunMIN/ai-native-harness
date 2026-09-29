@@ -551,8 +551,8 @@ rect.c-bg-rect { fill: var(--bg); }
           <text x="286" y="255" class="t-muted" font-size="8" text-anchor="middle">FE: AC별 Gherkin 초안</text>
         </g>
 
-        <g id="node-required-plan" data-node-id="required-plan" data-node-label="sdlc-tickets · 초안" tabindex="0" role="button" aria-label="Focus sdlc-tickets · 초안, G2 전 태스크 정의, 필수 / 해당 범위이면 호출" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="G2 전 태스크 정의" data-node-context="필수 / 해당 범위이면 호출">
-          <title>sdlc-tickets · 초안 · G2 전 태스크 정의 · 필수 / 해당 범위이면 호출</title>
+        <g id="node-required-plan" data-node-id="required-plan" data-node-label="sdlc-tasks · 초안" tabindex="0" role="button" aria-label="Focus sdlc-tasks · 초안, G2 전 태스크 정의, 필수 / 해당 범위이면 호출" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="G2 전 태스크 정의" data-node-context="필수 / 해당 범위이면 호출">
+          <title>sdlc-tasks · 초안 · G2 전 태스크 정의 · 필수 / 해당 범위이면 호출</title>
           <rect x="446" y="217" width="140" height="52" rx="6" class="c-mask"/>
           <rect x="446" y="217" width="140" height="52" rx="6" class="c-messagebus" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(452 223) scale(0.6875)">
@@ -561,7 +561,7 @@ rect.c-bg-rect { fill: var(--bg); }
             <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
-          <text data-node-label="" x="516" y="249" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">sdlc-tickets · 초안</text>
+          <text data-node-label="" x="516" y="249" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">sdlc-tasks · 초안</text>
           <text x="516" y="261.3" class="t-muted" font-size="8" text-anchor="middle">G2 전 태스크 정의</text>
         </g>
 
@@ -639,8 +639,8 @@ rect.c-bg-rect { fill: var(--bg); }
           <text x="516" y="385.3" class="t-muted" font-size="8" text-anchor="middle">strict: code-review</text>
         </g>
 
-        <g id="node-optional-implement" data-node-id="optional-implement" data-node-label="sdlc-tickets · 발행" tabindex="0" role="button" aria-label="Focus sdlc-tickets · 발행, strict/legacy · G2 후, 상황별 선택" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="strict/legacy · G2 후" data-node-context="상황별 선택">
-          <title>sdlc-tickets · 발행 · strict/legacy · G2 후 · 상황별 선택</title>
+        <g id="node-optional-implement" data-node-id="optional-implement" data-node-label="sdlc-tasks · 발행" tabindex="0" role="button" aria-label="Focus sdlc-tasks · 발행, strict/legacy · G2 후, 상황별 선택" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="strict/legacy · G2 후" data-node-context="상황별 선택">
+          <title>sdlc-tasks · 발행 · strict/legacy · G2 후 · 상황별 선택</title>
           <rect x="676" y="341" width="140" height="52" rx="6" class="c-mask"/>
           <rect x="676" y="341" width="140" height="52" rx="6" class="c-messagebus" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(682 347) scale(0.6875)">
@@ -649,7 +649,7 @@ rect.c-bg-rect { fill: var(--bg); }
             <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
-          <text data-node-label="" x="746" y="373" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">sdlc-tickets · 발행</text>
+          <text data-node-label="" x="746" y="373" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">sdlc-tasks · 발행</text>
           <text x="746" y="385.3" class="t-muted" font-size="8" text-anchor="middle">strict/legacy · G2 후</text>
         </g>
 

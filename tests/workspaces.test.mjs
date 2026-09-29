@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { digest } from '../scripts/state.mjs';
-import { renderTicket } from '../scripts/workflow.mjs';
+import { renderTask } from '../scripts/workflow.mjs';
 
 const tool = resolve('scripts/workspaces.mjs');
 function git(repo, ...args) {
@@ -32,15 +32,15 @@ function fixture(t, dependencies = [[], []]) {
   const approval = {actor:'human',reference:'test:approval',at:'2026-09-29T00:00:00Z'};
   const policy = {version:1,profile:'strict',changeKind:'documentation',risks:[],
     requireDifferentFamily:false,allowHumanReview:false,verificationReason:'Static validation'};
-  const tickets = dependencies.map((blockedBy, index) => {
+  const tasks = dependencies.map((blockedBy, index) => {
     const id = index + 1;
     const ticket = {id,title:`Outcome ${id}`,goal:`Result ${id}`,scope:[`src/${id}.js`],
       nonGoals:['Unrelated paths'],blockedBy,acceptanceCriteria:[{id:`T${id}-AC1`,
         requirement:`AC-${id}`,text:'Works',checks:['static']}]};
-    ticket.document = evidence(`ticket-${id}.md`,renderTicket(ticket,'local-work'));
+    ticket.document = evidence(`ticket-${id}.md`,renderTask(ticket,'local-work'));
     return ticket;
   });
-  const plan = evidence('tickets.json',JSON.stringify({format:'canonical-v1',parent:'local-work',policy,tickets}));
+  const plan = evidence('tasks.json',JSON.stringify({format:'canonical-v1',parent:'local-work',policy,tasks}));
   const state = {schemaVersion:2,ticket:'local-work',intake:{kind:'local',request:intake},
     classification:'architectural',uiChange:false,phase:'implement',policy,
     gates:{G0:{status:'passed',evidence:[intake]},G1:{status:'passed',evidence:[intake],approval},
@@ -48,11 +48,11 @@ function fixture(t, dependencies = [[], []]) {
         reviewerType:'model',authorModel:'author',authorFamily:'openai',authorSession:'author-session',
         reviewerModel:'reviewer',reviewerFamily:'openai',reviewerSession:'review-session',evidence:intake}]},
       G3:{status:'pending'},G4:{status:'pending'},G5a:{status:'pending'},G5b:{status:'pending'}},
-    ticketPlan:plan,slices:tickets.map(({id}) => ({id,status:'pending'})),publications:[],history:[]};
+    taskPlan:plan,slices:tasks.map(({id}) => ({id,status:'pending'})),publications:[],history:[]};
   const statePath = join(directory,'state.json');
   writeFileSync(statePath,JSON.stringify(state));
   const scopePath = join(repo,'scopes.json');
-  writeFileSync(scopePath,JSON.stringify(Object.fromEntries(tickets.map(({id}) => [id,[`src/${id}.js`]]))));
+  writeFileSync(scopePath,JSON.stringify(Object.fromEntries(tasks.map(({id}) => [id,[`src/${id}.js`]]))));
   git(repo,'add','.');
   git(repo,'commit','-qm','approved work');
   const run = (command, scopes) => spawnSync(process.execPath,
@@ -76,7 +76,7 @@ test('one ready ticket uses only an integration branch in the current checkout',
   assert.notEqual(run('start').status,0);
 });
 
-test('disjoint ready tickets start in distinct worktrees at the same base revision', t => {
+test('disjoint ready tasks start in distinct worktrees at the same base revision', t => {
   const {repo,statePath,run} = fixture(t);
   assert.match(run('plan').stderr,/scope/i);
   const preview = run('plan',true);
@@ -113,7 +113,7 @@ test('overlapping edits defer a ticket instead of running it in parallel', t => 
   assert.deepEqual(JSON.parse(readFileSync(statePath)).slices.map(slice => slice.status),['in_progress','pending']);
 });
 
-test('narrow disjoint tickets take priority over one broad overlapping ticket', t => {
+test('narrow disjoint tasks take priority over one broad overlapping ticket', t => {
   const {repo,scopePath,run} = fixture(t,[[],[],[]]);
   writeFileSync(scopePath,JSON.stringify({'1':['src'],'2':['src/a.js'],'3':['src/b.js']}));
   git(repo,'add','.');
@@ -190,7 +190,7 @@ test('G3 revalidation reuses its recorded integration branch, not a second branc
   const {repo,statePath,run} = fixture(t,[[]]);
   assert.equal(run('start').status,0);
   const state = JSON.parse(readFileSync(statePath));
-  state.history.push({event:'invalidate',gate:'G3',previous:{ticketPlan:state.ticketPlan,
+  state.history.push({event:'invalidate',gate:'G3',previous:{taskPlan:state.taskPlan,
     slices:structuredClone(state.slices)}});
   state.slices = [{id:1,status:'pending'}];
   writeFileSync(statePath,JSON.stringify(state));

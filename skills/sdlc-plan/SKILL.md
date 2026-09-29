@@ -27,8 +27,8 @@ The plan includes:
 | UX | chosen variant, real Grafana evidence, accessibility/visual checks |
 | Release | immutable artifact, chart changes, compatibility, rollback and human-owned prod step |
 
-After the design, use `sdlc-tickets` draft mode. Write one authoring definition and
-run `tickets.mjs prepare`; it snapshots config/risk policy, generates immutable
+After the design, use `sdlc-tasks` draft mode. Write one authoring definition and
+run `tasks.mjs prepare`; it snapshots config/risk policy, generates immutable
 manifest/documents and records hashes/pending slices. Do not hand-copy ACs into
 Markdown. Review policy, granularity, AC coverage and blockers with the
 human. Small bounded work can be one implementation task; DB/API/UI-only division
@@ -43,7 +43,7 @@ human review needs policy permission. Resolve blocking findings and attach prove
 require a separate model review; the human still approves policy and scope at G2.
 
 Present plan, detailed implementation task set, dependency graph and review to the human for G2.
-Approval binds to current discovery, contracts, plan, policy and `ticketPlan` hashes;
+Approval binds to current discovery, contracts, plan, policy and `taskPlan` hashes;
 Jira strict approval authorizes publication of that task set as Jira child tickets; local
 plans do not authorize or require Jira publication. G2 evidence
 must contain the manifest reference; its document hashes are checked transitively.

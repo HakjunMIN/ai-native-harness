@@ -15,10 +15,10 @@ BFF가 응답의 tenant/time/error 의미를 고정하고, 플러그인은 data 
 | 3 | timeout과 재시도 | API timeout 테스트, FE Gherkin AC-3 실패 | 오류 계약 + 사용자 재시도, 실제 통합 E2E |
 
 2와 3은 각각 1에 의존한다. 파일 충돌 여부를 확인하기 전 병렬 실행하지 않는다.
-상세 내용은 [T1](tickets/1-error-rate.md), [T2](tickets/2-empty.md),
-[T3](tickets/3-timeout.md)에 있으며 모두 G2 이전 draft다. 실제 소스/테스트
+상세 내용은 [T1](tasks/1-error-rate.md), [T2](tasks/2-empty.md),
+[T3](tasks/3-timeout.md)에 있으며 모두 G2 이전 draft다. 실제 소스/테스트
 경로와 실행 명령은 setup과 착수 시점의 코드에서 확정한다.
-실제 실행에서는 이 문서들을 해시한 `tickets.json` manifest까지 작성·리뷰한 뒤
+실제 실행에서는 이 문서들을 해시한 `tasks.json` manifest까지 작성·리뷰한 뒤
 G2 승인 → Jira 자식 티켓 발행 확인 → 구현 태스크별 RED/GREEN 순서로 진행한다.
 이 예시는 승인·발행·실행 증거가 아니다.
 

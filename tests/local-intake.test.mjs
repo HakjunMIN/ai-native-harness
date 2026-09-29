@@ -148,17 +148,17 @@ test('local light work uses the same ID without requiring model plan review or J
   state.phase = 'plan';
   writeFileSync(statePath,JSON.stringify(state));
   writeFileSync(join(repo,'draft.json'),JSON.stringify({changeKind:'documentation',risks:[],
-    verificationReason:'Validate links',tickets:[{id:1,title:'Guide',goal:'Readable guidance',
+    verificationReason:'Validate links',tasks:[{id:1,title:'Guide',goal:'Readable guidance',
       scope:['Docs'],nonGoals:['Runtime'],blockedBy:[],acceptanceCriteria:[{
         id:'T1-AC1',requirement:'local-AC-1',text:'Valid link',checks:['static']
       }]}]}));
   writeFileSync(join(repo,'config.json'),JSON.stringify({workflow:{boundedProfile:'light'},
     review:{requireDifferentFamily:false,allowHumanReview:true}}));
-  const prepare = spawnSync(process.execPath,['scripts/tickets.mjs','prepare',statePath,
+  const prepare = spawnSync(process.execPath,['scripts/tasks.mjs','prepare',statePath,
     join(repo,'config.json'),join(repo,'draft.json')],{encoding:'utf8'});
   assert.equal(prepare.status,0,prepare.stderr);
   const prepared = JSON.parse(readFileSync(statePath,'utf8'));
-  prepared.gates.G2 = {status:'passed',evidence:[prepared.ticketPlan],approval};
+  prepared.gates.G2 = {status:'passed',evidence:[prepared.taskPlan],approval};
   prepared.phase = 'implement';
   assert.deepEqual(validateState(prepared,root),[]);
   assert.equal(nextPhase(prepared),'implement');
@@ -178,20 +178,20 @@ test('local strict plan proceeds without child Jira publication while preserving
   state.gates.G1 = {status:'passed',evidence:[state.intake.request],approval};
   state.phase = 'plan';
   writeFileSync(statePath,JSON.stringify(state));
-  const draft = {changeKind:'documentation',risks:[],verificationReason:'Check Markdown links',tickets:[{
+  const draft = {changeKind:'documentation',risks:[],verificationReason:'Check Markdown links',tasks:[{
     id:1,title:'Local documentation',goal:'Accurate guidance',scope:['README'],nonGoals:['Code'],blockedBy:[],
     acceptanceCriteria:[{id:'T1-AC1',requirement:'local-AC-1',text:'The guidance is accurate',checks:['static']}]
   }]};
   const config = {workflow:{boundedProfile:'strict'}};
   writeFileSync(join(repo,'draft.json'),JSON.stringify(draft));
   writeFileSync(join(repo,'config.json'),JSON.stringify(config));
-  const prepare = spawnSync(process.execPath,['scripts/tickets.mjs','prepare',statePath,
+  const prepare = spawnSync(process.execPath,['scripts/tasks.mjs','prepare',statePath,
     join(repo,'config.json'),join(repo,'draft.json')],{encoding:'utf8'});
   assert.equal(prepare.status,0,prepare.stderr);
   const planned = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(planned.policy.profile,'strict');
   assert.equal(planned.gates.G2.status,'pending');
-  planned.gates.G2 = {status:'passed',evidence:[planned.ticketPlan],approval,reviews:[{
+  planned.gates.G2 = {status:'passed',evidence:[planned.taskPlan],approval,reviews:[{
     axis:'plan',reviewerType:'model',authorModel:'author',authorFamily:'openai',authorSession:'author-session',
     reviewerModel:'reviewer',reviewerFamily:'anthropic',reviewerSession:'review-session',blocking:0,
     evidence:planned.intake.request

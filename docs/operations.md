@@ -117,15 +117,15 @@ false입니다. 같은 모델이라도 작성자와 독립된 세션에서 리�
 false일 때 인간 리뷰는 `allowHumanReview: true`인 경우에만 허용합니다
 (이 필드가 없으면 false, 제공되는 설정 템플릿은 true). 인간 G1/G2/G5b는 모두 유지합니다.
 
-G1 승인 후 [구현 태스크 정의 템플릿](../templates/ticket-plan.json)으로 draft를 작성합니다.
-파일명과 `ticketPlan` 필드는 기존 실행 상태와의 호환성을 위해 유지합니다.
+G1 승인 후 [구현 태스크 정의 템플릿](../templates/task-plan.json)으로 draft를 작성합니다.
+정규 정의의 `tasks`와 상태의 `taskPlan`을 생성기가 연결합니다.
 구현 태스크는 Jira 발행 전에도 존재하며, 로컬 실행에서는 Jira 티켓을 만들지 않습니다.
 
 ```bash
-node "$PLUGIN_ROOT/scripts/tickets.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/ticket-draft.json
+node "$PLUGIN_ROOT/scripts/tasks.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/task-draft.json
 ```
 
-도구는 `plans/<revision>/tickets.json`과 strict 상세 Markdown을 생성하고 해시와
+도구는 `plans/<revision>/tasks.json`과 strict 상세 Markdown을 생성하고 해시와
 policy를 state에 등록합니다. AC를 두 파일에서 수동 관리하지 않습니다.
 승인·Jira 작업은 수행하지 않습니다. G2가 manifest와 policy를 함께 승인하며,
 config 편집만으로 승인된 정책이 바뀌지 않습니다. 변경은 G2 무효화·재생성·재승인합니다.
@@ -135,7 +135,7 @@ config 편집만으로 승인된 정책이 바뀌지 않습니다. 변경은 G2 
 
 ```bash
 node "$PLUGIN_ROOT/scripts/state.mjs" invalidate docs/sdlc/ABC-123/state.json G2 "교차 모델을 권고 정책으로 전환"
-node "$PLUGIN_ROOT/scripts/tickets.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/ticket-draft.json
+node "$PLUGIN_ROOT/scripts/tasks.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/task-draft.json
 ```
 
 새 manifest·리뷰를 확인하고 **사람의 G2 재승인**을 받은 후 재개합니다.
@@ -152,11 +152,11 @@ Behavior는 RED/GREEN, refactor는 before/GREEN, 문서·config는 의미 있는
 
 ### Jira 자식 티켓 발행
 
-Strict/legacy의 `sdlc-plan`은 설계 뒤 `sdlc-tickets` draft를 사용합니다. 생성된
+Strict/legacy의 `sdlc-plan`은 설계 뒤 `sdlc-tasks` draft를 사용합니다. 생성된
 manifest·문서 해시·AC·의존성 그래프를 리뷰하고 사람이 G2 승인합니다.
-`ticketPlan`에는 manifest 경로/해시를 넣고 G2 evidence에도 같은 참조를 넣습니다.
-생성된 구현 태스크 뷰의 의미는 [안내](../templates/ticket.md), 상태 필드는
-[구현 태스크 계약](../skills/sdlc-tickets/references/ticket-contract.md)을 따릅니다.
+`taskPlan`에는 manifest 경로/해시를 넣고 G2 evidence에도 같은 참조를 넣습니다.
+생성된 구현 태스크 뷰의 의미는 [안내](../templates/task.md), 상태 필드는
+[구현 태스크 계약](../skills/sdlc-tasks/references/task-contract.md)을 따릅니다.
 
 Strict/legacy는 G2 이후 `phase=publish`, light는 `phase=implement`이며 자식을 만들지
 않습니다. Strict 발행은 setup에서 확인한 Jira 이슈 타입·필수 필드·
@@ -199,8 +199,8 @@ schema 1은 자동 승인 승계 없이 명시적으로 차단합니다. 원본 
 별도 감사용 파일로 보존한 뒤, 재개할 실행에 대해서만 다음 절차를 적용합니다.
 
 1. 기존 G2 이후로 진행된 실행은 먼저 `invalidate <state> G2 "구현 태스크 워크플로우로 전환"`을 실행합니다. 이미 끝난 릴리스 기록은 재개하지 말고 보관합니다.
-2. `schemaVersion`을 2로 바꾸고 `ticketPlan: null`, `publications: []`를 추가합니다. 기존 Jira 자식이 있다면 빈 목록으로 잊지 말고 실제 키·marker·증거를 검토하여 stale 기록으로 옮깁니다. 기존 증거로 현재 승인을 꾸미지 않습니다.
-3. G0/G1의 유효한 원본 증거는 보존합니다. 상세 구현 태스크 draft와 pending slices를 만들고 `ticketPlan` 해시를 등록합니다. 요구사항이 바뀌었으면 G1부터 재승인합니다.
+2. `schemaVersion`을 2로 바꾸고 `taskPlan: null`, `publications: []`를 추가합니다. 기존 Jira 자식이 있다면 빈 목록으로 잊지 말고 실제 키·marker·증거를 검토하여 stale 기록으로 옮깁니다. 기존 증거로 현재 승인을 꾸미지 않습니다.
+3. G0/G1의 유효한 원본 증거는 보존합니다. 상세 구현 태스크 draft와 pending slices를 만들고 `taskPlan` 해시를 등록합니다. 요구사항이 바뀌었으면 G1부터 재승인합니다.
 4. 새 계획·구현 태스크 그래프를 정책에 따라 독립 리뷰하고 G2를 다시 받습니다. 교차 계열은 새 정책의 명시적 강제 또는 policy 없는 legacy 기록일 때 필수입니다. 기존 Jira 이슈는 재사용/조정하고 새 발행은 승인 후에만 수행합니다. 마지막으로 `check`, `next`를 실행합니다.
 
 schema 1의 단순 버전 숫자 변경만으로 구현을 재개할 수 없습니다. G2 미도달

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { digest, validateState, nextPhase, invalidate } from '../scripts/state.mjs';
-import { renderTicket } from '../scripts/workflow.mjs';
+import { renderTask } from '../scripts/workflow.mjs';
 
 const head = 'a'.repeat(40);
 const lightPolicy = {
@@ -32,15 +32,15 @@ function fixture(t, policy = lightPolicy) {
     publications:[],slices:[{id:1,status:'pending'}],history:[]
   };
   for (const name of ['G3','G4','G5a','G5b']) state.gates[name] = {status:'pending'};
-  const plan = {format:'canonical-v1',parent:state.ticket,policy:structuredClone(policy),tickets:[{
+  const plan = {format:'canonical-v1',parent:state.ticket,policy:structuredClone(policy),tasks:[{
     id:1,title:'Small change',goal:'Observable result',scope:['Affected behavior'],nonGoals:['Other behavior'],
     blockedBy:[],acceptanceCriteria:[{id:'T1-AC1',requirement:'AC-1',text:'Expected result',checks:['junit']}]
   }]};
   function bind() {
     const body = JSON.stringify(plan);
-    writeFileSync(join(root,'tickets.json'),body);
-    state.ticketPlan = {path:'tickets.json',sha256:digest(body)};
-    state.gates.G2.evidence = [state.ticketPlan];
+    writeFileSync(join(root,'tasks.json'),body);
+    state.taskPlan = {path:'tasks.json',sha256:digest(body)};
+    state.gates.G2.evidence = [state.taskPlan];
   }
   bind();
   return {root,state,plan,evidence,approval,review,bind};
@@ -111,11 +111,11 @@ test('policy is bound to G2 and cannot silently weaken existing approvals', t =>
 
 test('light plans reject multiple outcomes and active child publication receipts', t => {
   const {state,root,plan,bind} = fixture(t);
-  plan.tickets.push({...plan.tickets[0],id:2});
+  plan.tasks.push({...plan.tasks[0],id:2});
   state.slices.push({id:2,status:'pending'});
   bind();
   assert.match(validateState(state,root).join('\n'),/light.*one/);
-  plan.tickets.pop();
+  plan.tasks.pop();
   state.slices.pop();
   bind();
   state.publications = [{id:1,status:'pending',parent:state.ticket,marker:'sdlc:ABC-123:ticket:1'}];
@@ -137,12 +137,12 @@ test('strict policy permits same-model independent reviews at plan, slice and fi
   const {state,root,plan,bind,evidence,review,approval} = fixture(t);
   state.policy = {...lightPolicy,profile:'strict',allowHumanReview:false};
   plan.policy = structuredClone(state.policy);
-  const body = renderTicket(plan.tickets[0],state.ticket);
+  const body = renderTask(plan.tasks[0],state.ticket);
   writeFileSync(join(root,'ticket.md'),body);
-  plan.tickets[0].document = {path:'ticket.md',sha256:digest(body)};
+  plan.tasks[0].document = {path:'ticket.md',sha256:digest(body)};
   bind();
   state.publications = [{id:1,parent:state.ticket,marker:'sdlc:ABC-123:ticket:1',status:'confirmed',
-    key:'ABC-124',planSha256:state.ticketPlan.sha256,blockedBy:[],evidence}];
+    key:'ABC-124',planSha256:state.taskPlan.sha256,blockedBy:[],evidence}];
   const independent = {...review,reviewerModel:review.authorModel};
   state.gates.G2.reviews = [{...independent,axis:'plan'}];
   state.slices[0] = {id:1,status:'done',attempts:1,red:evidence,green:evidence,subjectHead:head,
@@ -169,7 +169,7 @@ test('strict policy permits same-model independent reviews at plan, slice and fi
   state.policy.allowHumanReview = true;
   plan.policy = structuredClone(state.policy);
   bind();
-  state.publications[0].planSha256 = state.ticketPlan.sha256;
+  state.publications[0].planSha256 = state.taskPlan.sha256;
   assert.deepEqual(validateState(state,root,head),[]);
 });
 
@@ -177,12 +177,12 @@ test('explicit strict cross-family policy still rejects same-family and human su
   const {state,root,plan,bind,evidence,review} = fixture(t);
   state.policy = {...lightPolicy,profile:'strict',requireDifferentFamily:true,allowHumanReview:false};
   plan.policy = structuredClone(state.policy);
-  const body = renderTicket(plan.tickets[0],state.ticket);
+  const body = renderTask(plan.tasks[0],state.ticket);
   writeFileSync(join(root,'ticket.md'),body);
-  plan.tickets[0].document = {path:'ticket.md',sha256:digest(body)};
+  plan.tasks[0].document = {path:'ticket.md',sha256:digest(body)};
   bind();
   state.publications = [{id:1,parent:state.ticket,marker:'sdlc:ABC-123:ticket:1',status:'confirmed',
-    key:'ABC-124',planSha256:state.ticketPlan.sha256,blockedBy:[],evidence}];
+    key:'ABC-124',planSha256:state.taskPlan.sha256,blockedBy:[],evidence}];
   const strictReview = {...review,reviewerFamily:'anthropic'};
   state.gates.G2.reviews = [{...strictReview,axis:'plan'}];
   state.slices[0] = {id:1,status:'done',attempts:1,red:evidence,green:evidence,subjectHead:head,
@@ -262,26 +262,26 @@ test('final light review can reuse unchanged evidence but must include security 
 test('selective G3 invalidation resets changed slices and transitive dependents, not unrelated slices', t => {
   const {state,evidence,review} = fixture(t);
   state.slices = [1,2,3,4].map(id => ({id,status:'done',attempts:1,red:evidence,green:evidence,subjectHead:head,reviews:[review]}));
-  const tickets = [{id:1,blockedBy:[]},{id:2,blockedBy:[1]},{id:3,blockedBy:[2]},{id:4,blockedBy:[]}];
-  const updated = invalidate(state,'G3','Changed first outcome',{sliceIds:[1],tickets,impact:evidence});
+  const tasks = [{id:1,blockedBy:[]},{id:2,blockedBy:[1]},{id:3,blockedBy:[2]},{id:4,blockedBy:[]}];
+  const updated = invalidate(state,'G3','Changed first outcome',{sliceIds:[1],tasks,impact:evidence});
   assert.deepEqual(updated.slices.map(slice => slice.status),['pending','pending','pending','done']);
   assert.deepEqual(updated.slices[3],state.slices[3]);
   assert.deepEqual(updated.impactAnalysis,evidence);
   assert.equal(updated.gates.G4.status,'pending');
-  assert.throws(() => invalidate(state,'G3','Missing impact',{sliceIds:[1],tickets}),/impact/);
-  assert.throws(() => invalidate(state,'G3','Unknown slice',{sliceIds:[99],tickets,impact:evidence}),/slice/);
-  assert.throws(() => invalidate(state,'G2','Wrong gate',{sliceIds:[1],tickets,impact:evidence}),/known G3/);
-  assert.throws(() => invalidate(state,'G3','Incomplete graph',{sliceIds:[1],tickets:tickets.slice(0,3),impact:evidence}),/complete ticket dependency graph/);
+  assert.throws(() => invalidate(state,'G3','Missing impact',{sliceIds:[1],tasks}),/impact/);
+  assert.throws(() => invalidate(state,'G3','Unknown slice',{sliceIds:[99],tasks,impact:evidence}),/slice/);
+  assert.throws(() => invalidate(state,'G2','Wrong gate',{sliceIds:[1],tasks,impact:evidence}),/known G3/);
+  assert.throws(() => invalidate(state,'G3','Incomplete graph',{sliceIds:[1],tasks:tasks.slice(0,3),impact:evidence}),/complete task dependency graph/);
 });
 
 test('selective CLI invalidation preserves a valid unrelated strict slice and rejects a changed graph', t => {
   const {state,root,plan,bind,evidence,review} = fixture(t);
   state.policy = {...lightPolicy,profile:'strict',requireDifferentFamily:true,allowHumanReview:false};
   plan.policy = structuredClone(state.policy);
-  const prototype = plan.tickets[0];
-  plan.tickets = [1,2,3,4].map(id => ({...prototype,id,blockedBy:id === 2 ? [1] : id === 3 ? [2] : []}));
-  for (const ticket of plan.tickets) {
-    const body = renderTicket(ticket,state.ticket);
+  const prototype = plan.tasks[0];
+  plan.tasks = [1,2,3,4].map(id => ({...prototype,id,blockedBy:id === 2 ? [1] : id === 3 ? [2] : []}));
+  for (const ticket of plan.tasks) {
+    const body = renderTask(ticket,state.ticket);
     const path = `ticket-${ticket.id}.md`;
     writeFileSync(join(root,path),body);
     ticket.document = {path,sha256:digest(body)};
@@ -289,10 +289,10 @@ test('selective CLI invalidation preserves a valid unrelated strict slice and re
   bind();
   const strictReview = {...review,reviewerFamily:'anthropic'};
   state.gates.G2.reviews = [{...strictReview,axis:'plan'}];
-  state.publications = plan.tickets.map(ticket => ({id:ticket.id,parent:state.ticket,
+  state.publications = plan.tasks.map(ticket => ({id:ticket.id,parent:state.ticket,
     marker:`sdlc:ABC-123:ticket:${ticket.id}`,status:'confirmed',key:`ABC-${123+ticket.id}`,
-    planSha256:state.ticketPlan.sha256,blockedBy:ticket.blockedBy.map(id => `ABC-${123+id}`),evidence}));
-  state.slices = plan.tickets.map(ticket => ({id:ticket.id,status:'done',attempts:1,
+    planSha256:state.taskPlan.sha256,blockedBy:ticket.blockedBy.map(id => `ABC-${123+id}`),evidence}));
+  state.slices = plan.tasks.map(ticket => ({id:ticket.id,status:'done',attempts:1,
     red:evidence,green:evidence,subjectHead:head,reviews:['spec','standards'].map(axis => ({...strictReview,axis}))}));
   assert.deepEqual(validateState(state,root),[]);
   const path = join(root,'state.json');
@@ -306,9 +306,9 @@ test('selective CLI invalidation preserves a valid unrelated strict slice and re
   assert.deepEqual(updated.slices[3],state.slices[3]);
   assert.deepEqual(validateState(updated,root),[]);
   const saved = readFileSync(path,'utf8');
-  writeFileSync(join(root,state.ticketPlan.path),'changed graph');
+  writeFileSync(join(root,state.taskPlan.path),'changed graph');
   const rejected = run();
   assert.notEqual(rejected.status,0);
-  assert.match(rejected.stderr,/ticket plan: evidence hash mismatch/);
+  assert.match(rejected.stderr,/task plan: evidence hash mismatch/);
   assert.equal(readFileSync(path,'utf8'),saved);
 });

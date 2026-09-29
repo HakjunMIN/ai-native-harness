@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
-import { isLight, isLocal, policyErrors, verificationMode, renderTicket, ticketDefinitionErrors } from './workflow.mjs';
+import { isLight, isLocal, policyErrors, verificationMode, renderTask, taskDefinitionErrors } from './workflow.mjs';
 
 export const gates = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5a', 'G5b'];
 const phases = ['discover', 'discover', 'plan', 'implement', 'verify', 'release', 'release'];
@@ -14,8 +14,8 @@ const sha = v => typeof v === 'string' && /^[a-f0-9]{40,64}$/.test(v);
 export const digest = data => createHash('sha256').update(data).digest('hex');
 const ticketKey = v => typeof v === 'string' && /^[A-Z][A-Z0-9_]*-[1-9][0-9]*$/.test(v);
 const published = (state, id) => Array.isArray(state.publications) && state.publications.some(p =>
-  object(p) && p.id === id && p.status === 'confirmed' && text(state.ticketPlan?.sha256) &&
-  p.planSha256 === state.ticketPlan.sha256);
+  object(p) && p.id === id && p.status === 'confirmed' && text(state.taskPlan?.sha256) &&
+  p.planSha256 === state.taskPlan.sha256);
 const allPublished = state => Array.isArray(state.slices) && state.slices.length > 0 &&
   state.slices.every(s => object(s) && published(state,s.id));
 const executionReady = state => isLocal(state) || isLight(state) || allPublished(state);
@@ -42,41 +42,41 @@ export function evidenceErrors(item, root, label) {
   return [];
 }
 
-function readTicketPlan(state, root) {
-  const errors = evidenceErrors(state.ticketPlan,root,'ticket plan');
-  if (errors.length) return {tickets:[],errors};
+function readTaskPlan(state, root) {
+  const errors = evidenceErrors(state.taskPlan,root,'task plan');
+  if (errors.length) return {tasks:[],errors};
   let plan;
-  try { plan = JSON.parse(readFileSync(resolve(root,state.ticketPlan.path),'utf8')); }
-  catch (error) { return {tickets:[],errors:[`ticket plan: invalid JSON: ${error.message}`]}; }
-  if (!object(plan) || plan.parent !== state.ticket || !Array.isArray(plan.tickets) || !plan.tickets.length) {
-    return {tickets:[],errors:['ticket plan: matching parent and nonempty tickets required']};
+  try { plan = JSON.parse(readFileSync(resolve(root,state.taskPlan.path),'utf8')); }
+  catch (error) { return {tasks:[],errors:[`task plan: invalid JSON: ${error.message}`]}; }
+  if (!object(plan) || plan.parent !== state.ticket || !Array.isArray(plan.tasks) || !plan.tasks.length) {
+    return {tasks:[],errors:['task plan: matching parent and nonempty tasks required']};
   }
-  if (!isDeepStrictEqual(plan.policy,state.policy)) errors.push('ticket plan policy must match the state policy');
-  if (state.policy && plan.format !== 'canonical-v1') errors.push('policy requires canonical-v1 ticket plan');
-  if (isLight(state) && (plan.tickets.length !== 1 || plan.tickets[0]?.blockedBy?.length)) errors.push('light policy requires one independent outcome');
-  errors.push(...ticketDefinitionErrors(plan.tickets));
-  for (const t of plan.tickets) {
+  if (!isDeepStrictEqual(plan.policy,state.policy)) errors.push('task plan policy must match the state policy');
+  if (state.policy && plan.format !== 'canonical-v1') errors.push('policy requires canonical-v1 task plan');
+  if (isLight(state) && (plan.tasks.length !== 1 || plan.tasks[0]?.blockedBy?.length)) errors.push('light policy requires one independent outcome');
+  errors.push(...taskDefinitionErrors(plan.tasks));
+  for (const t of plan.tasks) {
     if (!object(t)) continue;
     if (!isLight(state) || t.document !== undefined) {
-      const documentErrors = evidenceErrors(t.document,root,`ticket ${t.id} document`);
+      const documentErrors = evidenceErrors(t.document,root,`task ${t.id} document`);
       errors.push(...documentErrors);
       if (!documentErrors.length && plan.format === 'canonical-v1') {
         try {
-          if (readFileSync(resolve(root,t.document.path),'utf8') !== renderTicket(t,plan.parent)) errors.push(`ticket ${t.id}: generated document differs from canonical definition`);
-        } catch { errors.push(`ticket ${t.id}: invalid canonical definition`); }
+          if (readFileSync(resolve(root,t.document.path),'utf8') !== renderTask(t,plan.parent)) errors.push(`task ${t.id}: generated document differs from canonical definition`);
+        } catch { errors.push(`task ${t.id}: invalid canonical definition`); }
       }
     }
   }
-  return {tickets:plan.tickets.filter(object),errors};
+  return {tasks:plan.tasks.filter(object),errors};
 }
 
-function ticketErrors(state, root) {
+function taskErrors(state, root) {
   const approved = state.gates.G2?.status === 'passed';
   const errors = [];
-  const {tickets,errors:planErrors} = approved || state.ticketPlan ? readTicketPlan(state,root) : {tickets:[],errors:[]};
+  const {tasks,errors:planErrors} = approved || state.taskPlan ? readTaskPlan(state,root) : {tasks:[],errors:[]};
   errors.push(...planErrors);
   if (approved && (!Array.isArray(state.gates.G2.evidence) || !state.gates.G2.evidence.some(e => object(e) &&
-      e.path === state.ticketPlan?.path && e.sha256 === state.ticketPlan?.sha256))) errors.push('G2: ticket plan must be bound in approval evidence');
+      e.path === state.taskPlan?.path && e.sha256 === state.taskPlan?.sha256))) errors.push('G2: task plan must be bound in approval evidence');
   const slices = Array.isArray(state.slices) ? state.slices : [];
   const ids = new Set();
   for (const s of slices) {
@@ -100,12 +100,12 @@ function ticketErrors(state, root) {
       errors.push(...evidenceErrors(s.revalidation?.red,root,`slice ${s.id} revalidation RED`));
     }
     if (s.status !== 'pending' && (!approved || !executionReady(state))) errors.push(`slice ${s.id}: G2 and required ticket publications required before execution`);
-    const ticket = tickets.find(t => t.id === s.id);
-    if (s.status !== 'pending' && ticket && Array.isArray(ticket.blockedBy)) {
-      for (const id of ticket.blockedBy) if (!slices.some(d => object(d) && d.id === id && d.status === 'done')) errors.push(`slice ${s.id}: unfinished blocker ${id}`);
+    const task = tasks.find(t => t.id === s.id);
+    if (s.status !== 'pending' && task && Array.isArray(task.blockedBy)) {
+      for (const id of task.blockedBy) if (!slices.some(d => object(d) && d.id === id && d.status === 'done')) errors.push(`slice ${s.id}: unfinished blocker ${id}`);
     }
   }
-  if (approved && (ids.size !== tickets.length || tickets.some(t => !ids.has(t.id)))) errors.push('slices must map every approved ticket exactly');
+  if (approved && (ids.size !== tasks.length || tasks.some(t => !ids.has(t.id)))) errors.push('slices must map every approved task exactly');
   if (!Array.isArray(state.publications)) return [...errors,'publications must be an array'];
   const remoteKeys = new Set(), receiptIds = new Set();
   for (const p of state.publications) {
@@ -120,18 +120,18 @@ function ticketErrors(state, root) {
         !/^[a-f0-9]{64}$/.test(p.planSha256 ?? '') ||
         (p.key !== undefined && (!ticketKey(p.key) || p.key === state.ticket))) errors.push(`publication ${p.id}: invalid identity or status`);
     if (!approved && p.status !== 'stale') errors.push(`publication ${p.id}: G2 approval required`);
-    const ticket = tickets.find(t => t.id === p.id);
-    if (p.status !== 'stale' && p.planSha256 === state.ticketPlan?.sha256 && !ticket) errors.push(`publication ${p.id}: unknown approved ticket`);
+    const task = tasks.find(t => t.id === p.id);
+    if (p.status !== 'stale' && p.planSha256 === state.taskPlan?.sha256 && !task) errors.push(`publication ${p.id}: unknown approved task`);
     if (p.status !== 'confirmed') continue;
     if (!ticketKey(p.key)) errors.push(`publication ${p.id}: confirmed Jira key required`);
     errors.push(...evidenceErrors(p.evidence,root,`publication ${p.id} readback`));
-    if (p.planSha256 !== state.ticketPlan?.sha256) continue;
-    if (!ticket) continue;
-    const expected = (Array.isArray(ticket.blockedBy) ? ticket.blockedBy : []).map(id =>
+    if (p.planSha256 !== state.taskPlan?.sha256) continue;
+    if (!task) continue;
+    const expected = (Array.isArray(task.blockedBy) ? task.blockedBy : []).map(id =>
       state.publications.find(r => object(r) && r.id === id && published(state,id))?.key);
     if (!Array.isArray(p.blockedBy) || expected.some(k => !ticketKey(k)) ||
         p.blockedBy.length !== expected.length || new Set(p.blockedBy).size !== p.blockedBy.length ||
-        p.blockedBy.some(k => !expected.includes(k))) errors.push(`publication ${p.id}: blocking links do not match ticket plan`);
+        p.blockedBy.some(k => !expected.includes(k))) errors.push(`publication ${p.id}: blocking links do not match task plan`);
   }
   return errors;
 }
@@ -194,7 +194,7 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
   if (!Array.isArray(state.slices)) errors.push('slices must be an array');
   if (state.policy !== undefined) errors.push(...policyErrors(state.policy,state.classification));
   if (state.impactAnalysis !== undefined) errors.push(...evidenceErrors(state.impactAnalysis,root,'impact analysis'));
-  errors.push(...ticketErrors(state,root));
+  errors.push(...taskErrors(state,root));
   if (![...phases,'publish','done'].includes(state.phase) || (checkPhase && state.phase !== nextPhase(state))) errors.push(`phase must be ${nextPhase(state)}`);
   for (const [index, name] of gates.entries()) {
     const gate = state.gates[name];
@@ -231,25 +231,25 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
   return errors;
 }
 
-export function invalidate(state, gate, reason, {sliceIds,tickets,impact} = {}) {
+export function invalidate(state, gate, reason, {sliceIds,tasks,impact} = {}) {
   const index = gates.indexOf(gate);
   if (index < 0 || !text(reason)) throw new Error('known gate and nonempty reason required');
   const result = structuredClone(state);
-  const previous = {ticketPlan:result.ticketPlan ?? null,slices:structuredClone(result.slices),policy:result.policy,impactAnalysis:result.impactAnalysis};
+  const previous = {taskPlan:result.taskPlan ?? null,slices:structuredClone(result.slices),policy:result.policy,impactAnalysis:result.impactAnalysis};
   let affected;
   if (sliceIds !== undefined) {
     if (gate !== 'G3' || !Array.isArray(sliceIds) || !sliceIds.length ||
         sliceIds.some(id => !Number.isInteger(id) || !state.slices.some(slice => slice.id === id))) throw new Error('selective invalidation requires known G3 slice IDs');
     if (!object(impact) || !text(impact.path) || !/^[a-f0-9]{64}$/.test(impact.sha256 ?? '')) throw new Error('selective invalidation requires hashed impact evidence');
-    if (!Array.isArray(tickets) || tickets.length !== state.slices.length ||
-        state.slices.some(slice => !tickets.some(ticket => ticket.id === slice.id)) ||
-        tickets.some(ticket => !Array.isArray(ticket.blockedBy) || ticket.blockedBy.some(id => !tickets.some(other => other.id === id)))) throw new Error('selective invalidation requires the complete ticket dependency graph');
+    if (!Array.isArray(tasks) || tasks.length !== state.slices.length ||
+        state.slices.some(slice => !tasks.some(task => task.id === slice.id)) ||
+        tasks.some(task => !Array.isArray(task.blockedBy) || task.blockedBy.some(id => !tasks.some(other => other.id === id)))) throw new Error('selective invalidation requires the complete task dependency graph');
     affected = new Set(sliceIds);
     let changed = true;
     while (changed) {
       changed = false;
-      for (const ticket of tickets) if (!affected.has(ticket.id) && ticket.blockedBy.some(id => affected.has(id))) {
-        affected.add(ticket.id);
+      for (const task of tasks) if (!affected.has(task.id) && task.blockedBy.some(id => affected.has(id))) {
+        affected.add(task.id);
         changed = true;
       }
     }
@@ -257,7 +257,7 @@ export function invalidate(state, gate, reason, {sliceIds,tickets,impact} = {}) 
   for (const g of gates.slice(index)) result.gates[g] = {status: 'pending'};
   if (index <= 2) {
     result.slices = [];
-    result.ticketPlan = null;
+    result.taskPlan = null;
     delete result.impactAnalysis;
     result.publications = (result.publications ?? []).map(p => ({...p,status:'stale'}));
   } else if (index === 3) {
@@ -320,10 +320,10 @@ function main() {
       const impactPath = realpathSync(resolve(root,values.impact));
       if (isAbsolute(values.impact) || relative(root,impactPath).startsWith('..')) throw new Error('impact evidence must remain inside ticket directory');
       const impact = {path:values.impact,sha256:digest(readFileSync(impactPath))};
-      const {tickets,errors} = readTicketPlan(state,root);
+      const {tasks,errors} = readTaskPlan(state,root);
       errors.push(...evidenceErrors(impact,root,'impact analysis'));
       if (errors.length) throw new Error(errors.join('\n'));
-      selection = {sliceIds:values.slices.split(',').map(Number),tickets,impact};
+      selection = {sliceIds:values.slices.split(',').map(Number),tasks,impact};
     }
     const updated = invalidate(state, gate, reason,selection);
     const temp = `${path}.${randomUUID()}.tmp`;
@@ -345,14 +345,14 @@ function main() {
   if (errors.length) throw new Error(errors.join('\n'));
   if (command === 'ready') {
     if (nextPhase(state) !== 'implement') throw new Error('ready requires implement phase and required publication');
-    const {tickets} = readTicketPlan(state,dirname(path));
+    const {tasks} = readTaskPlan(state,dirname(path));
     const needsIntegration = state.slices.some(slice => slice.status === 'done' && slice.workspace);
     const repo = needsIntegration ? execFileSync('git',['rev-parse','--show-toplevel'],{cwd:dirname(path),encoding:'utf8'}).trim() : null;
     const revision = repo ? execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim() : null;
     const branch = repo ? execFileSync('git',['-C',repo,'branch','--show-current'],{encoding:'utf8'}).trim() : null;
     const integrated = slice => slice.status === 'done' && (!slice.workspace ||
       (branch === `sdlc/${state.ticket}/integration` && !sliceIntegrationErrors(slice,repo,revision).length));
-    console.log(JSON.stringify(tickets.filter(t => state.slices.some(s => s.id === t.id && s.status === 'pending') &&
+    console.log(JSON.stringify(tasks.filter(t => state.slices.some(s => s.id === t.id && s.status === 'pending') &&
       t.blockedBy.every(id => state.slices.some(s => s.id === id && integrated(s))))
       .map(t => ({id:t.id,key:isLocal(state) || isLight(state) ? state.ticket : state.publications.find(p => p.id === t.id).key}))));
     return;

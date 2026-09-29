@@ -13,7 +13,7 @@ Validate input hashes, base/HEAD, approvals, and the assigned goal. Have the par
 Produce a Korean design containing context/container/component views where warranted, considered alternatives, ADRs, plugin/BFF OpenAPI, pinned query-service mapping, and vertical slices with tests and dependencies. Bounded work may omit unnecessary diagrams with reasons, but not G1/G2 human approval.
 
 Deliver one canonical draft with stable IDs, parent AC traceability, risks, change
-kind, test kinds and blockers. The parent runs `tickets.mjs prepare` to generate
+kind, test kinds and blockers. The parent runs `tasks.mjs prepare` to generate
 manifest/detailed views and snapshot policy; never manually maintain AC copies.
 Light keeps one parent-only outcome. Keep exact paths in later handoffs. Never publish tickets;
 G2 must review/approve both the design and ticket breakdown first.

@@ -1,7 +1,7 @@
 {
   "changeKind": "behavior",
   "risks": [],
-  "tickets": [
+  "tasks": [
     {
       "id": 1,
       "title": "<observable outcome>",

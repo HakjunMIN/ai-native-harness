@@ -40,7 +40,7 @@ Scenario: Identify a service above the error threshold
 Before G1, return this draft and threshold questions without demanding RED. After
 G2 (and strict publication), its step assertion checks the approved accessible state.
 For unchanged scenarios under G3 revalidation, use the historical-RED procedure
-in `sdlc-tickets`; changed steps/scenarios require new RED.
+in `sdlc-tasks`; changed steps/scenarios require new RED.
 
 ## Stop and output
 

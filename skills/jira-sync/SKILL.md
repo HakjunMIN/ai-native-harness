@@ -14,8 +14,8 @@ not use this skill or silently establish a remote Jira link.
 
 ## Child-ticket creation and reconciliation
 
-For publication, require `sdlc-tickets` publish mode and its
-[persistent contract](../sdlc-tickets/references/ticket-contract.md). Check G2 and
+For publication, require `sdlc-tasks` publish mode and its
+[persistent contract](../sdlc-tasks/references/task-contract.md). Check G2 and
 document hashes before each effect. Discover project creation fields, permissions,
 issue type, parent relation and blocking-link IDs; never guess subtask support.
 

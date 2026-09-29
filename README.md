@@ -102,8 +102,9 @@ setup·설계·검증·릴리스에서 해당 범위에만 로드하고 기존 �
 **구현 태스크**는 목표·AC·범위·검증 기준·의존성을 가진 실행 단위이며,
 **Jira 티켓**은 Jira에 있는 원격 이슈입니다(기존 부모 또는 승인된 태스크에서
 발행된 자식).
-기존 `sdlc-tickets` 스킬과 `ticketPlan`·`tickets.json`은 호환성을 위해
-이름을 유지합니다. Jira light는 **Plan → 구현 태스크 하나·G2 승인 → 부모 이슈 구현**,
+`sdlc-tasks`가 구현 태스크 정의와 Jira 발행을 담당합니다. 정규 정의의
+`tasks`와 상태의 `taskPlan`은 `tasks.mjs prepare`가 `tasks.json`으로 연결합니다.
+Jira light는 **Plan → 구현 태스크 하나·G2 승인 → 부모 이슈 구현**,
 Jira strict/legacy는 **Plan → 구현 태스크 분해·G2 승인 → Jira 자식 티켓 발행 →
 태스크별 구현**입니다. 로컬 실행은 light/strict 모두 G2 승인 후 Jira 발행 없이
 로컬 ID로 구현합니다. DB/API/UI 계층만 나누지 않습니다.

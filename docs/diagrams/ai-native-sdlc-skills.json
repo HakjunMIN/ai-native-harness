@@ -108,7 +108,7 @@
       "lane": "required",
       "col": 2,
       "type": "messagebus",
-      "label": "sdlc-tickets · 초안",
+      "label": "sdlc-tasks · 초안",
       "sublabel": "G2 전 태스크 정의",
       "width": 140,
       "sources": [{ "path": "skills/sdlc-plan/SKILL.md", "line": 30, "end_line": 35 }]
@@ -181,10 +181,10 @@
       "lane": "optional",
       "col": 3,
       "type": "messagebus",
-      "label": "sdlc-tickets · 발행",
+      "label": "sdlc-tasks · 발행",
       "sublabel": "strict/legacy · G2 후",
       "width": 140,
-      "sources": [{ "path": "skills/sdlc-tickets/SKILL.md", "line": 39, "end_line": 45 }]
+      "sources": [{ "path": "skills/sdlc-tickets/SKILL.md", "line": 39, "end_line": 45, "label": "Pinned pre-rename source" }]
     },
     {
       "id": "optional-verify",

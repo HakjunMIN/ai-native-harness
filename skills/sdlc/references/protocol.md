@@ -51,7 +51,7 @@ never use N/A for human gates or unavailable required checks.
 ## Risk-based policy
 
 The canonical manifest and state contain the same policy, bound by G2 evidence.
-See [implementation task contract](../../sdlc-tickets/references/ticket-contract.md) for drafting,
+See [implementation task contract](../../sdlc-tasks/references/task-contract.md) for drafting,
 generation and publication. Config changes do not alter an approved snapshot.
 
 - **Light:** newly configured bounded, low-risk work with one independent outcome.
@@ -87,7 +87,7 @@ are `{path, sha256}`, relative to the run directory, with actual SHA256; no
 parent traversal or external symlinks. Gates have `status` and nonempty `evidence`.
 G1/G2/G5b also require `approval: {actor: "human", reference, at}` from an observed,
 artifact-scoped decision. Silence, selection clicks and autopilot are not approval.
-G2 evidence includes the exact `ticketPlan` reference. A local run always keeps
+G2 evidence includes the exact `taskPlan` reference. A local run always keeps
 its copied or interview-recorded request at `state.intake.request`; G0 evidence
 must include that exact reference. Changing its contents invalidates the state;
 do not edit intake in place. Discovery produces the AC/module mapping before G0

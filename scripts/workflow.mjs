@@ -25,7 +25,7 @@ export function createPolicy(config, classification, draft) {
     if (config.review?.[flag] !== undefined && typeof config.review[flag] !== 'boolean') throw new Error(`review.${flag} must be boolean`);
   }
   const profile = classification === 'bounded' && Array.isArray(draft.risks) && draft.risks.length === 0 &&
-    Array.isArray(draft.tickets) && draft.tickets.length === 1
+    Array.isArray(draft.tasks) && draft.tasks.length === 1
     ? config.workflow?.boundedProfile ?? 'strict' : 'strict';
   const requireDifferentFamily = config.review?.requireDifferentFamily ?? false;
   const policy = {
@@ -43,35 +43,35 @@ export const isLight = state => state?.policy?.profile === 'light';
 export const isLocal = state => state?.intake?.kind === 'local';
 export const verificationMode = state => state.policy?.changeKind ?? 'behavior';
 
-export function ticketDefinitionErrors(tickets) {
-  if (!Array.isArray(tickets) || !tickets.length) return ['nonempty tickets required'];
+export function taskDefinitionErrors(tasks) {
+  if (!Array.isArray(tasks) || !tasks.length) return ['nonempty tasks required'];
   const errors = [], ids = new Map();
   const list = value => Array.isArray(value) && value.length > 0 && value.every(text);
   const checks = ['junit','jest','playwright-bdd','go','chart','manual','static'];
-  for (const ticket of tickets) {
-    if (!object(ticket) || !Number.isInteger(ticket.id) || ticket.id < 1) { errors.push('invalid ticket id'); continue; }
-    if (ids.has(ticket.id)) errors.push(`duplicate ticket id ${ticket.id}`);
-    ids.set(ticket.id,ticket);
-    if (!text(ticket.title) || !text(ticket.goal) || !list(ticket.scope) || !list(ticket.nonGoals)) errors.push(`ticket ${ticket.id}: title, goal, scope and nonGoals required`);
-    if (ticket.details !== undefined && !text(ticket.details)) errors.push(`ticket ${ticket.id}: details must be text`);
-    if (!Array.isArray(ticket.blockedBy) || ticket.blockedBy.some(id => !Number.isInteger(id)) ||
-        new Set(ticket.blockedBy).size !== ticket.blockedBy.length) errors.push(`ticket ${ticket.id}: invalid dependencies`);
+  for (const task of tasks) {
+    if (!object(task) || !Number.isInteger(task.id) || task.id < 1) { errors.push('invalid task id'); continue; }
+    if (ids.has(task.id)) errors.push(`duplicate task id ${task.id}`);
+    ids.set(task.id,task);
+    if (!text(task.title) || !text(task.goal) || !list(task.scope) || !list(task.nonGoals)) errors.push(`task ${task.id}: title, goal, scope and nonGoals required`);
+    if (task.details !== undefined && !text(task.details)) errors.push(`task ${task.id}: details must be text`);
+    if (!Array.isArray(task.blockedBy) || task.blockedBy.some(id => !Number.isInteger(id)) ||
+        new Set(task.blockedBy).size !== task.blockedBy.length) errors.push(`task ${task.id}: invalid dependencies`);
     const acIds = new Set();
-    if (!Array.isArray(ticket.acceptanceCriteria) || !ticket.acceptanceCriteria.length) errors.push(`ticket ${ticket.id}: acceptance criteria required`);
-    else for (const criterion of ticket.acceptanceCriteria) {
+    if (!Array.isArray(task.acceptanceCriteria) || !task.acceptanceCriteria.length) errors.push(`task ${task.id}: acceptance criteria required`);
+    else for (const criterion of task.acceptanceCriteria) {
       if (!object(criterion) || !text(criterion.id) || acIds.has(criterion.id) || !text(criterion.requirement) || !text(criterion.text) ||
-          !list(criterion.checks) || criterion.checks.some(check => !checks.includes(check))) errors.push(`ticket ${ticket.id}: invalid acceptance criteria/checks`);
+          !list(criterion.checks) || criterion.checks.some(check => !checks.includes(check))) errors.push(`task ${task.id}: invalid acceptance criteria/checks`);
       if (object(criterion)) acIds.add(criterion.id);
     }
   }
   const visiting = new Set(), visited = new Set();
   function visit(id) {
-    if (visiting.has(id)) { errors.push(`ticket ${id}: dependency cycle`); return; }
+    if (visiting.has(id)) { errors.push(`task ${id}: dependency cycle`); return; }
     if (visited.has(id)) return;
     visiting.add(id);
-    const ticket = ids.get(id);
-    for (const dependency of Array.isArray(ticket.blockedBy) ? ticket.blockedBy : []) {
-      if (!ids.has(dependency)) errors.push(`ticket ${id}: unknown dependency ${dependency}`);
+    const task = ids.get(id);
+    for (const dependency of Array.isArray(task.blockedBy) ? task.blockedBy : []) {
+      if (!ids.has(dependency)) errors.push(`task ${id}: unknown dependency ${dependency}`);
       else visit(dependency);
     }
     visiting.delete(id);
@@ -81,15 +81,15 @@ export function ticketDefinitionErrors(tickets) {
   return errors;
 }
 
-export function renderTicket(ticket, parent) {
+export function renderTask(task, parent) {
   const items = values => values.map(value => `- ${value}`).join('\n');
   return [
-    '<!-- Generated from tickets.json; edit the canonical draft, not this view. -->',
-    `# T${ticket.id}: ${ticket.title}`, `Parent: ${parent}`, '## Goal', ticket.goal,
-    '## Scope', items(ticket.scope), '## Non-goals', items(ticket.nonGoals),
-    '## Acceptance criteria', ...ticket.acceptanceCriteria.map(criterion =>
+    '<!-- Generated from tasks.json; edit the canonical draft, not this view. -->',
+    `# T${task.id}: ${task.title}`, `Parent: ${parent}`, '## Goal', task.goal,
+    '## Scope', items(task.scope), '## Non-goals', items(task.nonGoals),
+    '## Acceptance criteria', ...task.acceptanceCriteria.map(criterion =>
       `- ${criterion.id} → ${criterion.requirement}: ${criterion.text} (${criterion.checks.join(', ')})`),
-    '## Dependencies', ticket.blockedBy.length ? ticket.blockedBy.join(', ') : 'None',
-    '## References and verification', ticket.details ?? 'Use the approved acceptance criteria and scoped handoff.'
+    '## Dependencies', task.blockedBy.length ? task.blockedBy.join(', ') : 'None',
+    '## References and verification', task.details ?? 'Use the approved acceptance criteria and scoped handoff.'
   ].join('\n\n')+'\n';
 }

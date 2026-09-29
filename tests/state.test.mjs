@@ -26,7 +26,7 @@ function fixture(t) {
   state.gates.G2.reviews = [{ axis: 'plan', authorFamily: 'anthropic', reviewerFamily: 'openai', authorModel: 'planner', reviewerModel: 'critic', blocking: 0, evidence }];
   state.gates.G4.reviews = [{ ...state.slices[0].reviews[0], axis: 'final' }];
   state.gates.G5b = { status: 'pending' };
-  const plan = { parent: 'ABC-123', tickets: [{
+  const plan = { parent: 'ABC-123', tasks: [{
     id: 1, title: 'Show error rate', goal: 'User sees the selected service error rate',
     scope: ['Selected service'], nonGoals: ['Alert management'],
     blockedBy: [], document: evidence,
@@ -36,15 +36,15 @@ function fixture(t) {
   bindPlan(state, root, plan);
   state.publications = [{ id: 1, key: 'ABC-124', parent: state.ticket,
     status: 'confirmed', marker: 'sdlc:ABC-123:ticket:1',
-    planSha256: state.ticketPlan.sha256, blockedBy: [], evidence }];
+    planSha256: state.taskPlan.sha256, blockedBy: [], evidence }];
   return { state, root, evidence, plan };
 }
 
 function bindPlan(state, root, plan) {
   const body = JSON.stringify(plan);
-  writeFileSync(join(root, 'tickets.json'), body);
-  state.ticketPlan = { path: 'tickets.json', sha256: createHash('sha256').update(body).digest('hex') };
-  state.gates.G2.evidence = [state.ticketPlan];
+  writeFileSync(join(root, 'tasks.json'), body);
+  state.taskPlan = { path: 'tasks.json', sha256: createHash('sha256').update(body).digest('hex') };
+  state.gates.G2.evidence = [state.taskPlan];
 }
 
 function planned(t) {
@@ -165,15 +165,15 @@ test('malformed ticket collections and G2 evidence report errors without throwin
   assert.doesNotThrow(() => validateState(state,root));
   state.gates.G2.evidence = [];
   for (const bad of [null,{},'bad']) {
-    bindPlan(state,root,{...plan,tickets:[{...plan.tickets[0],blockedBy:bad}]});
+    bindPlan(state,root,{...plan,tasks:[{...plan.tasks[0],blockedBy:bad}]});
     assert.match(validateState(state,root).join('\n'),/dependenc/i);
   }
 });
 test('publication intent cannot create a ticket outside the approved set', t => {
   const {state,root} = fixture(t);
   state.publications.push({id:99,parent:state.ticket,status:'unknown',
-    marker:'sdlc:ABC-123:ticket:99',planSha256:state.ticketPlan.sha256});
-  assert.match(validateState(state,root,head).join('\n'),/publication 99.*approved ticket/i);
+    marker:'sdlc:ABC-123:ticket:99',planSha256:state.taskPlan.sha256});
+  assert.match(validateState(state,root,head).join('\n'),/publication 99.*approved task/i);
 });
 test('all same-axis review scopes must pass, regardless of record order', t => {
   const {state,root} = fixture(t);
@@ -190,7 +190,7 @@ test('all same-axis review scopes must pass, regardless of record order', t => {
     state.gates.G2.reviews.reverse();
   }
 });
-  test('routes approved unpublished tickets to publish before any implementation', t => {
+  test('routes approved unpublished tasks to publish before any implementation', t => {
     const {state,root} = planned(t);
     assert.equal(nextPhase(state), 'publish');
     assert.deepEqual(validateState(state,root), []);
@@ -204,58 +204,58 @@ test('all same-axis review scopes must pass, regardless of record order', t => {
     assert.match(validateState(state,root).join('\n'), /migrat/i);
   });
 
-  test('G2 requires a nonempty hashed ticket plan included in approval evidence', t => {
+  test('G2 requires a nonempty hashed task plan included in approval evidence', t => {
     const {state,root,plan,evidence} = planned(t);
-    delete state.ticketPlan;
-    assert.match(validateState(state,root).join('\n'), /ticket plan/i);
-    bindPlan(state,root,{...plan,tickets:[]});
+    delete state.taskPlan;
+    assert.match(validateState(state,root).join('\n'), /task plan/i);
+    bindPlan(state,root,{...plan,tasks:[]});
     assert.match(validateState(state,root).join('\n'), /nonempty/i);
     bindPlan(state,root,plan);
     state.gates.G2.evidence = [evidence];
-    assert.match(validateState(state,root).join('\n'), /G2.*ticket plan/i);
+    assert.match(validateState(state,root).join('\n'), /G2.*task plan/i);
   });
 
-  test('detects changed ticket documents and malformed manifest without crashing', t => {
+  test('detects changed task documents and malformed manifest without crashing', t => {
     const {state,root} = planned(t);
     writeFileSync(join(root,'evidence.txt'),'changed ticket');
-    assert.match(validateState(state,root).join('\n'), /ticket.*hash/i);
+    assert.match(validateState(state,root).join('\n'), /task.*hash/i);
     const body = '{broken';
-    writeFileSync(join(root,'tickets.json'),body);
-    state.ticketPlan.sha256 = createHash('sha256').update(body).digest('hex');
-    assert.match(validateState(state,root).join('\n'), /ticket plan.*JSON/i);
+    writeFileSync(join(root,'tasks.json'),body);
+    state.taskPlan.sha256 = createHash('sha256').update(body).digest('hex');
+    assert.match(validateState(state,root).join('\n'), /task plan.*JSON/i);
   });
 
-  test('ticket graph rejects duplicate IDs, missing dependencies, self edges and cycles', t => {
+  test('task graph rejects duplicate IDs, missing dependencies, self edges and cycles', t => {
     const {state,root,plan} = planned(t);
-    const first = plan.tickets[0];
+    const first = plan.tasks[0];
     const cases = [
-      { tickets:[first,first], error:/duplicate.*ticket/i },
-      { tickets:[{...first,blockedBy:[99]}], error:/unknown.*dependency/i },
-      { tickets:[{...first,blockedBy:[1]}], error:/self|cycle/i },
-      { tickets:[{...first,blockedBy:[2]},{...first,id:2,blockedBy:[1]}], error:/cycle/i },
-      { tickets:[null], error:/invalid ticket/i },
+      { tasks:[first,first], error:/duplicate.*task/i },
+      { tasks:[{...first,blockedBy:[99]}], error:/unknown.*dependency/i },
+      { tasks:[{...first,blockedBy:[1]}], error:/self|cycle/i },
+      { tasks:[{...first,blockedBy:[2]},{...first,id:2,blockedBy:[1]}], error:/cycle/i },
+      { tasks:[null], error:/invalid task/i },
     ];
     for (const item of cases) {
-      bindPlan(state,root,{parent:state.ticket,tickets:item.tickets});
+      bindPlan(state,root,{parent:state.ticket,tasks:item.tasks});
       assert.match(validateState(state,root).join('\n'),item.error);
     }
   });
 
-  test('ticket AC requires parent traceability and valid stack-specific checks', t => {
+  test('task AC requires parent traceability and valid stack-specific checks', t => {
     const {state,root,plan} = planned(t);
-    plan.tickets[0].acceptanceCriteria = [{id:'T1-AC1',text:'Works',checks:['cucumber']}];
+    plan.tasks[0].acceptanceCriteria = [{id:'T1-AC1',text:'Works',checks:['cucumber']}];
     bindPlan(state,root,plan);
     assert.match(validateState(state,root).join('\n'), /acceptance|checks/i);
-    plan.tickets[0].acceptanceCriteria = [];
+    plan.tasks[0].acceptanceCriteria = [];
     bindPlan(state,root,plan);
     assert.match(validateState(state,root).join('\n'), /acceptance/i);
   });
 
-  test('slice IDs must exactly map the approved detailed tickets', t => {
+  test('slice IDs must exactly map the approved detailed tasks', t => {
     const {state,root} = planned(t);
     for (const slices of [[],[{id:9,status:'pending'}],[{id:1,status:'pending'},{id:1,status:'pending'}]]) {
       state.slices = slices;
-      assert.match(validateState(state,root).join('\n'), /slice.*ticket|slice.*unique/i);
+      assert.match(validateState(state,root).join('\n'), /slice.*task|slice.*unique/i);
     }
   });
 
@@ -301,7 +301,7 @@ test('all same-axis review scopes must pass, regardless of record order', t => {
     const updated = invalidate(state,'G3','code changed');
     assert.deepEqual(updated.slices,[{id:1,status:'pending',
       revalidation:{red:state.slices[0].red,subjectHead:state.slices[0].subjectHead}}]);
-    assert.deepEqual(updated.ticketPlan,state.ticketPlan);
+    assert.deepEqual(updated.taskPlan,state.taskPlan);
     assert.deepEqual(updated.publications,state.publications);
     assert.equal(updated.phase,'implement');
     assert.deepEqual(validateState(updated,root),[]);
@@ -309,10 +309,10 @@ test('all same-axis review scopes must pass, regardless of record order', t => {
 
   test('G2 invalidation archives a stale manifest and allows draft repair without approval', t => {
     const {state,root} = fixture(t);
-    writeFileSync(join(root,'tickets.json'),'broken or edited after approval');
+    writeFileSync(join(root,'tasks.json'),'broken or edited after approval');
     const updated = invalidate(state,'G2','stale ticket definition');
-    assert.equal(updated.ticketPlan,null);
-    assert.deepEqual(updated.history.at(-1).previous.ticketPlan,state.ticketPlan);
+    assert.equal(updated.taskPlan,null);
+    assert.deepEqual(updated.history.at(-1).previous.taskPlan,state.taskPlan);
     assert.deepEqual(updated.history.at(-1).previous.slices,state.slices);
     assert.deepEqual(validateState(updated,root),[]);
     assert.equal(nextPhase(updated),'plan');
@@ -331,11 +331,11 @@ test('all same-axis review scopes must pass, regardless of record order', t => {
     state.slices[0].status = 'in_progress';
     assert.match(validateState(state,root).join('\n'), /publication/i);
     const f = fixture(t);
-    plan.tickets.push({...plan.tickets[0],id:2,blockedBy:[1]});
+    plan.tasks.push({...plan.tasks[0],id:2,blockedBy:[1]});
     bindPlan(f.state,f.root,plan);
     for (const g of ['G3','G4','G5a','G5b']) f.state.gates[g] = {status:'pending'};
     f.state.slices = [{id:1,status:'pending'},{id:2,status:'in_progress'}];
-    f.state.publications[0].planSha256 = f.state.ticketPlan.sha256;
+    f.state.publications[0].planSha256 = f.state.taskPlan.sha256;
     f.state.publications.push({...f.state.publications[0],id:2,key:'ABC-125',
       marker:'sdlc:ABC-123:ticket:2',blockedBy:['ABC-124']});
     f.state.phase = 'implement';
@@ -350,11 +350,11 @@ test('all same-axis review scopes must pass, regardless of record order', t => {
     assert.match(validateState(state,root).join('\n'), /RED/);
   });
 
-  test('ready CLI emits only pending tickets whose blockers are evidenced done', t => {
+  test('ready CLI emits only pending tasks whose blockers are evidenced done', t => {
     const {state,root,plan} = fixture(t);
-    plan.tickets.push({...plan.tickets[0],id:2,blockedBy:[1]});
+    plan.tasks.push({...plan.tasks[0],id:2,blockedBy:[1]});
     bindPlan(state,root,plan);
-    state.publications[0].planSha256 = state.ticketPlan.sha256;
+    state.publications[0].planSha256 = state.taskPlan.sha256;
     state.publications.push({...state.publications[0],id:2,key:'ABC-125',
       marker:'sdlc:ABC-123:ticket:2',blockedBy:['ABC-124']});
     for (const g of ['G3','G4','G5a','G5b']) state.gates[g] = {status:'pending'};

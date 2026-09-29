@@ -73,7 +73,7 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
   const currentBranch = git(repo,'symbolic-ref','--short','HEAD');
   const integrationExists = branchExists(repo,integrationBranch);
   const resuming = state.history?.some(entry => entry.event === 'invalidate' && entry.gate === 'G3' &&
-    entry.previous?.ticketPlan?.sha256 === state.ticketPlan?.sha256 &&
+    entry.previous?.taskPlan?.sha256 === state.taskPlan?.sha256 &&
     entry.previous?.slices?.some(slice => slice.workspace?.integrationBranch === integrationBranch));
   if (initial && integrationExists && !(resuming && currentBranch === integrationBranch)) throw new Error('integration branch already exists; reconcile before resuming');
   if (!initial && (currentBranch !== integrationBranch || !branchExists(repo,integrationBranch))) throw new Error('switch to the recorded integration branch before resuming');
@@ -83,7 +83,7 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
   }
   cleanSource(repo);
   const committed = JSON.parse(git(repo,'show',`HEAD:${relative(repo,statePath)}`));
-  if (committed.gates?.G2?.status !== 'passed' || committed.ticketPlan?.sha256 !== state.ticketPlan?.sha256) throw new Error('commit the approved plan before starting workspaces');
+  if (committed.gates?.G2?.status !== 'passed' || committed.taskPlan?.sha256 !== state.taskPlan?.sha256) throw new Error('commit the approved plan before starting workspaces');
   const baseHead = git(repo,'rev-parse','HEAD');
   const worktreeRoot = join(dirname(repo),`${basename(repo)}.sdlc-worktrees`,state.ticket);
   const assignments = plan.selected.map(id => ({id, mode:plan.mode,

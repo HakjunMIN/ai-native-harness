@@ -1,7 +1,7 @@
 # Implementation task document view
 
 This is a field guide, not a second authoring template. Write the canonical
-[task definition](ticket-plan.json); the conductor runs `scripts/tickets.mjs
+[task definition](task-plan.json); the conductor runs `scripts/tasks.mjs
 prepare STATE CONFIG DRAFT`. Strict detailed Markdown is generated from that
 same definition. Light uses the canonical outcome on the parent without a child
 Markdown requirement. Never manually synchronize or edit generated AC copies.
@@ -19,6 +19,6 @@ policy; task completion does not mean Jira Done or production release.
 Exact edit paths/commands belong in the current handoff. Publication keys and
 execution logs belong in their ledgers, not approved generated documents.
 
-Legacy manifests remain strict and keep their existing document/hash semantics
+Policy-less manifests remain strict and keep their document/hash semantics
 until explicitly invalidated, regenerated and reapproved under the
-[implementation task contract](../skills/sdlc-tickets/references/ticket-contract.md).
+[implementation task contract](../skills/sdlc-tasks/references/task-contract.md).
