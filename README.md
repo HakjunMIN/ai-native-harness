@@ -47,6 +47,8 @@ printf 'header = "Authorization: Bearer %s"\nheader = "Accept: application/vnd.g
 
 원격 스크립트를 바로 실행하지 않는 방법과 호스트별 설정은
 [설치 안내](docs/install.md), 권한·훅의 한계는 [호환성](docs/compatibility.md)을 참고하세요.
+같은 명령을 다시 실행하면 프로젝트 내부의 관리 파일을 새 버전으로 갱신합니다.
+사용자가 수정한 관리 파일이나 이전 공유 캐시 링크 설치는 자동으로 덮어쓰지 않습니다.
 
 ## 시작
 

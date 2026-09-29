@@ -19,22 +19,27 @@
 bash /absolute/path/to/ai-native-harness/install.sh /absolute/path/to/target-repo
 ```
 
-설치기는 Node.js를 호출하지 않지만, 설치 후 훅과 SDLC 스크립트에는
-**Node.js 22 이상**이 필요합니다. curl 경로에서 스크립트를 스트리밍하면
-Git SSH로 하네스 소스를 `~/.cache/ai-native-sdlc/main`에 받아 연결합니다.
-소스 캐시는 자동으로 업데이트되지 않으며, 재실행은 동일 설정일 때만
-멱등입니다. 다른 리비전은 스크립트 URL과 `AI_NATIVE_SDLC_REF`(브랜치·태그),
-`AI_NATIVE_SDLC_CACHE_DIR`를 함께 맞춰 사용하세요. 인증된 다른 Git 원격은
-`AI_NATIVE_SDLC_REPO_URL`로 지정합니다. 캐시에는 비공개 소스가 남으므로
-권한과 출처를 확인하세요.
+설치 후 훅과 SDLC 스크립트에는 **Node.js 22 이상**이 필요합니다.
+curl 경로에서 스크립트를 스트리밍하면 매번 Git SSH로 지정한 ref의 최신
+하네스 소스를 가져옵니다. 같은 명령을 다시 실행하면 대상 프로젝트의
+관리 파일을 새 버전으로 갱신합니다. 다른 브랜치·태그를 사용한다면
+스크립트 URL의 `ref`와 `AI_NATIVE_SDLC_REF`를 함께 맞추세요.
+인증된 다른 Git 원격은 `AI_NATIVE_SDLC_REPO_URL`로 지정합니다.
 
-설치 결과는 대상의 `.ai-native-sdlc` 원본 링크, `.agents/skills/` 스킬 링크,
+설치 결과는 대상의 실제 `.ai-native-sdlc/` 파일, `.agents/skills/` 스킬 링크,
 Copilot용 `.github/agents/`와 `.github/hooks/ai-native-sdlc.json`,
 Codex용 `.codex/agents/`와 `.codex/hooks.json`입니다. `scripts/`와 `templates/`는
-원본 링크 안의 런타임 자산이고 `tests/`와 `examples/`는 대상 루트에 복사되지
-않습니다. 기존 경로와 충돌하면 덮어쓰지 않고 중단합니다. 기존 생성 파일의
-형식이 바뀌거나 원본을 이동했다면 링크와 설정을 검토해 충돌을 해결한 뒤 다시
-설치하세요. `AGENTS.md`와 다른 프로젝트 설정은 변경하지 않습니다.
+프로젝트 안의 런타임 자산이고 `tests/`와 `examples/`는 대상 루트에 복사되지
+않습니다. 대상에 `AGENTS.md`가 없으면 프로젝트용 템플릿을 복사해
+로컬 스킬 우선 사용, setup, 승인 게이트를 안내합니다. 하네스 루트의
+`AGENTS.md`는 하네스 저장소 전용이므로 복사하지 않습니다. 이미 대상에
+`AGENTS.md`가 있으면 수정하지 않고 경고만 출력하므로
+[프로젝트용 템플릿](../templates/project-AGENTS.md)의 관련 지침을 직접
+통합하세요. 관리 대상 설정은 변경되지 않았을 때만 재설치에서 갱신합니다.
+기존 경로와 충돌하거나 이전에 설치한 관리 파일이 수정되어 있으면 덮어쓰지
+않고 중단합니다. 기존 `.ai-native-sdlc` 공유 캐시 심볼릭 링크 설치는 자동
+전환하지 않습니다. 이전 설치를 수동 정리하기 전에 프로젝트별 변경과
+기존 훅·스킬 링크를 확인하세요. 다른 프로젝트 설정은 변경하지 않습니다.
 
 대상에서 새 세션을 열어 Copilot `/skills`, `/agent` 또는
 `copilot skill list`, Codex `/skills`, `/agent`, `/hooks`를 확인하세요. Codex는

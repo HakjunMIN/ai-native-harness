@@ -71,6 +71,7 @@ export function validatePackage(root) {
     }
   }
   json('.claude-plugin/marketplace.json');
+  checkPath('templates/project-AGENTS.md','installer template');
   for (const file of ['hooks/copilot.json','hooks/hooks.json','templates/state.json','templates/ai-native-sdlc.config.json']) json(file);
   for (const file of ['install.sh','hooks/session-start.sh','hooks/gate-guard.sh','scripts/validate.sh']) {
     checkPath(file,'executable');
