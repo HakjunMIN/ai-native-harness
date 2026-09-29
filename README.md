@@ -15,15 +15,32 @@ Node.js 22 이상과 Bash가 필요합니다. 패키지 검증에는 외부 npm 
 
 ### GitHub Copilot CLI
 
-팀 마켓플레이스 방식으로 이 플러그인 디렉터리의 절대 경로를 등록합니다.
+팀 마켓플레이스 방식으로 GitHub 저장소를 등록합니다.
 
 ```bash
-copilot plugin marketplace add /absolute/path/to/ai-native-harness
+copilot plugin marketplace add HakjunMIN/ai-native-harness
 copilot plugin install ai-native-sdlc@ai-native-sdlc-marketplace
 ```
 
 현재 CLI의 직접 경로 설치(`copilot plugin install <절대 경로>`)도 가능하지만
 deprecated 경고가 있으므로 위 마켓플레이스 방식을 권장합니다.
+
+현재 저장소에서만 플러그인을 활성화하려면 대상 저장소의
+`.github/copilot/settings.json`에 다음 설정을 추가합니다. Copilot CLI는 이
+저장소에 들어왔을 때 플러그인을 자동 설치·활성화하고, 다른 저장소에서는
+비활성화합니다.
+
+```json
+{
+  "enabledPlugins": {
+    "HakjunMIN/ai-native-harness": true
+  }
+}
+```
+
+팀과 설정을 공유하려면 이 파일을 커밋합니다. 개인에게만 적용하려면 같은 내용을
+`.github/copilot/settings.local.json`에 저장하고 해당 파일을 대상 저장소의
+`.gitignore`에 추가합니다.
 
 새 세션에서 대상 모노레포를 열고 `/skills`, `/agent`, `/plugin`에서 로딩을
 확인합니다. 명령 표시가 namespace를 포함하면 표시된 이름을 사용합니다.
@@ -63,6 +80,21 @@ done
 명시적 강제 정책 또는 policy 없는 기존 기록은 교차 모델 미지원 시 해당 리뷰가 BLOCKED입니다.
 인간 리뷰는 정책이 허용할 때만 사용할 수 있습니다. [호환성](docs/compatibility.md)을
 확인하세요.
+
+## 게이트 개요
+
+전체 워크플로우는 아래 게이트를 순서대로 통과합니다. G1/G2/G5b는 사람 승인이
+필수이며, 나머지는 에이전트가 증거를 통해 통과시킵니다.
+
+| 게이트 | 단계 | 승인 주체 | 의미 |
+|---|---|---|---|
+| G0 | discover | 에이전트 | 요구사항/AC/모듈 맵 확정 |
+| G1 | discover | **사람** | 요구사항, UI/BE/FE 결정 승인 |
+| G2 | plan | **사람** | 계획, 정책, 티켓 manifest 승인 |
+| G3 | implement | 에이전트 | 슬라이스 구현·검증·리뷰 완료 |
+| G4 | verify | 에이전트 | 통합 검증, spec/standards/security 리뷰 |
+| G5a | release | 에이전트 | CI/이미지 digest, dev·staging 프로모션 확인 |
+| G5b | release | **사람** | 운영 승인/머지, 배포 상태 확인 |
 
 ## 시작
 
