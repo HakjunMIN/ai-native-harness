@@ -14,6 +14,7 @@
   },
   "lanes": [
     { "id": "flow", "label": "진행 단계 · sdlc가 순서대로 호출" },
+    { "id": "agents", "label": "서브에이전트 · 단계별 위임" },
     { "id": "required", "label": "필수 / 해당 범위이면 호출" },
     { "id": "optional", "label": "상황별 선택" },
     { "id": "technical", "label": "스택별 기술 스킬 · 실제 영향 범위에만 적용" }
@@ -82,6 +83,79 @@
       "sublabel": "CI · GitOps · G5b 사람 승인",
       "width": 154,
       "sources": [{ "path": "skills/sdlc-release/SKILL.md", "line": 9, "end_line": 33 }]
+    },
+    {
+      "id": "agents-discover",
+      "lane": "agents",
+      "col": 1,
+      "type": "database",
+      "icon": "person",
+      "label": "sdlc-ux-designer",
+      "sublabel": "UI: 프로토타입 대안",
+      "width": 140,
+      "sources": [
+        { "path": "skills/sdlc-discover/SKILL.md", "line": 30, "end_line": 33},
+        { "path": "agents/sdlc-ux-designer.agent.md", "line": 3, "end_line": 3}
+      ]
+    },
+    {
+      "id": "agents-plan",
+      "lane": "agents",
+      "col": 2,
+      "type": "database",
+      "icon": "person",
+      "label": "sdlc-architect",
+      "sublabel": "strict: cross-reviewer",
+      "width": 140,
+      "sources": [
+        { "path": "skills/sdlc-plan/SKILL.md", "line": 11, "end_line": 12},
+        { "path": "agents/sdlc-architect.agent.md", "line": 3, "end_line": 3},
+        { "path": "agents/sdlc-cross-reviewer.agent.md", "line": 3, "end_line": 3}
+      ]
+    },
+    {
+      "id": "agents-implement",
+      "lane": "agents",
+      "col": 3,
+      "type": "database",
+      "icon": "person",
+      "label": "test-writer · 구현",
+      "sublabel": "spec · code · cross 리뷰",
+      "width": 140,
+      "sources": [
+        { "path": "skills/sdlc-implement/SKILL.md", "line": 24, "end_line": 33},
+        { "path": "agents/sdlc-test-writer.agent.md", "line": 3, "end_line": 3},
+        { "path": "agents/sdlc-implementer.agent.md", "line": 3, "end_line": 3}
+      ]
+    },
+    {
+      "id": "agents-verify",
+      "lane": "agents",
+      "col": 4,
+      "type": "database",
+      "icon": "person",
+      "label": "sdlc-verifier",
+      "sublabel": "ux-designer · cross-reviewer",
+      "width": 154,
+      "sources": [
+        { "path": "skills/sdlc-verify/SKILL.md", "line": 9, "end_line": 27},
+        { "path": "agents/sdlc-verifier.agent.md", "line": 3, "end_line": 3},
+        { "path": "agents/sdlc-cross-reviewer.agent.md", "line": 3, "end_line": 3}
+      ]
+    },
+    {
+      "id": "agents-release",
+      "lane": "agents",
+      "col": 5,
+      "type": "database",
+      "icon": "person",
+      "label": "sdlc-release-engineer",
+      "sublabel": "CI 증거 · GitOps 관찰",
+      "width": 154,
+      "sources": [
+        { "path": "skills/sdlc-release/SKILL.md", "line": 9, "end_line": 12},
+        { "path": "agents/sdlc-release-engineer.agent.md", "line": 3, "end_line": 3}
+      ]
     },
     {
       "id": "required-start",

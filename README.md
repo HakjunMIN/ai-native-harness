@@ -29,7 +29,7 @@ BFF는 ClickHouse에 직접 접근하지 않으며, SigNoz 자체 UI는 노출�
 
 **Discovery → Plan → Implement → Verify → Release**
 
-![단계별 필수·조건부 스킬과 G1/G2/G5b 사람 승인 게이트](docs/assets/ai-native-sdlc-skills.svg)
+![단계별 서브에이전트, 필수·조건부 스킬과 G1/G2/G5b 사람 승인 게이트](docs/assets/ai-native-sdlc-skills.svg)
 
 `sdlc`가 진행·중단·재개를 관리합니다. 기술 스킬은 독립적으로 사용할 수 있으며,
 호출만으로 전체 SDLC나 Jira 작업이 시작되지는 않습니다.
@@ -87,6 +87,7 @@ GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니�
 
 | 문서 | 내용 |
 |---|---|
+| [고객 리포 적용 사전 탐색](docs/customer-repository-discovery.md) | 인터뷰 질문, 산출물 양식, 도구·권한 조사, 개발 프로세스 매핑과 파일럿 도입 기준 |
 | [운영 절차](docs/operations.md) | light/strict 정책, 승인·재개, 병렬 워크트리, 기존 상태 마이그레이션 |
 | [구현 태스크 예시](examples/ABC-123/README.md) | 계획·태스크·증거 산출물 구조 |
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
