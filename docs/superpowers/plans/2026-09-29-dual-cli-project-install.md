@@ -1,5 +1,8 @@
 # Dual-CLI Project Installation Implementation Plan
 
+> Historical plan: the Node installer steps below were superseded by the root
+> Bash `install.sh` and curl/Git bootstrap. See README for the current command.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Install one symlink-based project harness whose skills, native agents and safety hooks work in both Copilot CLI and Codex CLI.

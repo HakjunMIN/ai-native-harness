@@ -1,5 +1,8 @@
 # Copilot CLI + Codex project installation
 
+> Historical design: the Node installer described below was subsequently replaced
+> by the root Bash `install.sh` with optional curl/Git bootstrap. See README.
+
 ## Goal and boundaries
 
 One explicit command, run for a target project, makes this harness's 30 skills,

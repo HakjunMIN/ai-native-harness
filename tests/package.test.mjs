@@ -14,6 +14,11 @@ function copy(t) {
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
 });
+test('package requires the Bash installation entrypoint', t => {
+  const root = copy(t);
+  rmSync(join(root,'install.sh'));
+  assert.match(validatePackage(root).join('\n'),/install\.sh/);
+});
 test('rejects missing required skill rather than silently shipping a partial workflow', t => {
   const root = copy(t);
   rmSync(join(root,'skills/sdlc-plan'),{recursive:true});

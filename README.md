@@ -10,17 +10,28 @@ Jira 티켓 또는 로컬 요청서에서 시작해 **Discovery → Plan → Imp
 
 ## 설치
 
-Node.js 22 이상과 Bash가 필요합니다. 패키지 검증에는 외부 npm 의존성이 없습니다.
+설치에는 Bash가 필요하며, `curl` 설치에는 Git과 curl도 필요합니다.
+**설치기 자체는 Node.js를 사용하지 않지만**, 설치 후 SDLC 훅과 스크립트 실행에는
+Node.js 22 이상이 필요합니다. 패키지 검증에는 외부 npm 의존성이 없습니다.
 대상 서비스의 Java/Grafana/SigNoz 버전과 테스트 명령은 setup에서 확인합니다.
 
 ### Copilot CLI + Codex: 프로젝트에 한 번 설치
 
-두 CLI를 같은 대상 저장소에서 사용하려면 **플러그인 설치 대신** 한 번의 프로젝트
-설치 명령을 사용합니다. 원본 스킬 리포와 대상 저장소를 서로 다른 디렉터리에 두고
-실행하세요.
+두 CLI를 같은 대상 저장소에서 사용하려면 **플러그인 설치 대신** Bash 설치기를
+실행합니다. 이미 스킬 리포를 내려받았다면 원본과 대상 저장소를 서로 다른
+디렉터리에 두고 다음처럼 설치하세요.
 
 ```bash
-node /absolute/path/to/ai-native-harness/scripts/install-project.mjs /absolute/path/to/target-repo
+bash /absolute/path/to/ai-native-harness/install.sh /absolute/path/to/target-repo
+```
+
+리포를 아직 내려받지 않았다면, 다운로드한 스크립트를 **검토한 뒤** 실행하세요.
+스크립트가 공개 GitHub 저장소를 내려받아 `~/.cache/ai-native-sdlc/main`에
+보관하고 대상 프로젝트를 연결합니다.
+
+```bash
+curl -fsSLo install.sh https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install.sh
+bash install.sh /absolute/path/to/target-repo
 ```
 
 대상에 `.ai-native-sdlc` 링크(원본 리포 전체), `.agents/skills/` 링크,
@@ -33,6 +44,11 @@ Codex용 `.codex/agents/` 및 `.codex/hooks.json`을 생성합니다.
 링크/설정 경로를 확인하고 다시 설치해야 합니다. 기존 생성 설정과 새 설정이 충돌하면
 내용을 검토한 뒤 해당 생성 파일만 직접 교체하세요. 다른 프로젝트 설정이나 `AGENTS.md`
 는 변경하지 않습니다. 원본 리포를 지우면 링크도 동작하지 않습니다.
+curl 경로에서 재실행하면 같은 캐시를 사용하며 자동으로 업데이트하지 않습니다.
+다른 리비전을 설치하려면 다운로드할 스크립트 URL과 `AI_NATIVE_SDLC_REF`(브랜치/
+태그 이름), `AI_NATIVE_SDLC_CACHE_DIR`를 함께 맞추고 기존 링크 충돌을 먼저
+해결하세요. `AI_NATIVE_SDLC_REPO_URL`로 저장소 URL도 지정할 수 있습니다.
+캐시에는 설치된 실행 코드가 남으므로 신뢰할 수 있는 리포에서만 설치하세요.
 
 두 CLI를 **대상 저장소에서 새 세션**으로 실행해 Copilot `/skills`, `/agent`와
 Codex `/skills`, `/agent`, `/hooks`에서 발견 상태를 확인하세요. Copilot은

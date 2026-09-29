@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
-import {spawnSync} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
 import {existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join, resolve} from 'node:path';
+import {createServer} from 'node:http';
+import {dirname, join, resolve} from 'node:path';
 import {test} from 'node:test';
-import {install as writeEntries} from '../scripts/install-project.mjs';
 
 const source = resolve('.');
-const installer = resolve('scripts/install-project.mjs');
-const install = target => spawnSync(process.execPath,[installer,target,source],{encoding:'utf8'});
+const shellInstaller = resolve('install.sh');
+const shellInstall = (target, env = {}) => spawnSync('bash',[shellInstaller,target],
+  {encoding:'utf8',env:{...process.env,...env}});
+const install = target => spawnSync('bash',[shellInstaller,target,source],{encoding:'utf8'});
 const fixture = t => {
   const target = mkdtempSync(join(tmpdir(),'sdlc-dual-'));
   t.after(() => rmSync(target,{recursive:true,force:true}));
@@ -95,10 +97,74 @@ test('existing skills and dangling installation links fail without modifying use
 test('failed write rolls back newly created files and directories only', t => {
   const target = fixture(t);
   writeFileSync(join(target,'keep.txt'),'user');
-  assert.throws(() => writeEntries(target,[
-    {path:join(target,'new','entry.txt'),kind:'file',value:'generated'},
-    {path:join(target,'new','invalid\0entry'),kind:'file',value:'generated'}
-  ]));
-  assert.equal(existsSync(join(target,'new')),false);
+  const tools = fixture(t);
+  writeFileSync(join(tools,'cp'),'#!/bin/sh\nexit 43\n',{mode:0o755});
+  const failed = shellInstall(target,{PATH:`${tools}:${process.env.PATH}`});
+  assert.notEqual(failed.status,0);
+  assert.equal(existsSync(join(target,'.ai-native-sdlc')),false);
+  assert.equal(existsSync(join(target,'.codex')),false);
   assert.equal(readFileSync(join(target,'keep.txt'),'utf8'),'user');
+});
+
+test('local install.sh installs from its checked-out source', t => {
+  const target = fixture(t);
+  const tools = fixture(t);
+  writeFileSync(join(tools,'node'),'#!/bin/sh\nexit 63\n',{mode:0o755});
+  const result = shellInstall(target,{PATH:`${tools}:${process.env.PATH}`});
+  assert.equal(result.status,0,result.stderr);
+  assert.equal(realpathSync(join(target,'.ai-native-sdlc')),realpathSync(source));
+  assert.equal(shellInstall(target).status,0);
+  assert.equal(readdirSync(join(target,'.agents/skills')).length,
+    readdirSync(join(source,'skills')).length);
+});
+
+test('hook commands remain valid for quoted and non-ASCII target paths', t => {
+  const parent = fixture(t);
+  const target = join(parent,"project's 한글");
+  mkdirSync(target);
+  const result = shellInstall(target);
+  assert.equal(result.status,0,result.stderr);
+  const config = JSON.parse(readFileSync(join(target,'.codex/hooks.json'),'utf8'));
+  const command = config.hooks.PreToolUse[0].hooks[0].command;
+  const blocked = spawnSync('bash',['-c',command],{cwd:target,encoding:'utf8',
+    input:JSON.stringify({tool_name:'Bash',tool_input:{command:'git push origin main'},cwd:target})});
+  assert.equal(blocked.status,0,blocked.stderr);
+  assert.equal(JSON.parse(blocked.stdout).hookSpecificOutput.permissionDecision,'deny');
+});
+
+test('HTTP curl-downloaded install.sh bootstraps a reusable checkout without modifying target on clone failure', async t => {
+  const target = fixture(t);
+  const cache = fixture(t);
+  const download = fixture(t);
+  const script = join(download,'install.sh');
+  const server = createServer((request,response) => {
+    if (request.url !== '/install.sh') { response.writeHead(404).end(); return; }
+    response.writeHead(200,{'content-type':'text/plain'}).end(readFileSync(shellInstaller));
+  });
+  await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
+  t.after(() => server.close());
+  const fetched = await new Promise((resolve,reject) => {
+    const child = spawn('curl',['-fsSLo',script,`http://127.0.0.1:${server.address().port}/install.sh`]);
+    child.on('error',reject);
+    child.on('close',resolve);
+  });
+  assert.equal(fetched,0);
+  const repository = resolve(dirname(source), '..');
+  const tools = fixture(t);
+  writeFileSync(join(tools,'node'),'#!/bin/sh\nexit 63\n',{mode:0o755});
+  const wrong = spawnSync('bash',[script,target],{encoding:'utf8',env:{
+    ...process.env,AI_NATIVE_SDLC_CACHE_DIR:cache,AI_NATIVE_SDLC_REPO_URL:'file:///no-such-repository'
+  }});
+  assert.notEqual(wrong.status,0);
+  assert.equal(existsSync(join(target,'.ai-native-sdlc')),false);
+  const installed = spawnSync('bash',[script,target],{encoding:'utf8',env:{
+    ...process.env,PATH:`${tools}:${process.env.PATH}`,
+    AI_NATIVE_SDLC_CACHE_DIR:cache,AI_NATIVE_SDLC_REPO_URL:`file://${repository}`
+  }});
+  assert.equal(installed.status,0,installed.stderr);
+  assert.equal(realpathSync(join(target,'.ai-native-sdlc')),
+    realpathSync(join(cache,'main')));
+  assert.equal(spawnSync('bash',[script,target],{encoding:'utf8',env:{
+    ...process.env,AI_NATIVE_SDLC_CACHE_DIR:cache,AI_NATIVE_SDLC_REPO_URL:`file://${repository}`
+  }}).status,0);
 });
