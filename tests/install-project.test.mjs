@@ -3,7 +3,7 @@ import {spawn, spawnSync} from 'node:child_process';
 import {existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {createServer} from 'node:http';
-import {dirname, join, resolve} from 'node:path';
+import {join, resolve} from 'node:path';
 import {test} from 'node:test';
 
 const source = resolve('.');
@@ -149,7 +149,9 @@ test('HTTP curl-downloaded install.sh bootstraps a reusable checkout without mod
     child.on('close',resolve);
   });
   assert.equal(fetched,0);
-  const repository = resolve(dirname(source), '..');
+  const gitDir = spawnSync('git',['rev-parse','--git-common-dir'],{cwd:source,encoding:'utf8'});
+  assert.equal(gitDir.status,0,gitDir.stderr);
+  const repository = resolve(source,gitDir.stdout.trim(),'..');
   const tools = fixture(t);
   writeFileSync(join(tools,'node'),'#!/bin/sh\nexit 63\n',{mode:0o755});
   const wrong = spawnSync('bash',[script,target],{encoding:'utf8',env:{
