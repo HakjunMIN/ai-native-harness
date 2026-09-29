@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node.js 22+ ESM, Node built-in test runner, Markdown skills.
 
-**Spec:** `docs/superpowers/specs/2026-09-29-conversational-local-intake-design.md`
+**Spec:** `docs/specs/2026-09-29-conversational-local-intake-design.md`
 
 ## Global Constraints
 
@@ -38,7 +38,7 @@
 - Consumes: `node scripts/intake.mjs start-text LOCAL-ID [REPOSITORY_ROOT]` with Markdown on stdin.
 - Produces: `startLocalText(id: string, content: string, repositoryRoot?: string): string` returning state path, sharing existing file-start logic.
 
-- [ ] **Step 1: Add failing tests** in `tests/local-intake.test.mjs` for stdin start and invalid requests:
+- [x] **Step 1: Add failing tests** in `tests/local-intake.test.mjs` for stdin start and invalid requests:
 
 ```js
 test('starts a pending local run from interviewed Markdown on stdin', t => {
@@ -67,11 +67,11 @@ test('rejects blank interviewed Markdown without creating state', t => {
 });
 ```
 
-- [ ] **Step 2: Run `node --test tests/local-intake.test.mjs` and confirm RED** because `start-text` does not exist.
-- [ ] **Step 3: Extract shared creation** from `startLocal(id, requestFile, repositoryRoot)` into `startLocalText(id, content, repositoryRoot)` with existing validation, staging, state serialization and cleanup untouched; `startLocal` reads the file then calls `startLocalText`, and the CLI `start-text` reads `readFileSync(0,'utf8')`. Check `command`, argument count and root exactly; a missing ID and extra arguments fail with usage. Do not write a transient request file.
-- [ ] **Step 4: Add tests** for stdin with invalid ID, output symlink, no stdin, non-default cwd, and `validateState`/`state.mjs check` on the generated run; make each test observe the error and absence of new files.
-- [ ] **Step 5: Run `node --test tests/local-intake.test.mjs` and `npm run validate`; expect all passing.**
-- [ ] **Step 6: Commit.**
+- [x] **Step 2: Run `node --test tests/local-intake.test.mjs` and confirm RED** because `start-text` does not exist.
+- [x] **Step 3: Extract shared creation** from `startLocal(id, requestFile, repositoryRoot)` into `startLocalText(id, content, repositoryRoot)` with existing validation, staging, state serialization and cleanup untouched; `startLocal` reads the file then calls `startLocalText`, and the CLI `start-text` reads `readFileSync(0,'utf8')`. Check `command`, argument count and root exactly; a missing ID and extra arguments fail with usage. Do not write a transient request file.
+- [x] **Step 4: Add tests** for stdin with invalid ID, output symlink, no stdin, non-default cwd, and `validateState`/`state.mjs check` on the generated run; make each test observe the error and absence of new files.
+- [x] **Step 5: Run `node --test tests/local-intake.test.mjs` and `npm run validate`; expect all passing.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add scripts/intake.mjs tests/local-intake.test.mjs
@@ -92,10 +92,10 @@ git commit -m "feat: start local SDLC intake from stdin"
 - Consumes: `start-text LOCAL-ID [REPOSITORY_ROOT]` from Task 1.
 - Produces: documented `sdlc <natural-language request>` path and unchanged bare/Jira paths.
 
-- [ ] **Step 1: Rewrite `skills/sdlc/SKILL.md` entry** with explicit branches: bare `sdlc` lists status; Jira key reads Jira; non-Jira substantive task starts interview. Ask only material unknowns, preserve original request and Q&A, choose unused local ID, redact sensitive content, write `intake.md` via `start-text` stdin, then route to setup/discovery. Require pending gates; distinguish request recording from G1 approval. Keep `start` from existing file as optional.
-- [ ] **Step 2: Align discovery and protocol** with the new interview source: `state.intake.request` always references a copied/generated immutable `intake.md`; G0 binds exact hash and AC/module map; no auto approval or Jira writes. Tell the conductor not to modify intake after creation; revised original request needs new ID.
-- [ ] **Step 3: Simplify README `## 시작`** to show `sdlc 문서 검색 화면의 빈 상태를 개선해줘` (natural language, no manual file or ID). State that interview creates `docs/sdlc/local-<slug>/intake.md` and `state.json`, and link to the manual command in operations. Keep Jira `sdlc ABC-123` example.
-- [ ] **Step 4: Update `docs/operations.md`** with both executable commands, marking the file-based command as optional automation:
+- [x] **Step 1: Rewrite `skills/sdlc/SKILL.md` entry** with explicit branches: bare `sdlc` lists status; Jira key reads Jira; non-Jira substantive task starts interview. Ask only material unknowns, preserve original request and Q&A, choose unused local ID, redact sensitive content, write `intake.md` via `start-text` stdin, then route to setup/discovery. Require pending gates; distinguish request recording from G1 approval. Keep `start` from existing file as optional.
+- [x] **Step 2: Align discovery and protocol** with the new interview source: `state.intake.request` always references a copied/generated immutable `intake.md`; G0 binds exact hash and AC/module map; no auto approval or Jira writes. Tell the conductor not to modify intake after creation; revised original request needs new ID.
+- [x] **Step 3: Simplify README `## 시작`** to show `sdlc 문서 검색 화면의 빈 상태를 개선해줘` (natural language, no manual file or ID). State that interview creates `docs/sdlc/local-<slug>/intake.md` and `state.json`, and link to the manual command in operations. Keep Jira `sdlc ABC-123` example.
+- [x] **Step 4: Update `docs/operations.md`** with both executable commands, marking the file-based command as optional automation:
 
 ```bash
 printf '# Request\n\nUpdate documentation without Jira.\n' |
@@ -103,8 +103,8 @@ printf '# Request\n\nUpdate documentation without Jira.\n' |
 node "$PLUGIN_ROOT/scripts/intake.mjs" start local-doc-update ./request.md
 ```
 
-- [ ] **Step 5: Run `npm test && npm run validate`; inspect that README no longer requires a prewritten local request, while the optional file path and G1 authority remain discoverable.**
-- [ ] **Step 6: Commit.**
+- [x] **Step 5: Run `npm test && npm run validate`; inspect that README no longer requires a prewritten local request, while the optional file path and G1 authority remain discoverable.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add skills/sdlc/SKILL.md skills/sdlc-discover/SKILL.md skills/sdlc/references/protocol.md README.md docs/operations.md

@@ -11,7 +11,7 @@
 
 **Tech Stack:** Node.js 22+ ESM, Node built-in test runner, Bash, JSON, TOML.
 
-**Spec:** `docs/superpowers/specs/2026-09-29-dual-cli-project-install-design.md`
+**Spec:** `docs/specs/2026-09-29-dual-cli-project-install-design.md`
 
 ## Global Constraints
 
