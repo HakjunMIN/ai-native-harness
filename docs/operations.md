@@ -6,16 +6,25 @@
 
 ### Jira 없는 로컬 시작
 
-사용자가 작성한 비밀정보 없는 요청서를 준비합니다. 로컬 ID는 소문자/숫자/
-하이픈으로 구성한 `local-<slug>`이고 기존 디렉터리가 있으면 거부합니다.
+일반 사용자는 대상 레포에서 `sdlc <자연어 요청>`으로 시작합니다. 필요한 내용만
+인터뷰하고 원문·확인된 범위·질문과 답변·미해결 질문을 기록합니다. `sdlc`만
+호출하면 기존 실행 상태를 조회합니다. CLI는 인터뷰를 수행하지 않으며 아래 명령은
+자동화나 수동 초기화에 사용합니다. 비밀정보는 입력에서 제외하세요. 로컬 ID는
+소문자/숫자/하이픈으로 구성한 `local-<slug>`이며 기존 ID를 덮어쓰지 않습니다.
 
 ```bash
-node "$PLUGIN_ROOT/scripts/intake.mjs" start local-doc-update ./request.md
+# 인터뷰 결과 Markdown을 표준입력으로 전달 (대상 레포에서 실행)
+printf '# Request\n\nUpdate documentation without Jira.\n' |
+  node "$PLUGIN_ROOT/scripts/intake.mjs" start-text local-doc-update
+
+# 이미 작성된 요청 파일을 사용하는 선택적 자동화 방식 (서로 다른 ID 사용)
+node "$PLUGIN_ROOT/scripts/intake.mjs" start local-doc-update-file ./request.md
+
 node "$PLUGIN_ROOT/scripts/state.mjs" check docs/sdlc/local-doc-update/state.json
 node "$PLUGIN_ROOT/scripts/state.mjs" next docs/sdlc/local-doc-update/state.json
 ```
 
-초기화는 원본 내용을 `intake.md`에 복사하고 해시를 `state.intake.request`에
+초기화는 입력 내용을 `intake.md`에 저장하고 해시를 `state.intake.request`에
 기록하지만 G0·G1을 pending으로 남깁니다. Discovery에서 AC/모듈을 확인한 후
 G0 evidence에 같은 요청서 참조를 넣어야 합니다. 내용 변경은 해시 불일치로 차단합니다.
 초기 분류는 보수적으로 architectural이며 `uiChange: false`는 미확인 기본값이므로

@@ -11,10 +11,16 @@ unrelated same-name skills. Loading a reference does not execute its procedure.
 Use `docs/sdlc/<ID>/`. Jira IDs match `^[A-Z][A-Z0-9_]*-[1-9][0-9]*$`;
 local IDs match `^local-[a-z0-9]+(-[a-z0-9]+)*$`. Reject unsafe IDs. For a
 Jira-originated run, copy the state template only if no state exists. For a
-request without Jira, save the user's nonempty, sanitized written request and
-run `node "$PLUGIN_ROOT/scripts/intake.mjs" start local-<slug> REQUEST_FILE
-[REPO_ROOT]`. This creates `intake.md` and pending `state.json` without approval,
-Jira access, publication, or source edits. In v1 artifactRoot remains `docs/sdlc`.
+new natural-language request without Jira, interview for material unknowns,
+preserve the original request and confirmed answers in sanitized Markdown,
+then pass it on stdin to `node "$PLUGIN_ROOT/scripts/intake.mjs" start-text
+local-<slug> [REPO_ROOT]`. Do not create a temporary request file. The optional
+prewritten automation path remains `start local-<slug> REQUEST_FILE [REPO_ROOT]`.
+Both create one immutable `intake.md` and pending `state.json` without approval,
+Jira access, publication, or source edits. Bare `sdlc` lists existing runs; an
+existing local ID resumes instead of interviewing. If the ID is taken, choose
+another; changed original requests require a new ID. In v1 artifactRoot
+remains `docs/sdlc`.
 Before entering a phase run:
 
 ```bash
@@ -82,9 +88,11 @@ parent traversal or external symlinks. Gates have `status` and nonempty `evidenc
 G1/G2/G5b also require `approval: {actor: "human", reference, at}` from an observed,
 artifact-scoped decision. Silence, selection clicks and autopilot are not approval.
 G2 evidence includes the exact `ticketPlan` reference. A local run always keeps
-its copied request at `state.intake.request`; G0 evidence must include that exact
-reference. Changing its contents invalidates the state. Discovery produces the
-AC/module mapping before G0 passes. A local ID is not a Jira key: do not create
+its copied or interview-recorded request at `state.intake.request`; G0 evidence
+must include that exact reference. Changing its contents invalidates the state;
+do not edit intake in place. Discovery produces the AC/module mapping before G0
+passes; the intake interview itself does not constitute G1 approval. A local ID
+is not a Jira key: do not create
 issues, enqueue writes, or label work remotely without a separate authorized run.
 
 G3/G4/G5a/G5b use the verified source `subjectHead`. Obtain the user's required

@@ -1,6 +1,6 @@
 # ai-native-sdlc
 
-Jira 티켓 또는 로컬 요청서에서 시작해 **Discovery → Plan → Implement → Verify → Release**로
+Jira 티켓 또는 자연어 요청에서 시작해 **Discovery → Plan → Implement → Verify → Release**로
 진행하는 로컬 AI 개발 워크플로우입니다. 30개 스킬과 9개 전문 에이전트를 제공합니다.
 각 단계는 단독으로 실행할 수 있고, `sdlc`가 전체 진행·중단·재개를 관리합니다.
 
@@ -33,25 +33,19 @@ set -o pipefail; printf 'header = "Authorization: Bearer %s"\nheader = "Accept: 
 
 ## 시작
 
-Jira 없이 시작하려면 대상 레포에 요구사항 파일을 작성한 뒤 로컬 ID로 초기화합니다.
-파일에는 실제 사용자 요청과 범위를 적고 비밀정보는 넣지 마세요. 초기화는
-G0/G1을 통과시키거나 Jira 이슈를 만들지 않습니다.
-
-```bash
-# 대상 레포에서 실행 (PLUGIN_ROOT는 설치된 플러그인 절대 경로)
-node "$PLUGIN_ROOT/scripts/intake.mjs" start local-doc-update ./request.md
-```
-
-그다음 스킬을 호출합니다.
+Jira 없이 시작하려면 대상 레포에서 원하는 작업을 자연어로 말하세요.
 
 ```text
-sdlc local-doc-update
+sdlc 문서 검색 화면의 빈 상태를 개선해줘
 ```
 
-요청서 사본은 `docs/sdlc/local-doc-update/intake.md`, 상태는 같은 디렉터리의
-`state.json`에 저장됩니다. 발견 단계에서 AC/모듈을 확인하고 G0 증거에 원본 요청
-해시를 연결합니다. 로컬 실행은 Jira 연동·자식 발행·outbox 없이 진행하지만 G1/G2와
-위험별 검증·리뷰, 실제 운영 변경의 인간 통제는 유지합니다.
+필요한 사항만 인터뷰한 뒤 원래 요청과 확인한 내용을
+`docs/sdlc/local-<slug>/intake.md`에 한 번 기록하고, 같은 디렉터리에
+`state.json`을 만듭니다. 별도 요청 파일이나 기록 전 승인은 필요 없습니다.
+`sdlc`만 호출하면 기존 실행 상태를 조회합니다. 발견 단계에서 AC/모듈을 확인하고
+G0 증거에 요청 해시를 연결합니다. 로컬 실행은 Jira 연동·자식 발행·outbox 없이
+진행하지만 G1/G2의 사람 승인과 위험별 검증·리뷰, 실제 운영 변경의 인간 통제는
+유지합니다. 파일 입력을 사용하는 자동화 방법은 [운영 절차](docs/operations.md#jira-없는-로컬-시작)를 참고하세요.
 
 Jira 티켓으로 시작하는 기존 경로는 그대로 사용합니다.
 
