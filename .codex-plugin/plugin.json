@@ -1,0 +1,6 @@
+{
+  "name": "ai-native-sdlc",
+  "version": "0.1.0",
+  "description": "Portable SDLC skills; verify host capabilities before passing gates",
+  "skills": "./skills/"
+}

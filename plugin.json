@@ -1,0 +1,9 @@
+{
+  "name": "ai-native-sdlc",
+  "version": "0.1.0",
+  "description": "Evidence-gated, local request or Jira-to-release skills for an observability monorepo",
+  "author": { "name": "ai-native-sdlc contributors" },
+  "skills": "./skills",
+  "agents": "./agents",
+  "hooks": "./hooks/copilot.json"
+}

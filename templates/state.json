@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 2,
+  "ticket": "ABC-123",
+  "title": "",
+  "classification": "architectural",
+  "uiChange": true,
+  "phase": "discover",
+  "gates": {
+    "G0": { "status": "pending" },
+    "G1": { "status": "pending" },
+    "G2": { "status": "pending" },
+    "G3": { "status": "pending" },
+    "G4": { "status": "pending" },
+    "G5a": { "status": "pending" },
+    "G5b": { "status": "pending" }
+  },
+  "ticketPlan": null,
+  "publications": [],
+  "slices": [],
+  "history": [],
+  "jira": { "sync": "pending" }
+}

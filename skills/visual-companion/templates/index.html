@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서비스 맵 비교 · 프로토타입</title>
+<style>
+  :root { color-scheme: dark; --bg:#181b1f; --panel:#22252b; --fg:#eee; --border:#8691a3; }
+  body.light { color-scheme:light; --bg:#f4f5f5; --panel:white; --fg:#192127; --border:#637182; }
+  body { background:var(--bg); color:var(--fg); font:16px system-ui; margin:2rem auto; max-width:1000px; padding:1rem; }
+  section { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; }
+  article { background:var(--panel); border:1px solid var(--border); padding:1.5rem; border-radius:.4rem; }
+  button { padding:.7rem 1rem; margin:.5rem; cursor:pointer; }
+  button:focus-visible { outline:3px solid #f6b73c; outline-offset:3px; }
+  .node { display:inline-block; border:2px solid var(--border); padding:1rem; margin:.5rem; }
+  .alert { border-color:#ff9d55; }
+  table { border-collapse:collapse; width:100%; }
+  th,td { padding:.6rem; text-align:left; border-bottom:1px solid var(--border); }
+</style>
+<header><h1>서비스 에러율 강조 방식</h1>
+<p>가상 데이터 · 폐기용 목업 · 선택은 승인이나 실제 구현이 아닙니다.</p>
+<button id="theme">라이트/다크 전환</button></header>
+<section aria-label="레이아웃 대안">
+  <article><h2>A · 맵 중심</h2><p>서비스 관계를 유지하면서 임계치 초과를 강조합니다.</p>
+    <div class="node">gateway<br>0.3%</div> → <div class="node alert">checkout<br>⚠ 5.2% · 임계치 초과</div>
+    <button data-option="map">맵 중심 선택</button>
+  </article>
+  <article><h2>B · 표 중심</h2><p>에러율 순으로 탐색하고 서비스 상세로 이동합니다.</p>
+    <table><caption>최근 5분 에러율</caption><tr><th>서비스</th><th>에러율</th><th>상태</th></tr>
+      <tr><td>checkout</td><td>5.2%</td><td>⚠ 임계치 초과</td></tr><tr><td>gateway</td><td>0.3%</td><td>정상</td></tr></table>
+    <button data-option="table">표 중심 선택</button>
+  </article>
+</section>
+<p id="status" role="status" aria-live="polite"></p>
+<script>
+document.querySelector('#theme').onclick = () => document.body.classList.toggle('light');
+document.querySelectorAll('[data-option]').forEach(button => {
+  button.onclick = async () => {
+    const status = document.querySelector('#status');
+    try {
+      const response = await fetch('/selection', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({option:button.dataset.option})});
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      status.textContent = `${button.dataset.option} 선택을 저장했습니다. 요구사항 승인은 별도로 진행합니다.`;
+    } catch (error) { status.textContent = `저장 실패: ${error.message}`; }
+  };
+});
+</script>
+</html>
