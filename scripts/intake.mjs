@@ -21,9 +21,14 @@ function pathExists(path) {
 
 export function startLocal(id, requestFile, repositoryRoot = process.cwd()) {
   if (!localId.test(id ?? '') || id.length > 72) throw new Error('local ID must be a short lowercase slug, e.g. local-doc-change');
-  const root = realpathSync(repositoryRoot);
   const content = readFileSync(resolve(requestFile),'utf8');
+  return startLocalText(id,content,repositoryRoot);
+}
+
+export function startLocalText(id, content, repositoryRoot = process.cwd()) {
+  if (!localId.test(id ?? '') || id.length > 72) throw new Error('local ID must be a short lowercase slug, e.g. local-doc-change');
   if (!content.trim()) throw new Error('nonempty local request required');
+  const root = realpathSync(repositoryRoot);
   const directory = safeDirectory(safeDirectory(root,'docs'),'sdlc');
   const target = join(directory,id);
   if (pathExists(target)) throw new Error(`local run already exists: ${id}`);
@@ -50,8 +55,13 @@ export function startLocal(id, requestFile, repositoryRoot = process.cwd()) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const [command,id,requestFile,repositoryRoot,...extra] = process.argv.slice(2);
-    if (command !== 'start' || !id || !requestFile || extra.length) throw new Error('Usage: intake.mjs start LOCAL-ID REQUEST_FILE [REPOSITORY_ROOT]');
-    console.log(startLocal(id,requestFile,repositoryRoot));
+    const [command,id,...args] = process.argv.slice(2);
+    if (command === 'start' && id && args.length >= 1 && args.length <= 2 && args[0]) {
+      console.log(startLocal(id,args[0],args[1]));
+    } else if (command === 'start-text' && id && args.length <= 1) {
+      console.log(startLocalText(id,readFileSync(0,'utf8'),args[0]));
+    } else {
+      throw new Error('Usage: intake.mjs start LOCAL-ID REQUEST_FILE [REPOSITORY_ROOT]\n       intake.mjs start-text LOCAL-ID [REPOSITORY_ROOT] < request.md');
+    }
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

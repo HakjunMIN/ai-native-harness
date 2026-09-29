@@ -47,6 +47,70 @@ test('starts from the target repository working directory without a root argumen
   assert.equal(JSON.parse(readFileSync(statePath,'utf8')).intake.kind,'local');
 });
 
+test('starts a pending Jira-free run from interviewed Markdown on stdin', t => {
+  const {repo,statePath} = fixture(t);
+  const markdown = '# Original request\n\nImprove documentation\n\n## Interview\n\n- Scope: README\n';
+  const run = () => spawnSync(process.execPath,
+    [resolve('scripts/intake.mjs'),'start-text','local-doc-change',repo],
+    {input:markdown,encoding:'utf8'});
+  const result = run();
+  assert.equal(result.status,0,result.stderr);
+  assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
+  const root = join(repo,'docs/sdlc/local-doc-change');
+  const state = JSON.parse(readFileSync(statePath,'utf8'));
+  assert.equal(readFileSync(join(root,'intake.md'),'utf8'),markdown);
+  assert.deepEqual(state.intake,{kind:'local',request:{path:'intake.md',sha256:digest(markdown)}});
+  assert.equal(state.jira,undefined);
+  for (const gate of ['G0','G1','G2']) assert.equal(state.gates[gate].status,'pending');
+  assert.deepEqual(validateState(state,root),[]);
+  const check = spawnSync(process.execPath,['scripts/state.mjs','check',statePath],{encoding:'utf8'});
+  assert.equal(check.status,0,check.stderr);
+  assert.match(run().stderr,/already exists/);
+});
+
+test('rejects blank interviewed Markdown without creating state', t => {
+  const {repo,statePath} = fixture(t);
+  const result = spawnSync(process.execPath,
+    [resolve('scripts/intake.mjs'),'start-text','local-doc-change',repo],
+    {input:' \n',encoding:'utf8'});
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/nonempty/);
+  assert.equal(existsSync(statePath),false);
+});
+
+test('stdin intake defaults to the working repository and requires a valid command', t => {
+  const {repo,statePath} = fixture(t);
+  const cli = resolve('scripts/intake.mjs');
+  for (const args of [['start-text'],['start-text','local-doc-change',repo,'extra']]) {
+    const result = spawnSync(process.execPath,[cli,...args],{cwd:repo,input:'Request\n',encoding:'utf8'});
+    assert.notEqual(result.status,0);
+    assert.match(result.stderr,/Usage:/);
+  }
+  assert.equal(existsSync(statePath),false);
+  const result = spawnSync(process.execPath,[cli,'start-text','local-doc-change'],
+    {cwd:repo,input:'Request\n',encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
+});
+
+test('stdin intake rejects missing input, invalid IDs and symlink output', t => {
+  const {repo,statePath} = fixture(t);
+  const cli = resolve('scripts/intake.mjs');
+  const start = (id,input = 'Request\n') => spawnSync(process.execPath,
+    [cli,'start-text',id,repo],{input,encoding:'utf8'});
+  assert.match(start('local-doc-change','').stderr,/nonempty/);
+  for (const id of ['ABC-123','../escape','local--invalid']) {
+    const result = start(id);
+    assert.notEqual(result.status,0);
+    assert.match(result.stderr,/local ID/);
+  }
+  assert.equal(existsSync(statePath),false);
+  mkdirSync(join(repo,'docs/sdlc'),{recursive:true});
+  symlinkSync(join(repo,'missing'),join(repo,'docs/sdlc/local-doc-change'));
+  assert.match(start('local-doc-change').stderr,/already exists/);
+  assert.equal(existsSync(statePath),false);
+});
+
 test('local intake is immutable evidence and G0 must bind it before planning', t => {
   const {repo,start,statePath} = fixture(t);
   assert.equal(start().status,0);
