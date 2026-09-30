@@ -14,6 +14,23 @@ function copy(t) {
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
 });
+test('SDLC stages and domain review share the project governance reference', () => {
+  for (const name of ['sdlc-setup', 'sdlc-discover', 'sdlc-plan', 'sdlc-implement',
+    'sdlc-verify', 'sdlc-release', 'sdlc-handoff', 'domain-context', 'code-review']) {
+    const body = readFileSync(resolve(`skills/${name}/SKILL.md`), 'utf8');
+    assert.match(body, /\]\(\.\.\/sdlc\/references\/project-governance\.md\)/, name);
+  }
+  const protocol = readFileSync(resolve('skills/sdlc/references/protocol.md'), 'utf8');
+  assert.match(protocol, /\]\(project-governance\.md\)/);
+  const handoff = readFileSync(resolve('templates/handoff.md'), 'utf8');
+  assert.match(handoff, /## Project baseline/);
+  assert.match(handoff, /<PLUGIN_ROOT>\/skills\/sdlc\/references\/project-governance\.md/);
+});
+test('missing project governance blocks package validation', t => {
+  const root = copy(t);
+  rmSync(join(root, 'skills/sdlc/references/project-governance.md'));
+  assert.match(validatePackage(root).join('\n'), /missing or escaped path .*project-governance\.md/);
+});
 test('package requires the Bash installation entrypoint', t => {
   const root = copy(t);
   rmSync(join(root,'install.sh'));

@@ -16,8 +16,12 @@ Read the [shared principles](../sdlc/references/principles.md) before changing t
 2. For each new or conflicting term, propose a definition, scope, example, counterexample, and aliases. Ask the domain owner to resolve competing meanings before treating a proposal as canonical.
 3. Record confirmed definitions and their decision sources in `CONTEXT.md`; label unresolved definitions as proposals. Use Korean explanations while preserving exact code identifiers.
 4. Map canonical terms to API fields, UI labels, Gherkin steps, and Java/TypeScript identifiers. Identify migration impact before renaming public fields; use this plugin's `api-contract` skill for contract changes.
-5. Use an ADR for consequential, durable choices, not routine local changes. Follow
-   repository conventions; SDLC may use a run-local ADR. Preserve superseded history.
+5. Follow [project governance](../sdlc/references/project-governance.md) for
+   consequential, durable choices. Put cross-feature decisions in project ADRs
+   and current rules in project standards; keep feature-only decisions in the
+   plan or a run-local ADR. Classify by impact, not reuse count. Preserve
+   superseded history and require explicit project-owner approval for shared
+   changes or exceptions; feature approval alone does not grant that authority.
 
 ## Bounded example
 

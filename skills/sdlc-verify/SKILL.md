@@ -8,6 +8,14 @@ description: Use when implementation is complete and a Jira ticket or local run 
 Read [protocol](../sdlc/references/protocol.md). Require `next=verify` with valid G3.
 Invoke `verification-gate`; dispatch `sdlc-verifier` with the approved test matrix.
 
+Include the Project baseline and approved exceptions in the verifier handoff.
+Apply [project governance](../sdlc/references/project-governance.md): compare
+applicable standards, ADRs and indexes with the reviewed baseline. Record rule
+compliance, drift impact, shared-policy approvals and exception validity in
+`04-verify-report.md`; missing comparison evidence remains unverified. Material
+requirement or plan changes return to G1/G2. Use run-local reports as gate evidence,
+not repository-relative project-document paths or parent traversal.
+
 Run only applicable approved checks: Gradle unit/integration/API, FE Jest/RTL,
 lint/typecheck, build, Gherkin generation or Playwright. Documentation/config can
 use justified static/schema checks; do not require unrelated stack infrastructure.

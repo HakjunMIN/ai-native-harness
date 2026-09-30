@@ -10,6 +10,12 @@ unchanged source and fresh verification. Invoke `helm-argocd-release` and use
 `jira-sync` only for Jira-originated work. Dispatch `sdlc-release-engineer`
 with the handoff and production denylist when specialized work is needed.
 
+Apply [project governance](../sdlc/references/project-governance.md): confirm the
+verified Project baseline remains applicable and exceptions have not expired.
+Carry approved shared ADR/standard changes, migration obligations and exception
+owners/exit conditions into `05-release.md` and the production handoff. Material
+drift returns to the affected gate; release approval does not waive shared rules.
+
 1. Prepare PR title/body with Jira link only for Jira work; always include AC/test/UX reports, compatibility,
    release artifact and rollback. Human publishes the branch; v1 hooks deny
    shell push and merge. Agents may create a draft PR only on an already-published,

@@ -1,3 +1,7 @@
+---
+description: "Scoped SDLC assignment inputs, constraints and evidence return format"
+---
+
 # Handoff: <from> -> <to>
 
 Run: <Jira key or local ID> | Intake: <Jira snapshot or hashed local request> | Phase: <phase> | Slice: <id or N/A>
@@ -19,9 +23,23 @@ Impact: <affected slices/dependents, retained-evidence rationale and impact hash
 |---|---|---|
 | <run-relative or repo-relative path, explicitly labelled> | <hash> | <purpose> |
 
+## Project baseline
+
+Read `<PLUGIN_ROOT>/skills/sdlc/references/project-governance.md` from the installed
+harness; resolve PLUGIN_ROOT when writing the run-local handoff.
+Reference the plan's applicable standards and accepted project ADRs, including
+document paths/sections, baseline commits or uncommitted content hashes, and
+owners. Record none with a reason when no shared documents apply.
+
+- Shared changes: <approved project ADR/standard changes and owner approval evidence, or none>
+- Exceptions: <rule, scope, owner approval, expiry or exit condition, or none>
+- Drift: <comparison evidence and impact since the baseline; unresolved differences>
+- Follow-up: <migration obligations, expiring exceptions and responsible owners>
+
 ## Constraints
 
 - Allowed edits: <exact paths/globs; empty for reviewers>
+- Shared-document ownership: <single assigned owner and explicit allowed paths for standards/ADRs, or read-only>
 - Workspace isolation: <one checkout branch or distinct worktree; conductor alone writes shared docs/sdlc state>
 - Forbidden: cloud/nested delegation, prod mutation, weakening expectations; strict implementers cannot edit frozen tests.
 - Dependencies: <completed outcome IDs, Jira keys only if applicable, contracts and evidence>

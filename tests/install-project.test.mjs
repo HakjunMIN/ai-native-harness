@@ -43,6 +43,12 @@ test('one command wires skills, native agents and both hook configurations', t =
   assert.notEqual(guidance,readFileSync(join(source,'AGENTS.md'),'utf8'));
   assert.match(guidance,/\.agents\/skills\//);
   assert.match(guidance,/sdlc-setup/);
+  assert.match(guidance,/docs\/architecture\/adr\/README\.md/);
+  assert.match(guidance,/docs\/standards\/README\.md/);
+  assert.match(guidance,/references\/project-governance\.md/);
+  const governance = 'skills/sdlc/references/project-governance.md';
+  assert.equal(readFileSync(join(target,'.ai-native-sdlc',governance),'utf8'),
+    readFileSync(join(source,governance),'utf8'));
   for (const name of readdirSync(join(source,'skills'))) {
     assert.equal(realpathSync(join(target,'.agents/skills',name)),
       realpathSync(join(target,'.ai-native-sdlc/skills',name)));

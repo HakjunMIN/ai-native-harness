@@ -1,3 +1,7 @@
+---
+description: "Phase ownership, gates and evidence contracts for SDLC runs"
+---
+
 # Workflow protocol
 
 This is the phase-owner contract, not a prerequisite for standalone technical
@@ -5,6 +9,12 @@ skills. Follow [shared principles](principles.md). Resolve `PLUGIN_ROOT` from th
 installed plugin and `REPO_ROOT` from the selected repository. Never edit the
 installed plugin while implementing a task. Invoke exact plugin skills, not
 unrelated same-name skills. Loading a reference does not execute its procedure.
+
+Follow [project governance](project-governance.md) across phases. Project standards
+and cross-feature ADRs live outside individual runs; feature plans reference the
+applicable baseline. On resume, assess shared-document drift before dependent
+work. State validation alone does not check that drift or grant project-policy
+approval. Preserve existing artifact paths and the run-local evidence boundary.
 
 ## State and routing
 

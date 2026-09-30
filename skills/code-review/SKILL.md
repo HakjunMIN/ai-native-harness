@@ -24,6 +24,13 @@ supplied approved policy and handoff, not mutable config or guessed model routin
    maintainability, failure paths, scope, misleading tests) and assigned **security**
    (auth/tenant boundaries, injection, secret exposure, dependency/runtime risks).
    A named security agent is optional; missing necessary expertise is a blocker.
+   Apply [project governance](../sdlc/references/project-governance.md): inspect
+   relevant standards and accepted ADRs, compare them with the supplied Project
+   baseline, and report violations by document/section. Check shared-change
+   approval, exception scope/expiry, and index/standard updates for replaced ADRs.
+   Ask the conductor for comparison evidence when tools cannot establish drift;
+   a passing state check is not that evidence. Standalone reviews use applicable
+   current project rules without inventing an SDLC baseline or gate requirements.
 4. Return blocking/should-fix/nit findings with path/line, concrete failure or
    violated requirement, resolution and limitations. Zero findings must describe
    inspected scope, not assert universal safety.

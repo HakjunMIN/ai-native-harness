@@ -23,6 +23,13 @@ G0 needs AC and a module map. Draft missing questions; never invent customer int
 Write `01-discovery.md`: problem, users, glossary, existing behavior, scope/non-goals,
 AC IDs, edge cases, risks, assumptions, unanswered questions, decision evidence.
 
+Read the project's standards and ADR indexes plus relevant documents using
+[project governance](../sdlc/references/project-governance.md). Record applicable
+rules and paths, confirmed decision status, conflicts, needed exceptions and
+cross-feature decisions in discovery. If none exist, say so. Do not treat a
+feature requirement or proposal as authority to override a shared rule; obtain
+the designated owner's decision before dependent work.
+
 Use `grilling` for material ambiguity and `domain-context` for vocabulary conflicts.
 Do not ask a ceremonial question when intent is clear; record reversible low-risk
 assumptions and continue. Ask only decisions that affect correctness or authority.

@@ -10,8 +10,16 @@ and G1 passed with unchanged artifact hashes. An urgent ticket is not an excepti
 
 Use `sdlc-architect` for architecture/decomposition; a light plan may be written
 directly by the conductor. Load domain/API/stack references only when relevant.
-The author writes
-`02-plan.md`, task-specific ADRs and `openapi.yaml` when contracts change.
+The author writes `02-plan.md`; update `openapi.yaml` when contracts change. Follow
+[project governance](../sdlc/references/project-governance.md): write cross-feature
+decisions in project ADRs and current shared rules in project standards. Keep
+feature-only decisions in the plan or a run-local ADR; routine choices need no ADR.
+Include a Project baseline section with applicable document paths/sections, actual
+baseline commits (content hashes for uncommitted inputs), status/owner and exceptions.
+Do not copy shared rules into every plan. Shared changes and exceptions need
+explicit project-owner approval before dependent G2 approval; feature G2 alone
+does not approve project policy. Include affected standards, overview and indexes
+in the approved edit scope when changing a shared decision.
 For SigNoz lifecycle/collector/schema work, include `signoz-oss`; for explicit
 ClickStack/HyperDX research or an existing in-scope deployment, include `clickstack`.
 An alternative-stack study does not authorize changing the product boundary.

@@ -17,6 +17,13 @@ normal branch; independent, nonoverlapping slices run in separate Git worktrees.
 on resume, never start them twice. Handoffs include policy, Jira key, manifest/AC
 references, worktree path/branch/base, exact allowed paths and commands.
 
+Include the plan's Project baseline and approved exceptions in each handoff.
+Follow [project governance](../sdlc/references/project-governance.md); compare
+relevant current documents with the baseline before implementation or resumption.
+Report material drift to the conductor for G1/G2 impact assessment; do not silently
+adopt changed rules. Shared standards and ADR edits require an explicit allowlist
+and coordinated ownership, not parallel independent edits to the same shared files.
+
 1. Follow the approved verification mode: behavior needs meaningful RED then
    GREEN; refactor needs a passing before-baseline then GREEN; docs/config need
    meaningful static/schema/render or relevant tests. Missing tools and syntax

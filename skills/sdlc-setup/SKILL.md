@@ -47,7 +47,14 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
    Read-only reviewers must not execute shell commands to obtain missing evidence.
 7. Configure production paths/application identities from GitOps files; keep
    `production: human-only`. Confirm branch protections and prod RBAC with operator.
-8. Update existing domain context only when useful; use `domain-context` for
+8. Follow [project governance](../sdlc/references/project-governance.md): discover
+   existing architecture, standards and ADR locations and their owners. Preserve
+   those conventions; when absent, use `docs/architecture/overview.md`,
+   `docs/architecture/adr/` and `docs/standards/` for needed project documents.
+   Record locations, index entrypoints and reading rules in the project's AGENTS.md
+   through an authorized diff. Do not create empty standards or accepted decisions
+   merely to finish setup; missing policy decisions remain explicit questions.
+9. Update existing domain context only when useful; use `domain-context` for
    consequential vocabulary gaps, not a mandatory empty glossary. Report setup diff and unresolved
    capabilities in Korean.
 

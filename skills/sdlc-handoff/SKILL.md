@@ -30,6 +30,13 @@ revalidating. Keep ambiguous creates visible so a new session reconciles instead
 issues. Exact paths/commands belong to the current execution handoff, not the
 long-lived task definition.
 
+Include the Project baseline, approved shared decisions, exception owners/expiry,
+drift evidence and pending migrations using
+[project governance](../sdlc/references/project-governance.md). For existing runs
+without a baseline, carry the new comparison report rather than editing approved
+artifacts. The next session checks relevant shared-document changes before work;
+a matching state hash alone does not establish that project rules are unchanged.
+
 New session: open this handoff and state, verify hashes and source revision,
 invoke `sdlc` with the Jira key or local ID. Never resume from “all green” prose alone.
 If source, contracts, approvals or evidence changed, invalidate the earliest

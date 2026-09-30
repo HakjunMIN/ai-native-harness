@@ -1,4 +1,7 @@
-# ai-native-sdlc
+---
+title: "ai-native-sdlc"
+description: "프로젝트 공통 기준과 증거 기반 검증, 사람 승인을 연결하는 로컬 SDLC 스킬 프레임워크"
+---
 
 **AI가 구현하고, 증거로 검증하며, 사람이 승인하는 로컬 개발 워크플로우.**
 Jira 티켓 또는 자연어 요청에서 시작하며, 30개 스킬과 9개 전문 에이전트를 제공합니다.
@@ -53,8 +56,9 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
 
 ## 시작
 
-대상 저장소에서 **최초 한 번 `sdlc-setup`**으로 모듈 경로·테스트 명령·모델을
-설정한 뒤, Jira 키 또는 자연어 요청으로 시작합니다. 설정에 토큰은 저장하지 않습니다.
+대상 저장소에서 **최초 한 번 `sdlc-setup`**으로 모듈 경로·테스트 명령·모델과
+공통 표준·ADR의 위치·담당자를 확인하고 설정한 뒤, Jira 키 또는 자연어 요청으로
+시작합니다. 설정에 토큰은 저장하지 않습니다.
 
 ```text
 sdlc-setup
@@ -73,6 +77,48 @@ sdlc 문서 검색 화면의 빈 상태를 개선해줘
 단일 태스크는 현재 checkout의 브랜치에서, 독립적인 병렬 태스크는 별도 Git 워크트리에서
 수행한 뒤 통합 검증합니다. 백엔드는 JUnit, 프런트엔드 E2E는 Gherkin을 사용합니다.
 
+## 프로젝트 공통 기준과 ADR
+
+**표준은 현재 지켜야 할 규칙, ADR은 그 결정을 내린 이유입니다.**
+여러 기능에 영향을 주는 결정은 프로젝트 차원에 두고, 기능별 계획은 이를 참조합니다.
+첫 기능에서 도입하더라도 인증·테넌트·공유 API 같은 공통 경계는 프로젝트 ADR입니다.
+
+대상 프로젝트의 기존 문서 위치를 우선 사용합니다. 별도 관례가 없다면 다음 구조를
+사용하며, 설치된 하네스 내부가 아니라 대상 프로젝트에 필요한 문서만 작성합니다.
+
+```text
+AGENTS.md                         # 실제 문서 위치와 읽기 규칙
+docs/
+  architecture/
+    overview.md                   # 현재 시스템 경계와 의존성
+    adr/
+      README.md                   # 공통 결정 목록·상태·담당자
+      ADR-0001-<decision>.md       # 공통 결정의 근거·대안·승인
+  standards/
+    README.md                     # 표준 목록과 적용 범위
+    <topic>.md                    # 현재 규칙과 검증 방법
+  sdlc/
+    <ID>/
+      02-plan.md                  # 공통 기준 참조와 기능 설계
+      adr/<feature-decision>.md   # 필요한 경우에만 기능 한정 결정
+```
+
+Discovery에서 적용 기준과 충돌을 식별하고, Plan의 `Project baseline`에 문서
+경로·절·기준 commit을 기록합니다. 미커밋 문서는 실제 내용 해시를 사용합니다.
+구현·리뷰·검증·재개 시 기준 이후 변경과 예외 유효성을 확인하고, 릴리스·인계에는
+공통 결정 변경과 남은 마이그레이션 의무를 전달합니다.
+
+- 공통 규칙은 기능별로 복사하지 않고 원문을 참조합니다. 일반 구현 선택은 계획에 남깁니다.
+- 공통 변경과 한시적 예외는 해당 소유자의 명시적 승인이 필요합니다. 기능 G2 승인만으로 대신하지 않습니다.
+- 기능 결정의 공통 승격은 프로젝트 ADR로 기록하고 원래 작업을 연결합니다. 결정 대체 시 `superseded` 관계와 현재 표준을 갱신하며 과거 증거는 보존합니다.
+
+설치기는 빈 표준·ADR을 자동 생성하지 않습니다. 기존 설치본은 업데이트 후
+`sdlc-setup`으로 프로젝트 지침을 연결하며, 기존 AGENTS.md는 덮어쓰지 않고 diff로
+검토합니다. **공통 문서 변경 확인은 스킬 절차이며, 상태 검증기가 자동 감지하지는
+않습니다.** 비교 결과는 작업 내부 보고서에 남겨 기존 게이트 증거로 연결합니다.
+
+세부 규칙: [프로젝트 거버넌스](skills/sdlc/references/project-governance.md)
+
 ## 안전 범위
 
 **v1 훅은 모든 shell push/merge와 직접 cluster 변경을 보수적으로 차단합니다.**
@@ -89,6 +135,7 @@ GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니�
 |---|---|
 | [고객 리포 적용 사전 탐색](docs/customer-repository-discovery.md) | 인터뷰 질문, 산출물 양식, 도구·권한 조사, 개발 프로세스 매핑과 파일럿 도입 기준 |
 | [운영 절차](docs/operations.md) | light/strict 정책, 승인·재개, 병렬 워크트리, 기존 상태 마이그레이션 |
+| [프로젝트 거버넌스](skills/sdlc/references/project-governance.md) | 공통 표준·ADR, 기준 버전, 승인·예외·승격·대체와 변경 영향 확인 |
 | [구현 태스크 예시](examples/ABC-123/README.md) | 계획·태스크·증거 산출물 구조 |
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
 | [SigNoz OSS](skills/signoz-oss/SKILL.md) · [ClickStack](skills/clickstack/SKILL.md) | 자체 호스팅 운영과 선택적 대안 평가. ClickStack은 필수 의존성이 아니며 자동 설치·이전하지 않습니다. |
