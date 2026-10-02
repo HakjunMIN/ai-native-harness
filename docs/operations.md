@@ -2,7 +2,16 @@
 
 ## 상태 검사
 
-대상 모노레포에서 실행합니다. `PLUGIN_ROOT`는 설치 디렉터리의 실제 절대 경로입니다.
+대상 리포에서 실행합니다. 새 작업 생성 전에는 설치 경로를 사용하지만,
+티켓 생성/재개 이후의 `PLUGIN_ROOT`는 `harness.mjs resolve STATE`가 반환하는
+**티켓별 스냅샷 경로**입니다. 설치 경로와 혼동하거나 공용 링크를 바꾸지 마세요.
+lock은 `docs/sdlc/<ID>/harness.lock.json`에 있고 하위 구현 태스크도 상속합니다.
+리비전 확인·복원·명시적 전환은 [티켓 리비전 관리](../skills/sdlc/references/harness-revisions.md)를 따릅니다.
+
+새 Jira 작업은 `node .ai-native-sdlc/scripts/harness.mjs start ABC-123`으로
+초기화합니다. 로컬 intake는 lock을 자동 생성합니다. 생성 후에는
+`node .ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/<ID>/state.json`을
+실행하고 출력의 `root`를 해당 작업의 `PLUGIN_ROOT`로 사용하세요.
 
 ### Jira 없는 로컬 시작
 

@@ -3,6 +3,7 @@ import { dirname, basename, join, relative, resolve, isAbsolute } from 'node:pat
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { dispatchPinned } from './harness.mjs';
 
 const git = (repo, ...args) => execFileSync('git',['-C',repo,...args],{encoding:'utf8'}).trim();
 const overlaps = (first, second) => first === second || first.startsWith(`${second}/`) || second.startsWith(`${first}/`);
@@ -131,6 +132,7 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
 function main() {
   const [command,file,scopeFile] = process.argv.slice(2);
   if (!['plan','start'].includes(command) || !file || process.argv.length > 5) throw new Error('Usage: workspaces.mjs plan|start STATE [SCOPES.json]');
+  if (dispatchPinned('workspaces.mjs',file)) return;
   const statePath = realpathSync(resolve(file));
   const original = readFileSync(statePath,'utf8');
   const state = JSON.parse(original);

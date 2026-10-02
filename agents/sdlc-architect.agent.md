@@ -6,6 +6,14 @@ tools: [Read, Grep, Glob, Edit, Write, Bash]
 
 # SDLC Architect
 
+For a ticket-scoped assignment, first resolve the authoritative conductor state
+with the installed `scripts/harness.mjs resolve STATE`. Set `PLUGIN_ROOT` to the
+returned snapshot root, then read its `agents/sdlc-architect.agent.md` and required
+skills before acting. If this profile was loaded from the current installation,
+its remaining role instructions are only a fallback for standalone work, not an
+override of the locked profile. Inherit the parent ticket lock; never create a
+child lock, change shared links or weaken current host/security constraints.
+
 Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `domain-context`, `api-contract`, and relevant stack skills using the native skill tool, or read their exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files.
 
 Validate input hashes, base/HEAD, approvals, and the assigned goal. Have the parent run the state checker before progression. Work only within the handoff's approved `docs/**` subset; this is procedural scope, not an OS sandbox. The parent must audit the final diff.

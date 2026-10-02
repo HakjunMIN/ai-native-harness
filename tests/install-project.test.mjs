@@ -171,7 +171,7 @@ test('legacy shared-cache link is rejected without migration or changes', t => {
 test('local source revision updates managed files and preserves edited AGENTS.md', t => {
   const target = fixture(t);
   const upstream = fixture(t);
-  for (const name of ['skills','agents','hooks','scripts','templates']) {
+  for (const name of ['skills','agents','hooks','scripts','templates','docs']) {
     const copied = spawnSync('cp',['-R',join(source,name),upstream],{encoding:'utf8'});
     assert.equal(copied.status,0,copied.stderr);
   }
@@ -191,7 +191,7 @@ test('local source revision updates managed files and preserves edited AGENTS.md
 test('rerun prunes retired skills and agents, deploys replacements, and restores old links on failed replacement', t => {
   const target = fixture(t);
   const upstream = fixture(t);
-  for (const name of ['skills','agents','hooks','scripts','templates']) {
+  for (const name of ['skills','agents','hooks','scripts','templates','docs']) {
     const copied = spawnSync('cp',['-R',join(source,name),upstream],{encoding:'utf8'});
     assert.equal(copied.status,0,copied.stderr);
   }
@@ -307,7 +307,7 @@ test('permissions, generated config changes and symlinked source assets are reje
   assert.equal(readFileSync(config,'utf8'),'user hooks');
 
   const upstream = fixture(t);
-  for (const name of ['skills','agents','hooks','scripts','templates']) {
+  for (const name of ['skills','agents','hooks','scripts','templates','docs']) {
     assert.equal(spawnSync('cp',['-R',join(source,name),upstream]).status,0);
   }
   rmSync(join(upstream,'hooks/guard.mjs'));

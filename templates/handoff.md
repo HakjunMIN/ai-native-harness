@@ -13,6 +13,10 @@ Goal: <one observable result>
 Base: <commit> | Head: <commit>
 Source workspace: <integration branch; assigned branch, absolute worktree path or current checkout, base/slice HEAD, merge status>
 Conductor state: <absolute state.json path in the integration checkout; worker worktree copy is not authoritative>
+Harness lock: <conductor-run harness.lock.json path and SHA256; inherited by every child task>
+Harness revision: <content SHA256; source Git commit if known, not the application Head>
+Harness root: <verified snapshot root from harness.mjs resolve; re-resolve on another machine/session>
+Role profile: <exact file under the locked root's agents directory; do not substitute the installed profile>
 Author model/family: <observed runtime identity>
 Review: <axis/coverage, confirmed model/family/session or permitted human reference>
 Impact: <affected slices/dependents, retained-evidence rationale and impact hash, if revalidating>
@@ -43,7 +47,7 @@ owners. Record none with a reason when no shared documents apply.
 - Workspace isolation: <one checkout branch or distinct worktree; conductor alone writes shared docs/sdlc state>
 - Forbidden: cloud/nested delegation, prod mutation, weakening expectations; strict implementers cannot edit frozen tests.
 - Dependencies: <completed outcome IDs, Jira keys only if applicable, contracts and evidence>
-- Required skills: <qualified plugin skill names>
+- Required skills: <exact skill paths under the locked harness root>
 - Done when: <measurable result and required commands>
 
 ## Return

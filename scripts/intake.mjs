@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { digest, validateState } from './state.mjs';
+import { pinRun } from './harness.mjs';
 
 const localId = /^local-[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -44,6 +45,7 @@ export function startLocalText(id, content, repositoryRoot = process.cwd()) {
     state.intake = {kind:'local',request:{path:'intake.md',sha256:digest(content)}};
     delete state.jira;
     state.history.push({at:new Date().toISOString(),event:'local-intake-created',request:state.intake.request});
+    pinRun(state,stage,root);
     const errors = validateState(state,stage);
     if (errors.length) throw new Error(errors.join('\n'));
     writeFileSync(join(stage,'state.json'),`${JSON.stringify(state,null,2)}\n`,{flag:'wx'});

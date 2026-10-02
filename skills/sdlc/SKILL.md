@@ -7,6 +7,23 @@ description: Use when a Jira ticket or natural-language local request needs an e
 
 **Required:** Read [protocol](references/protocol.md).
 
+## Ticket revision bootstrap
+
+Use the installed entrypoint only to select/create the run. For an existing run,
+first execute `node "$INSTALLED_HARNESS_ROOT/scripts/harness.mjs" resolve STATE`.
+For a new Jira key, use `harness.mjs start KEY [REPO_ROOT]` instead of copying the
+state template. Local intake commands below create the lock automatically.
+After creation, resolve the new state in the same way. Set `PLUGIN_ROOT` to the
+returned `root`, read that revision's `skills/sdlc/SKILL.md` and protocol, then
+continue phase routing. Do not keep using the installed revision's phase content
+after resolving a different root. Never resolve by changing a repository-wide link.
+
+Missing locks require explicit legacy adoption; missing or modified snapshots
+block execution, never fall back to current skills. All implementation tasks and
+specialists inherit the conductor's state path and resolved root. Do not start a
+separate run/lock for a child task already assigned by a conductor. See
+[ticket revisions](references/harness-revisions.md) for restore and upgrade.
+
 For bare `sdlc` without a substantive request, list `docs/sdlc/*/state.json`
 phases and blockers without creating work. A Jira key starts or resumes a Jira
 run; an existing local ID resumes that run. For a new non-Jira natural-language

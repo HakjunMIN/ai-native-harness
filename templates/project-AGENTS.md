@@ -10,6 +10,16 @@ a new natural-language request, or a paused SDLC run, use `sdlc`. Use
 `sdlc-setup` to map the actual project modules, commands, and host capabilities
 before running the workflow. Technical skills can be used independently.
 
+For SDLC work, first select the ticket and resolve its `harness.lock.json` using
+`.ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/<ID>/state.json`. Use the
+returned root for that ticket's skills, references, role profiles and scripts;
+`.agents/skills/` is the discovery/bootstrap entrypoint, not an override of an
+existing lock. Local intake and `harness.mjs start JIRA-ID` pin new runs. Every
+child task inherits the conductor's lock and authoritative state path. Missing
+locks need explicit adoption; mismatched/missing snapshots block, never fall back
+to latest. Do not modify snapshots, switch shared links, or weaken current safety
+hooks. Project instructions and current security requirements remain applicable.
+
 The installed `.ai-native-sdlc/` directory is the harness source, not this
 project's application code. Keep project changes in this repository. Follow
 this project's own build, test, review, and deployment rules; do not assume

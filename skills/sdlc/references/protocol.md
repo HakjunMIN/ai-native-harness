@@ -6,7 +6,8 @@ description: "Phase ownership, gates and evidence contracts for SDLC runs"
 
 This is the phase-owner contract, not a prerequisite for standalone technical
 skills. Follow [shared principles](principles.md). Resolve `PLUGIN_ROOT` from the
-installed plugin and `REPO_ROOT` from the selected repository. Never edit the
+ticket's locked snapshot and `REPO_ROOT` from the selected repository. Only initial
+run selection/creation uses the installed plugin. Never edit the
 installed plugin while implementing a task. Invoke exact plugin skills, not
 unrelated same-name skills. Loading a reference does not execute its procedure.
 
@@ -20,7 +21,8 @@ approval. Preserve existing artifact paths and the run-local evidence boundary.
 
 Use `docs/sdlc/<ID>/`. Jira IDs match `^[A-Z][A-Z0-9_]*-[1-9][0-9]*$`;
 local IDs match `^local-[a-z0-9]+(-[a-z0-9]+)*$`. Reject unsafe IDs. For a
-Jira-originated run, copy the state template only if no state exists. For a
+Jira-originated run, use `harness.mjs start KEY [REPO_ROOT]` only if no state exists;
+it creates pending state and a ticket lock without Jira evidence or approval. For a
 new natural-language request without Jira, interview for material unknowns,
 preserve the original request and confirmed answers in sanitized Markdown,
 then pass it on stdin to `node "$PLUGIN_ROOT/scripts/intake.mjs" start-text
@@ -31,7 +33,11 @@ Jira access, publication, or source edits. Bare `sdlc` lists existing runs; an
 existing local ID resumes instead of interviewing. If the ID is taken, choose
 another; changed original requests require a new ID. In v1 artifactRoot
 remains `docs/sdlc`.
-Before entering a phase run:
+Before entering a phase, resolve `STATE` with the installed `scripts/harness.mjs`
+and use the returned snapshot as `PLUGIN_ROOT` for all skills, references, role
+profiles, templates and scripts. See [ticket revisions](harness-revisions.md).
+Verify the lock on every resume and before dispatch; child tasks inherit the
+conductor's lock, not a lock from a worker's stale state copy. Then run:
 
 ```bash
 node "$PLUGIN_ROOT/scripts/state.mjs" check "docs/sdlc/ABC-123/state.json"

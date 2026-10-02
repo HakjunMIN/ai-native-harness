@@ -1,10 +1,11 @@
-import { readFileSync, realpathSync, writeFileSync, renameSync, statSync } from 'node:fs';
+import { readFileSync, realpathSync, writeFileSync, renameSync, statSync, existsSync } from 'node:fs';
 import { resolve, dirname, basename, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
 import { isLight, isLocal, policyErrors, verificationMode, renderTask, taskDefinitionErrors } from './workflow.mjs';
+import { dispatchPinned, readRunLock } from './harness.mjs';
 
 export const gates = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5a', 'G5b'];
 const phases = ['discover', 'discover', 'plan', 'implement', 'verify', 'release', 'release'];
@@ -174,6 +175,10 @@ function reviewErrors(reviews, axes, root, label, policy, subjectHead) {
 export function validateState(state, root, currentHead, {checkPhase = true} = {}) {
   if (!object(state)) return ['state must be an object'];
   const errors = [];
+  if (state.harness || existsSync(resolve(root,'harness.lock.json'))) {
+    try { readRunLock(state,root); }
+    catch (error) { errors.push(error.message); }
+  }
   if (state.schemaVersion !== 2) errors.push('schemaVersion must be 2; migrate legacy state using docs/operations.md before resuming');
   if (isLocal(state)) {
     if (!/^local-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state.ticket ?? '')) errors.push('invalid local ID');
@@ -309,6 +314,7 @@ function main() {
   const [command, file, gate, reason, ...options] = process.argv.slice(2);
   if (!file || !['check','next','ready','invalidate','hash'].includes(command)) throw new Error('Usage: state.mjs check|next|ready|invalidate|hash FILE [GATE REASON]');
   if (command === 'hash') { console.log(digest(readFileSync(file))); return; }
+  if (dispatchPinned('state.mjs',file)) return;
   const path = resolve(file);
   const state = JSON.parse(readFileSync(path, 'utf8'));
   if (command === 'invalidate') {

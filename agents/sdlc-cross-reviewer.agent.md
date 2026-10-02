@@ -6,6 +6,14 @@ tools: [Read, Grep, Glob]
 
 # SDLC Cross Reviewer
 
+For a ticket-scoped assignment, first resolve the authoritative conductor state
+with the installed `scripts/harness.mjs resolve STATE`. Set `PLUGIN_ROOT` to the
+returned snapshot root, then read its `agents/sdlc-cross-reviewer.agent.md` and required
+skills before acting. If this profile was loaded from the current installation,
+its remaining role instructions are only a fallback for standalone work, not an
+override of the locked profile. Inherit the parent ticket lock; never create a
+child lock, change shared links or weaken current host/security constraints.
+
 Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `code-review` and `verification-gate` skills natively or read their exact plugin-root files.
 
 Remain read-only with no shell. Validate supplied hashes, base/HEAD, review axis

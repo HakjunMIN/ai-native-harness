@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { createPolicy, renderTask, taskDefinitionErrors } from './workflow.mjs';
 import { digest, validateState, nextPhase } from './state.mjs';
+import { dispatchPinned } from './harness.mjs';
 
 function safeDirectory(root, relativePath) {
   let directory = root;
@@ -73,6 +74,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     const [command,statePath,configPath,draftPath,...extra] = process.argv.slice(2);
     if (command !== 'prepare' || !statePath || !configPath || !draftPath || extra.length) throw new Error('Usage: tasks.mjs prepare STATE CONFIG DRAFT');
-    console.log(JSON.stringify(prepareTasks(statePath,JSON.parse(readFileSync(configPath,'utf8')),JSON.parse(readFileSync(draftPath,'utf8')))));
+    if (!dispatchPinned('tasks.mjs',statePath)) {
+      console.log(JSON.stringify(prepareTasks(statePath,JSON.parse(readFileSync(configPath,'utf8')),JSON.parse(readFileSync(draftPath,'utf8')))));
+    }
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

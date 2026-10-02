@@ -28,3 +28,5 @@ jobs:
           node-version: 22
       - run: node --test tests/install-shared.test.mjs
         shell: pwsh
+      - run: node --test tests/harness-revision.test.mjs tests/local-intake.test.mjs
+        shell: pwsh

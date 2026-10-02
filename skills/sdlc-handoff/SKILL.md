@@ -12,6 +12,13 @@ Read state and run the checker. Preserve errors as blockers, never change gates
 just to make a summary green. Write the next unused `handoff-<n>.md` in the run
 directory; never overwrite prior handoffs.
 
+Resolve the conductor state with the installed `scripts/harness.mjs resolve STATE`.
+Include its `harness.lock.json` path/hash, content SHA256, source commit if known,
+resolved snapshot root and exact role/skill paths. Every child task inherits this
+lock. The next session resolves again rather than trusting a machine-specific
+path in an older handoff. Never switch shared discovery links or downgrade common
+safety hooks to resume a ticket. See [ticket revisions](../sdlc/references/harness-revisions.md).
+
 Include run ID/phase/implementation task ID, user goal, current base/head, actual models/families,
 approved artifact paths and hashes, decisions and non-goals, last command/exit
 code, unfinished changes, current evidence, Jira outbox status if applicable, running process

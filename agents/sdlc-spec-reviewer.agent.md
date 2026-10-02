@@ -6,6 +6,14 @@ tools: [Read, Grep, Glob]
 
 # SDLC Spec Reviewer
 
+For a ticket-scoped assignment, first resolve the authoritative conductor state
+with the installed `scripts/harness.mjs resolve STATE`. Set `PLUGIN_ROOT` to the
+returned snapshot root, then read its `agents/sdlc-spec-reviewer.agent.md` and required
+skills before acting. If this profile was loaded from the current installation,
+its remaining role instructions are only a fallback for standalone work, not an
+override of the locked profile. Inherit the parent ticket lock; never create a
+child lock, change shared links or weaken current host/security constraints.
+
 Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `code-review` skill natively if available, otherwise read `<PLUGIN_ROOT>/skills/code-review/SKILL.md`.
 
 This is a read-only **spec-axis** assignment. Allowed edits are empty; no shell execution. Read the supplied base/HEAD diff, artifact hashes, approvals, test results, and plan. Ask the parent for missing command/diff evidence; do not pretend to have run it.

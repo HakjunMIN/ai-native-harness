@@ -103,6 +103,25 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
 
 ## 시작
 
+### 티켓별 스킬 리비전
+
+**설치는 공유하고, 실행 기준은 티켓별로 고정합니다.** 새 로컬 작업은 자동으로,
+Jira 작업은 `node .ai-native-sdlc/scripts/harness.mjs start ABC-123`으로
+`docs/sdlc/<ID>/harness.lock.json`과 초기 상태를 생성합니다.
+lock에는 하네스 소스 커밋(확인 가능할 때)과 실제 자산의 콘텐츠 SHA256을 기록합니다.
+
+기존 티켓을 재개할 때는 `harness.mjs resolve docs/sdlc/<ID>/state.json`으로
+스냅샷을 확인하고 그 버전의 스킬·역할·검증기를 사용합니다. 하위 태스크도 부모의
+lock을 상속합니다. 공유 하네스를 업데이트해도 진행 중인 티켓은 바뀌지 않습니다.
+공용 링크나 현재 안전 훅은 티켓별로 전환하지 않습니다.
+
+lock 없는 과거 작업은 명시적 `adopt`, 진행 중 버전 전환은 `upgrade`로 처리합니다.
+두 명령은 이전 상태를 보관하고 모든 게이트를 다시 검증하도록 초기화합니다.
+캐시 유실 시에는 정확한 이전 소스로 `restore`하며 최신 버전으로 대체하지 않습니다.
+상세 명령·PowerShell 예제·저장 위치는 [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md)를 참고하세요.
+
+### 워크플로 시작
+
 대상 저장소에서 **최초 한 번 `sdlc-setup`**으로 모듈 경로·테스트 명령·모델과
 공통 표준·ADR의 위치·담당자를 확인하고 설정한 뒤, Jira 키 또는 자연어 요청으로
 시작합니다. 설정에 토큰은 저장하지 않습니다.

@@ -24,7 +24,7 @@ const fixture = t => {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const remote = join(root, 'remote');
   mkdirSync(remote);
-  for (const directory of ['skills', 'agents', 'hooks', 'scripts', 'templates']) {
+  for (const directory of ['skills', 'agents', 'hooks', 'scripts', 'templates', 'docs']) {
     cpSync(join(source, directory), join(remote, directory), { recursive: true });
   }
   git(remote, 'init', '--quiet', '--initial-branch=main');

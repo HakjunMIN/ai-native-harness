@@ -72,7 +72,8 @@ for dir in skills agents hooks scripts templates; do
   [[ -d "$source_dir/$dir" ]] || fail "Missing harness directory: $dir"
 done
 for path in hooks/guard.mjs hooks/session.mjs hooks/gate-guard.sh hooks/session-start.sh \
-  scripts/state.mjs templates/state.json templates/project-AGENTS.md; do
+  scripts/state.mjs scripts/harness.mjs templates/state.json templates/project-AGENTS.md \
+  docs/compatibility.md docs/operations.md; do
   [[ -f "$source_dir/$path" ]] || fail "Missing harness asset: $path"
 done
 [[ "$source_dir" != "$target" &&
@@ -84,6 +85,12 @@ for dir in skills agents hooks scripts templates; do
   [[ -z $(find "$source_dir/$dir" ! -type d ! -type f -print -quit) ]] ||
     fail "Unsupported asset type in $dir (links are not installed)"
   cp -R "$source_dir/$dir" "$stage/new/$dir"
+done
+[[ -d "$source_dir/docs" && ! -L "$source_dir/docs" ]] || fail 'Unsupported docs directory'
+mkdir "$stage/new/docs"
+for path in docs/compatibility.md docs/operations.md; do
+  [[ ! -L "$source_dir/$path" ]] || fail "Unsupported asset type: $path"
+  cp "$source_dir/$path" "$stage/new/$path"
 done
 chmod -R go-w "$stage/new"
 
@@ -165,7 +172,7 @@ for agent in "$source_dir"/agents/*.agent.md; do
   description=$(sed -n 's/^description: *//p' "$agent" | head -n 1)
   [[ -n "$title" && -n "$description" ]] || fail "Invalid agent profile: $name"
   profile="$root/agents/$name"
-  instructions="Read $profile before acting and follow its role instructions. Respect the host's actual tools and permissions; Markdown tools metadata does not configure Codex permissions."
+  instructions="For an SDLC assignment, first use $root/scripts/harness.mjs resolve with the authoritative conductor state path. Read agents/$name and required skills under the returned locked root; inherit the ticket lock and never replace it with the installed profile. Without a ticket assignment, read $profile before acting. Respect the host's actual tools, current security rules and permissions; Markdown tools metadata does not configure Codex permissions."
   json_string "$title"; title_json=$REPLY
   json_string "$description"; description_json=$REPLY
   json_string "$instructions"; instructions_json=$REPLY

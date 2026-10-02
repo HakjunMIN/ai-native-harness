@@ -73,7 +73,7 @@ function plan(target, shared) {
     const title = profile.match(/^name: *(.+)$/m)?.[1];
     const description = profile.match(/^description: *(.+)$/m)?.[1];
     if (!title || !description) fail(`Invalid agent profile: ${name}`);
-    const instructions = `Read ${join(target, '.ai-native-sdlc/agents', name).replaceAll('\\', '/')} before acting and follow its role instructions. Respect the host's actual tools and permissions; Markdown tools metadata does not configure Codex permissions.`;
+    const instructions = `For an SDLC assignment, first use ${join(target, '.ai-native-sdlc/scripts/harness.mjs').replaceAll('\\', '/')} resolve with the authoritative conductor state path. Read agents/${name} and required skills under the returned locked root; inherit the ticket lock and never replace it with the installed profile. Without a ticket assignment, read ${join(target, '.ai-native-sdlc/agents', name).replaceAll('\\', '/')} before acting. Respect the host's actual tools, current security rules and permissions; Markdown tools metadata does not configure Codex permissions.`;
     file(`.codex/agents/${name.replace(/\.agent\.md$/, '.toml')}`,
       `name = ${JSON.stringify(title)}\ndescription = ${JSON.stringify(description)}\ndeveloper_instructions = ${JSON.stringify(instructions)}\n`);
   }
@@ -209,7 +209,8 @@ try {
   }
   const shared = realpathSync(sharedPath);
   for (const path of ['skills/sdlc/SKILL.md', 'agents/sdlc-architect.agent.md', 'hooks/session.mjs',
-    'hooks/guard.mjs', 'scripts/state.mjs', 'templates/project-AGENTS.md']) {
+    'hooks/guard.mjs', 'scripts/state.mjs', 'scripts/harness.mjs', 'templates/project-AGENTS.md',
+    'docs/compatibility.md', 'docs/operations.md']) {
     if (!existsSync(join(shared, path)) || !lstatSync(join(shared, path)).isFile()) fail(`Missing harness asset: ${path}`);
   }
   const plans = targets.map(target => plan(target, shared));

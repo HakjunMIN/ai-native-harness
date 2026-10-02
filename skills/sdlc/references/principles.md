@@ -3,7 +3,9 @@
 Apply only the user's authorized scope. Loading a technical skill does not start
 SDLC, create Jira work, require a state file, or execute another phase. Read only
 the relevant references; reuse loaded context rather than recursively invoking
-dependencies. Resolve this plugin's skills from its installed location.
+dependencies. Standalone skills use the installed location. Inside a ticket,
+resolve skills and role profiles from the ticket's locked harness root supplied
+by the conductor; do not mix that snapshot with currently installed skills.
 
 - Preserve user changes and product boundaries. Do not replace the selected stack
   or expand an evaluation into a migration without authorization.
