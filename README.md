@@ -4,7 +4,7 @@ description: "프로젝트 공통 기준과 증거 기반 검증, 사람 승인�
 ---
 
 **AI가 구현하고, 증거로 검증하며, 사람이 승인하는 로컬 개발 워크플로우.**
-Jira 티켓 또는 자연어 요청에서 시작하며, 30개 스킬과 9개 전문 에이전트를 제공합니다.
+Jira 티켓 또는 자연어 요청에서 시작하며, 32개 스킬과 9개 전문 에이전트를 제공합니다.
 
 ## 소프트웨어 엔지니어링 원칙
 
@@ -186,6 +186,7 @@ GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니�
 | [구현 태스크 예시](examples/ABC-123/README.md) | 계획·태스크·증거 산출물 구조 |
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
 | [SigNoz OSS](skills/signoz-oss/SKILL.md) · [ClickStack](skills/clickstack/SKILL.md) | 자체 호스팅 운영과 선택적 대안 평가. ClickStack은 필수 의존성이 아니며 자동 설치·이전하지 않습니다. |
+| [Mimir OSS](skills/mimir-oss/SKILL.md) · [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | 메트릭 저장소·쿼리 서비스 전환 평가와 운영, PromQL·BFF 쿼리 계약. 승인된 결정 없이 운영 전환하지 않습니다. |
 
 ## 패키지 개발
 

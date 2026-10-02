@@ -7,7 +7,7 @@ description: Use when Spring Boot BFF controllers, services, upstream clients, a
 
 The supported path is Grafana plugin → Spring BFF → SigNoz query-service. **The BFF never accesses ClickHouse directly.**
 
-Read the [shared principles](../sdlc/references/principles.md). Load this plugin's `api-contract`, `spring-testing`, and `signoz-query-service` skills natively or from their exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files.
+Read the [shared principles](../sdlc/references/principles.md). Load this plugin's `api-contract`, `spring-testing`, and `signoz-query-service` skills natively or from their exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files. When metrics are served by Mimir or another Prometheus-compatible API, load `prometheus-query-api` for those operations.
 
 ## Procedure
 

@@ -12,7 +12,8 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
    pinned SigNoz versions from files. Do not assume sample module paths.
    Use `signoz-oss` for the component/edition/metadata inventory. Load `clickstack`
    only for explicit evaluation or an existing in-scope ClickStack/HyperDX deployment;
-   ClickHouse presence alone is not a trigger. Do not install upstream plugins/MCP.
+   ClickHouse presence alone is not a trigger. Load `mimir-oss` for an existing or
+   explicitly evaluated Mimir/Prometheus metrics store. Do not install upstream plugins/MCP.
 2. Copy the plugin's `templates/ai-native-sdlc.config.json` to the repo root only
    when absent. Preserve existing settings on reruns; propose a diff.
 3. Populate `modules` with actual paths for BFF, React, each datasource/panel/app,

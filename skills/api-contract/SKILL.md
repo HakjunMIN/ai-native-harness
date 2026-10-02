@@ -7,7 +7,7 @@ description: Use when a Grafana plugin and Spring BFF interface is new, changing
 
 Agree on the plugin-to-BFF boundary before implementing either side.
 
-Read the [shared principles](../sdlc/references/principles.md). Load this plugin's `spring-boot-bff` and `signoz-query-service` skills through the native tool or exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` paths.
+Read the [shared principles](../sdlc/references/principles.md). Load this plugin's `spring-boot-bff` and `signoz-query-service` skills through the native tool or exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` paths. For metric operations backed by Mimir or Prometheus, also load `prometheus-query-api`.
 
 ## Procedure
 

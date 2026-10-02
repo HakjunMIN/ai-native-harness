@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {spawn, spawnSync} from 'node:child_process';
-import {chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import {createServer} from 'node:http';
-import {join, resolve} from 'node:path';
+import {dirname, join, resolve} from 'node:path';
 import {test} from 'node:test';
 
 const source = resolve('.');
@@ -19,12 +19,20 @@ const bootstrappableRepository = t => {
   const repository = join(fixture(t),'source');
   const clone = spawnSync('git',['clone','--quiet',source,repository],{encoding:'utf8'});
   assert.equal(clone.status,0,clone.stderr);
-  writeFileSync(join(repository,'templates/project-AGENTS.md'),
-    readFileSync(join(source,'templates/project-AGENTS.md')));
-  const add = spawnSync('git',['-C',repository,'add','templates/project-AGENTS.md'],{encoding:'utf8'});
+  const files = spawnSync('git',['ls-files','-z','--cached','--others','--exclude-standard'],
+    {cwd:source,encoding:'utf8'});
+  assert.equal(files.status,0,files.stderr);
+  for (const file of files.stdout.split('\0').filter(Boolean)) {
+    if (file.startsWith('.installer-test-') || !existsSync(join(source,file)) ||
+        !lstatSync(join(source,file)).isFile()) continue;
+    mkdirSync(dirname(join(repository,file)),{recursive:true});
+    copyFileSync(join(source,file),join(repository,file));
+  }
+  const add = spawnSync('git',['-C',repository,'add','-A'],{encoding:'utf8'});
   assert.equal(add.status,0,add.stderr);
   const commit = spawnSync('git',['-C',repository,'-c','user.name=Installer Test',
-    '-c','user.email=installer-test@example.invalid','commit','--quiet','-m','Add project instructions'],
+    '-c','user.email=installer-test@example.invalid','commit','--quiet','--allow-empty',
+    '-m','Snapshot working tree'],
   {encoding:'utf8'});
   assert.equal(commit.status,0,commit.stderr);
   const branch = spawnSync('git',['-C',repository,'branch','-M','main'],{encoding:'utf8'});
@@ -468,7 +476,7 @@ test('curl piped into bash installs in a nested quoted Unicode project path', as
   const [curlStatus, bashStatus] = await Promise.all([done(fetched),done(installed)]);
   assert.equal(curlStatus,0);
   assert.equal(bashStatus,0,error);
-  assert.equal(readdirSync(join(target,'.agents/skills')).length,30);
+  assert.equal(readdirSync(join(target,'.agents/skills')).length,32);
   assert.ok(lstatSync(join(target,'.ai-native-sdlc')).isDirectory());
   const hook = JSON.parse(readFileSync(join(target,'.codex/hooks.json'),'utf8'))
     .hooks.PreToolUse[0].hooks[0].command;

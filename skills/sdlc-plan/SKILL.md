@@ -22,6 +22,8 @@ does not approve project policy. Include affected standards, overview and indexe
 in the approved edit scope when changing a shared decision.
 For SigNoz lifecycle/collector/schema work, include `signoz-oss`; for explicit
 ClickStack/HyperDX research or an existing in-scope deployment, include `clickstack`.
+For Mimir/Prometheus metrics storage or migration include `mimir-oss`; for PromQL
+or Prometheus query API contracts include `prometheus-query-api`.
 An alternative-stack study does not authorize changing the product boundary.
 
 The plan includes:

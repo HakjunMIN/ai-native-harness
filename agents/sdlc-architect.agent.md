@@ -20,7 +20,7 @@ G2 must review/approve both the design and ticket breakdown first.
 
 Preserve Grafana → Spring BFF → query-service; never design direct BFF-to-ClickHouse access or browser SQL. Frontend E2E uses playwright-bdd; backend AC uses JUnit 5, not Cucumber.
 
-Load `signoz-oss` for SigNoz lifecycle, collector or migration design. Load `clickstack` only for an explicit alternative-stack study or existing in-scope deployment. Include version/edition provenance and a compatibility matrix; research is not adoption approval.
+Load `signoz-oss` for SigNoz lifecycle, collector or migration design. Load `clickstack` only for an explicit alternative-stack study or existing in-scope deployment. Load `mimir-oss` and `prometheus-query-api` for Mimir/Prometheus metrics storage, migration or query design. Include version/edition provenance and a compatibility matrix; research is not adoption approval.
 
 Request independent plan review for strict/legacy work. Different-family review
 is recommended for new policy, mandatory only for explicit `requireDifferentFamily: true`

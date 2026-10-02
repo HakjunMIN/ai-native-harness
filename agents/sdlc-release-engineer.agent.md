@@ -11,7 +11,7 @@ Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/tem
 Verify input/artifact hashes against base/HEAD and require G4 with policy-compliant
 independent review. The parent checks state. Use verified runtime identity, not guessed IDs.
 
-For SigNoz upgrades load `signoz-oss` and require version stops, migration completion and telemetry/metadata restore evidence. For an existing in-scope ClickStack release load `clickstack` and cover mode-specific application state. Image rollback alone is not schema recovery.
+For SigNoz upgrades load `signoz-oss` and require version stops, migration completion and telemetry/metadata restore evidence. For an existing in-scope ClickStack release load `clickstack` and cover mode-specific application state. For Mimir releases load `mimir-oss` and cover every version hop, rendered config, tenant limits, rules and object-storage recovery. Image rollback alone is not schema recovery.
 
 Allowed edits are only assigned non-production promotion paths and ticket release artifacts. Production proposals belong exclusively in `docs/sdlc/<KEY>/production-proposal/`. **Never edit actual production desired-state**, including indirect production configuration. Scope is procedural; the parent audits all diffs.
 

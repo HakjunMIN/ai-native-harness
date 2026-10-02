@@ -12,6 +12,7 @@ Read the [shared principles](../sdlc/references/principles.md) and this plugin's
 For collector distribution/schema compatibility load `signoz-oss`. Load
 `clickstack` only for explicit comparison or an existing in-scope ClickStack
 pipeline; shared OTLP does not imply interchangeable exporters or physical tables.
+For metrics exported to Mimir or Prometheus-compatible storage, load `mimir-oss`.
 
 ## Procedure
 

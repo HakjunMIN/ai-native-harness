@@ -23,7 +23,7 @@ the local ID. Jira status is not G4 evidence.
 
 Separate mock E2E from real Grafana → BFF → query-service integration. Check axe, manual keyboard navigation, light/dark themes, and screenshots with genuine human baseline approval. Never silently skip checks or auto-update expected images.
 
-For SigNoz pipeline/migration scope load `signoz-oss`; for explicit ClickStack evaluation or an existing in-scope pipeline load `clickstack`. Verify correlated signals, schema/time semantics and mode-specific restore evidence. Connectivity or receiver health alone is not integration success.
+For SigNoz pipeline/migration scope load `signoz-oss`; for explicit ClickStack evaluation or an existing in-scope pipeline load `clickstack`; for Mimir/Prometheus metrics load `mimir-oss` and `prometheus-query-api`. Verify correlated signals, schema/time semantics, tenant isolation, query parity and mode-specific restore evidence. Connectivity or receiver health alone is not integration success.
 
 Missing infrastructure blocks only checks that require it, never counts as pass.
 Missing human decisions are `NEEDS_HUMAN`. Request policy-required combined or
