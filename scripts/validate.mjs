@@ -73,11 +73,12 @@ export function validatePackage(root) {
   json('.claude-plugin/marketplace.json');
   checkPath('templates/project-AGENTS.md','installer template');
   for (const file of ['hooks/copilot.json','hooks/hooks.json','templates/state.json','templates/ai-native-sdlc.config.json']) json(file);
-  for (const file of ['install.sh','hooks/session-start.sh','hooks/gate-guard.sh','scripts/validate.sh']) {
+  for (const file of ['install.sh','install-shared.sh','hooks/session-start.sh','hooks/gate-guard.sh','scripts/validate.sh']) {
     checkPath(file,'executable');
     if (existsSync(resolve(root,file)) && !(statSync(resolve(root,file)).mode & 0o111)) errors.push(`${file}: executable permission missing`);
   }
-  for (const file of ['README.md','docs/compatibility.md','docs/operations.md','templates/handoff.md']) {
+  for (const file of ['install-shared.ps1','scripts/install-shared.mjs']) checkPath(file,'shared installer');
+  for (const file of ['README.md','docs/install.md','docs/compatibility.md','docs/operations.md','templates/handoff.md']) {
     links(file,read(file));
   }
   return errors;

@@ -39,6 +39,53 @@ BFF는 ClickHouse에 직접 접근하지 않으며, SigNoz 자체 UI는 노출�
 
 ## 설치
 
+### MSA: 형제 리포에서 하네스 공유 (Bash / PowerShell)
+
+3~4개 서비스 리포가 같은 상위 디렉터리에 있다면 **공유 클론 + 심볼릭 링크**
+설치를 사용하세요. 설치기가 서비스 리포와 같은 레벨에 `ai-native-harness`를
+먼저 클론하고, 이미 있으면 `git pull --ff-only`로 갱신합니다.
+Git과 **Node.js 22 이상**이 필요합니다.
+
+```text
+workspace/
+├── ai-native-harness/       # 공통 스킬·훅·에이전트의 Git 클론
+├── service-api/
+├── service-web/
+└── service-worker/
+    ├── .ai-native-sdlc -> ../ai-native-harness
+    ├── AGENTS.md -> .ai-native-sdlc/templates/project-AGENTS.md
+    ├── .agents/skills/* -> ../../.ai-native-sdlc/skills/*
+    └── .github/agents/* -> ../../.ai-native-sdlc/agents/*
+```
+
+**Bash/zsh** — 대상은 미리 존재하는 리포 경로입니다.
+
+```bash
+set -o pipefail
+curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install-shared.sh' |
+  bash -s -- /workspace/service-api /workspace/service-web /workspace/service-worker
+```
+
+**PowerShell 7+** — Windows에서도 Bash 없이 설치하고 훅을 실행합니다.
+
+```powershell
+$url = 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install-shared.ps1'
+& ([scriptblock]::Create((Invoke-WebRequest -Uri $url).Content)) `
+  'C:\workspace\service-api' 'C:\workspace\service-web' 'C:\workspace\service-worker'
+```
+
+이미 하네스가 있다면 [install-shared.sh](install-shared.sh) 또는
+[install-shared.ps1](install-shared.ps1)를 직접 실행할 수 있습니다.
+Windows에서 심볼릭 링크를 만들려면 **개발자 모드 또는 관리자 권한**이 필요합니다.
+같은 명령을 재실행하면 공통 자산 변경이 연결된 모든 리포에 반영됩니다.
+기존 `AGENTS.md`는 보존하며, 새로 만드는 `AGENTS.md`만 프로젝트용 공통 템플릿에
+연결합니다. 훅 실행 코드와 역할 원문은 공유하고, 대상 경로가 들어가는 CLI 훅 설정과
+Codex 네이티브 에이전트 TOML은 리포별로 생성합니다.
+충돌·기존 복사 설치를 자동 덮어쓰거나 변환하지 않습니다.
+옵션, 안전한 업데이트 및 프로젝트별 지침 관리 방법은 [설치 안내](docs/install.md)를 참고하세요.
+
+### 기존 방식: 프로젝트 내부 복사 설치
+
 공개 저장소이므로 인증 없이 설치할 수 있습니다. curl, Git, Bash와
 설치 후 실행에 사용할 **Node.js 22 이상**이 필요합니다.
 기존 대상 저장소 경로를 지정하세요.
@@ -52,7 +99,7 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
 원격 스크립트를 바로 실행하지 않는 방법과 호스트별 설정은
 [설치 안내](docs/install.md), 권한·훅의 한계는 [호환성](docs/compatibility.md)을 참고하세요.
 같은 명령을 다시 실행하면 프로젝트 내부의 관리 파일을 새 버전으로 갱신합니다.
-사용자가 수정한 관리 파일이나 이전 공유 캐시 링크 설치는 자동으로 덮어쓰지 않습니다.
+사용자가 수정한 관리 파일이나 공유 링크 설치는 자동으로 덮어쓰지 않습니다.
 
 ## 시작
 
