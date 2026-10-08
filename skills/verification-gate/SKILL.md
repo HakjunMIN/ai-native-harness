@@ -15,7 +15,7 @@ and evidence requirements; standalone verification does not require SDLC run sta
 1. Establish the actual subject and expected checks. For SDLC gate progression the
    conductor runs `state.mjs check`; specialists validate assigned evidence, not
    the entire workflow. State claims do not override stale hashes or changed source.
-2. Build a requirement-to-evidence matrix from the approved plan and repository configuration. Include applicable Gradle/JUnit unit, integration and API tests; Jest/RTL; playwright-bdd in Grafana; axe; manual keyboard checks; light/dark screenshots; and required reviews.
+2. Build a requirement-to-evidence matrix from the approved plan and repository configuration. Include applicable Gradle/JUnit or `go test` unit, integration and API tests; Jest/RTL; playwright-bdd in Grafana; axe; manual keyboard checks; light/dark screenshots; and required reviews.
 3. Run actual repository commands against the intended revision. Record command, working directory, exit code, timestamps, relevant output, environment, base/HEAD, and evidence-file SHA256. Distinguish a failed assertion from startup failure, skipped tests, and zero discovered tests.
 4. Label mocks and stubs explicitly. Real BFF integration must exercise the real Grafana → BFF → query-service path in the required environment; mock-only E2E cannot satisfy it.
 5. For UI changes inspect screenshot differences and obtain baseline approval.

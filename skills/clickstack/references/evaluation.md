@@ -55,7 +55,7 @@ after observing a mismatch. Test fixtures must follow actual API/SDK versions.
 For HyperDX-on-SigNoz-schema research, use a sanitized copy or authorized bounded
 read-only connection with explicit mappings. Do not allow collector auto-DDL
 or schema migration in that source. Do not infer that direct HyperDX database
-access authorizes database access from our Spring BFF or Grafana browser.
+access authorizes database access from our BFF (Spring or Go) or Grafana browser.
 
 ## Operational plan, when requested
 

@@ -7,8 +7,8 @@ description: Use when onboarding an observability monorepo to ai-native-sdlc or 
 
 Read [protocol](../sdlc/references/protocol.md). No deployment or global config edits.
 
-1. Inspect AGENTS.md, Gradle wrapper/settings, package manifests/lockfiles,
-   plugin.json files, CI and Helm/ArgoCD layout. Confirm Java, Node, Grafana and
+1. Inspect AGENTS.md, Gradle wrapper/settings, `go.mod`/`go.work`, package manifests/lockfiles,
+   plugin.json files, CI and Helm/ArgoCD layout. Confirm Java, Go, Node, Grafana and
    pinned SigNoz versions from files. Do not assume sample module paths.
    Use `signoz-oss` for the component/edition/metadata inventory. Load `clickstack`
    only for explicit evaluation or an existing in-scope ClickStack/HyperDX deployment;
@@ -66,6 +66,7 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
 Run approved read-only version/build discovery commands. Do not install dependencies
 until a relevant manifest changes or execution shows missing dependencies.
 
-Example module mapping: `"bff": {"path":"services/api","kind":"spring-boot-bff"}` is
+Example module mapping: `"bff": {"path":"services/api","kind":"spring-boot-bff"}` or
+`"bff": {"path":"services/bff","kind":"go-backend"}` is
 valid only after finding that actual module. Do not generate a sample app to make
 setup pass. Exit ready-for-intake or BLOCKED with exact missing input.

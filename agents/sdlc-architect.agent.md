@@ -26,7 +26,7 @@ manifest/detailed views and snapshot policy; never manually maintain AC copies.
 Light keeps one parent-only outcome. Keep exact paths in later handoffs. Never publish tickets;
 G2 must review/approve both the design and ticket breakdown first.
 
-Preserve Grafana → Spring BFF → query-service; never design direct BFF-to-ClickHouse access or browser SQL. Frontend E2E uses playwright-bdd; backend AC uses JUnit 5, not Cucumber.
+Preserve Grafana → BFF (Spring or Go) → query-service; never design direct BFF-to-ClickHouse access or browser SQL. Frontend E2E uses playwright-bdd; backend AC uses JUnit 5 for Spring or Go `testing` for Go modules, never Cucumber or godog.
 
 Load `signoz-oss` for SigNoz lifecycle, collector or migration design. Load `clickstack` only for an explicit alternative-stack study or existing in-scope deployment. Load `mimir-oss` and `prometheus-query-api` for Mimir/Prometheus metrics storage, migration or query design. Include version/edition provenance and a compatibility matrix; research is not adoption approval.
 

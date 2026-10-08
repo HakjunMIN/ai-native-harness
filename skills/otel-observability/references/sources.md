@@ -6,6 +6,7 @@ Fetch relevant URLs and pin SDK, instrumentation, collector and convention versi
 | Topic | Official URL to fetch | Verify |
 |---|---|---|
 | Java instrumentation | [Java docs](https://opentelemetry.io/docs/languages/java/) | SDK and automatic/manual instrumentation integration |
+| Go instrumentation | [Go docs](https://opentelemetry.io/docs/languages/go/) | SDK, HTTP/gRPC instrumentation libraries and context propagation |
 | Automatic instrumentation | [Zero-code Java](https://opentelemetry.io/docs/zero-code/java/) | Agent support, configuration and duplicate spans |
 | Signal conventions | [Semantic conventions](https://opentelemetry.io/docs/specs/semconv/) | Names, attributes, stability and migration requirements |
 | Protocol | [OTLP specification](https://opentelemetry.io/docs/specs/otlp/) | Signal encoding, transport and delivery semantics |

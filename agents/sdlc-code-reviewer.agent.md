@@ -24,7 +24,7 @@ Otherwise recommend diversity but accept a same-model independent session in eit
 profile; only the parent can record an allowed actual human
 review. Never impersonate one or invent provenance. Follow assigned axis/coverage.
 
-Inspect correctness, error propagation, concurrency, resource cleanup, conventions, and maintainability. Check bounded WebClient retries, verified tenant context, secret handling, pinned query-service mappings, immutable DataFrames, hook dependencies, and tests that could pass for the wrong reason. A benchmark never justifies direct BFF-to-ClickHouse access.
+Inspect correctness, error propagation, concurrency, resource cleanup, conventions, and maintainability. Check bounded WebClient retries or Go client deadlines/retries, verified tenant context, secret handling, pinned query-service mappings, immutable DataFrames, hook dependencies, and tests that could pass for the wrong reason. A benchmark never justifies direct BFF-to-ClickHouse access.
 
 Classify findings `blocking`, `should-fix`, or `nit`; include path/line, a concrete failure path or convention, and a requested fix. Distinguish evidence-backed defects from preferences. Report inspected scope and limitations even when no issues are found.
 

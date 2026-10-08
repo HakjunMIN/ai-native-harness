@@ -478,7 +478,7 @@ test('curl piped into bash installs in a nested quoted Unicode project path', as
   const [curlStatus, bashStatus] = await Promise.all([done(fetched),done(installed)]);
   assert.equal(curlStatus,0);
   assert.equal(bashStatus,0,error);
-  assert.equal(readdirSync(join(target,'.agents/skills')).length,34);
+  assert.equal(readdirSync(join(target,'.agents/skills')).length,36);
   assert.ok(lstatSync(join(target,'.ai-native-sdlc')).isDirectory());
   const hook = JSON.parse(readFileSync(join(target,'.codex/hooks.json'),'utf8'))
     .hooks.PreToolUse[0].hooks[0].command;

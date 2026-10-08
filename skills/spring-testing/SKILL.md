@@ -1,6 +1,6 @@
 ---
 name: spring-testing
-description: Use when backend unit, Spring integration, or BFF API tests need new coverage or investigation.
+description: Use when Spring backend unit, integration, or BFF API tests need new coverage or investigation.
 ---
 
 # Spring Testing

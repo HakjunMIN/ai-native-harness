@@ -15,7 +15,7 @@ Read the [shared principles](../sdlc/references/principles.md) before changing t
    Standalone work needs no intake snapshot. Separate observed usage from agreed meaning.
 2. For each new or conflicting term, propose a definition, scope, example, counterexample, and aliases. Ask the domain owner to resolve competing meanings before treating a proposal as canonical.
 3. Record confirmed definitions and their decision sources in `CONTEXT.md`; label unresolved definitions as proposals. Use Korean explanations while preserving exact code identifiers.
-4. Map canonical terms to API fields, UI labels, Gherkin steps, and Java/TypeScript identifiers. Identify migration impact before renaming public fields; use this plugin's `api-contract` skill for contract changes.
+4. Map canonical terms to API fields, UI labels, Gherkin steps, and Java/Go/TypeScript identifiers. Identify migration impact before renaming public fields; use this plugin's `api-contract` skill for contract changes.
 5. Follow [project governance](../sdlc/references/project-governance.md) for
    consequential, durable choices. Put cross-feature decisions in project ADRs
    and current rules in project standards; keep feature-only decisions in the

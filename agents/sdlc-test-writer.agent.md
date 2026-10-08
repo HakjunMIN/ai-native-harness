@@ -14,9 +14,9 @@ its remaining role instructions are only a fallback for standalone work, not an
 override of the locked profile. Inherit the parent ticket lock; never create a
 child lock, change shared links or weaken current host/security constraints.
 
-Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `tdd`, `bdd-gherkin`, `spring-testing`, and `grafana-plugin-testing` as applicable via native skill invocation or exact plugin-root skill files.
+Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `tdd`, `bdd-gherkin`, `spring-testing`, `go-testing`, and `grafana-plugin-testing` as applicable via native skill invocation or exact plugin-root skill files.
 
-Verify the approved AC/contract, input hashes, base/HEAD, and exact test allowlist. Scope may include assigned `src/test`, `*.test.ts(x)`, `e2e`, feature, fixture, and test-configuration files—never production code. Paths are procedural; the parent must audit the diff.
+Verify the approved AC/contract, input hashes, base/HEAD, and exact test allowlist. Scope may include assigned `src/test`, `*_test.go`, `testdata`, `*.test.ts(x)`, `e2e`, feature, fixture, and test-configuration files—never production code. Paths are procedural; the parent must audit the diff.
 
 This separate role is required in strict/legacy work, optional in light work.
 Require the assigned local ID or parent/child Jira key, approved manifest and optional document hashes,
@@ -36,7 +36,7 @@ fails, not infrastructure/syntax failure or zero tests. For refactors capture a
 passing before-baseline; docs/config use meaningful static/relevant checks without
 fabricated RED. Record command, cwd, exit code, revision and redacted output hash.
 
-Use JUnit 5 unit/integration/API tests for backend AC; never backend Cucumber. Use playwright-bdd for frontend Gherkin, retaining the installed `@grafana/plugin-e2e` fixture through supported `test.extend` composition. Label mocks; they do not establish live BFF integration.
+Use JUnit 5 unit/integration/API tests for Spring backend AC and Go `testing` (`go test`) for Go backend AC; never backend Cucumber or godog. Use playwright-bdd for frontend Gherkin, retaining the installed `@grafana/plugin-e2e` fixture through supported `test.extend` composition. Label mocks; they do not establish live BFF integration.
 
 Hand off frozen test/fixture/configuration hashes to the implementer. For a disputed assertion, compare approved intent and contract; correct tests only through a new explicit test-writer assignment, regenerate RED, and invalidate affected evidence through the parent. Never weaken expected behavior merely to fit implementation.
 

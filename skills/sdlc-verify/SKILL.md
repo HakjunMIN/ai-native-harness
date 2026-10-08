@@ -16,7 +16,7 @@ compliance, drift impact, shared-policy approvals and exception validity in
 requirement or plan changes return to G1/G2. Use run-local reports as gate evidence,
 not repository-relative project-document paths or parent traversal.
 
-Run only applicable approved checks: Gradle unit/integration/API, FE Jest/RTL,
+Run only applicable approved checks: Gradle or `go test` unit/integration/API, FE Jest/RTL,
 lint/typecheck, build, Gherkin generation or Playwright. Documentation/config can
 use justified static/schema checks; do not require unrelated stack infrastructure.
 Do not assume `gradlew test` runs

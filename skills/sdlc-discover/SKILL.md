@@ -40,7 +40,7 @@ actual `@grafana/ui` in an isolated Grafana sandbox and mock data. Dispatch
 error and keyboard behavior; selection is not approval.
 
 Invoke `bdd-gherkin` for FE observable behavior. Store `features/*.feature` tied to
-AC IDs; backend AC remains prose/API examples for JUnit, not Cucumber.
+AC IDs; backend AC remains prose/API examples for JUnit or Go tests, not Cucumber or godog.
 For backend-only changes explicitly mark frontend checks inapplicable.
 
 Present G1 scope to the human: discovery, FE scenarios, BE AC and prototype

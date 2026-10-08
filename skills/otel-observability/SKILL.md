@@ -16,7 +16,7 @@ failed retrieval blocks dependent guidance rather than falling back to memory.
 
 Trace the supported request path without leaking sensitive data or duplicating instrumentation.
 
-Read the [shared principles](../sdlc/references/principles.md) and this plugin's `spring-boot-bff` and `signoz-query-service` skills through native invocation or exact plugin-root files.
+Read the [shared principles](../sdlc/references/principles.md) and this plugin's `spring-boot-bff` or `go-backend` (matching the BFF language) and `signoz-query-service` skills through native invocation or exact plugin-root files.
 
 For collector distribution/schema compatibility load `signoz-oss`. Load
 `clickstack` only for explicit comparison or an existing in-scope ClickStack
@@ -26,7 +26,7 @@ For metrics exported to Mimir or Prometheus-compatible storage, load `mimir-oss`
 ## Procedure
 
 1. Inspect installed OTel instrumentation, SDK/agent versions, collector configuration, semantic-convention versions, and existing service/resource naming. Identify automatic spans before adding manual ones.
-2. Map the request path: Grafana/proxy → Spring BFF → query-service. Use supported context propagation through the WebClient boundary and asynchronous work; telemetry context is not authentication.
+2. Map the request path: Grafana/proxy → BFF (Spring or Go) → query-service. Use supported context propagation through the WebClient or Go HTTP client boundary and asynchronous work; telemetry context is not authentication.
 3. Add manual spans only for meaningful application operations not already covered. Set bounded attributes, correct status, and exception events according to the pinned conventions.
 4. Correlate application logs with trace/span IDs. Exclude tokens, raw SQL, request bodies, personal data, and unbounded identifiers from logs and metric labels. Never trust a propagated tenant label as authorization.
 5. Measure latency, error outcomes, and saturation using bounded-cardinality dimensions. Document sampling and redaction behavior; do not disable them broadly to make a demo visible.
@@ -35,7 +35,7 @@ For metrics exported to Mimir or Prometheus-compatible storage, load `mimir-oss`
 
 ## Bounded example
 
-A BFF request creates a server span but its query-service call starts an unrelated trace. Use the installed WebClient instrumentation's context propagation and verify parent linkage. Do not add a second client span if automatic instrumentation already emits one.
+A BFF request creates a server span but its query-service call starts an unrelated trace. Use the installed client instrumentation's context propagation (WebClient or Go HTTP client) and verify parent linkage. Do not add a second client span if automatic instrumentation already emits one.
 
 ## Stop and output
 

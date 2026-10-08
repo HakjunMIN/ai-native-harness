@@ -64,7 +64,7 @@ measured gaps, UX findings, recommendation (`retain`, `isolated pilot`, or
 `separate adoption decision`), evidence and next owner. Unknown required facts
 mean `BLOCKED` for execution.
 
-Our product remains Grafana -> Spring BFF -> SigNoz API. HyperDX research does
+Our product remains Grafana -> BFF (Spring or Go) -> SigNoz API. HyperDX research does
 not authorize exposing its UI, browser SQL or direct BFF-to-ClickHouse access.
 Use `visual-companion`/`prototype` for UX research, then real Grafana validation.
 Use existing BDD/TDD and release gates for approved implementation.

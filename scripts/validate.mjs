@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const skillNames = [
   'sdlc','sdlc-setup','sdlc-discover','sdlc-plan','sdlc-subtasks','sdlc-implement','sdlc-verify','sdlc-release','sdlc-handoff',
   'grilling','domain-context','visual-companion','prototype','bdd-gherkin','tdd','api-contract','code-review','pr','retro',
-  'verification-gate','jira-sync','diagnosing-bugs','spring-boot-bff','spring-testing','signoz-query-service','signoz-oss','clickstack',
+  'verification-gate','jira-sync','diagnosing-bugs','spring-boot-bff','spring-testing','go-backend','go-testing','signoz-query-service','signoz-oss','clickstack',
   'mimir-oss','prometheus-query-api',
   'grafana-plugin-dev','grafana-plugin-testing','react-ts','otel-observability','helm-argocd-release'
 ];

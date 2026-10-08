@@ -4,7 +4,7 @@ description: "프로젝트 공통 기준과 증거 기반 검증, 사람 승인�
 ---
 
 **AI가 구현하고, 증거로 검증하며, 사람이 승인하는 로컬 개발 워크플로우.**
-Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->34개 스킬과 9개 전문 에이전트를 제공합니다.
+Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->36개 스킬과 9개 전문 에이전트를 제공합니다.
 
 ## 소프트웨어 엔지니어링 원칙
 
@@ -13,7 +13,7 @@ Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->34�
 | 원칙 | 워크플로우에 적용하는 방식 |
 |---|---|
 | **작은 수직 단위로 전달** | DB/API/UI 계층별 작업 대신, 사용자 결과와 수용 기준(AC)을 갖춘 sub task로 나눕니다. |
-| **AC 기반 Verification & Validation** | 사용자 스토리·Jira 티켓 또는 요청에서 AC를 도출합니다. 프런트엔드 관찰 가능 동작은 AC에 연결된 Gherkin 시나리오로, 백엔드 AC는 API 예시와 JUnit 단위·통합·API 테스트로 연결합니다. 구현 전 G1에서 사람이 AC·시나리오(UI는 프로토타입 포함)로 요구 의도를 확인(Validation)하고, 최종 검증에서 AC별 테스트 결과로 구현 충족을 확인(Verification)합니다. |
+| **AC 기반 Verification & Validation** | 사용자 스토리·Jira 티켓 또는 요청에서 AC를 도출합니다. 프런트엔드 관찰 가능 동작은 AC에 연결된 Gherkin 시나리오로, 백엔드 AC는 API 예시와 JUnit(Spring) 또는 Go `testing`(Go) 단위·통합·API 테스트로 연결합니다. 구현 전 G1에서 사람이 AC·시나리오(UI는 프로토타입 포함)로 요구 의도를 확인(Validation)하고, 최종 검증에서 AC별 테스트 결과로 구현 충족을 확인(Verification)합니다. |
 | **계약과 경계 우선** | 도메인 용어·API 계약·테스트 기대값을 맞추고, 인증·테넌트·제품 경계를 보존합니다. |
 | **위험 기반 검증** | 작고 저위험인 단일 결과는 light, 고위험·아키텍처 변경·다중 결과는 strict로 진행합니다. |
 | **변경에 맞는 테스트** | 동작 변경은 TDD(RED → GREEN), 리팩터링은 전후 비교, 문서·설정은 관련 정적 검증을 적용합니다. 동작을 바꾸는 설정은 동작 테스트가 필요합니다. |
@@ -29,6 +29,7 @@ Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->34�
 기본 기술 지침은 **Grafana datasource/panel/app + React/TypeScript → Spring Boot BFF (Gradle)
 → SigNoz query-service** 관측성 스택을 대상으로 합니다.
 BFF는 ClickHouse에 직접 접근하지 않으며, SigNoz 자체 UI는 노출하지 않습니다.
+Go로 작성한 BFF·백엔드 서비스에는 `go-backend`·`go-testing`을 적용하며 같은 경계를 유지합니다.
 모노레포 또는 여러 MSA 서비스 리포에서 사용할 수 있으며, 공유 설치를 사용해도
 각 리포의 경로·명령·공통 기준은 `sdlc-setup`으로 별도 확인합니다.
 
@@ -42,7 +43,7 @@ BFF는 ClickHouse에 직접 접근하지 않으며, SigNoz 자체 UI는 노출�
 ### 기술 스킬은 실행 시점에 공식 문서 조회
 
 개발 워크플로우 스킬은 로컬 절차·승인·검증 기준을 정의합니다. 반면 Mimir,
-Prometheus, SigNoz, ClickStack, OTel, Grafana, React/TypeScript, Spring 및
+Prometheus, SigNoz, ClickStack, OTel, Grafana, React/TypeScript, Spring, Go 및
 Helm/ArgoCD 기술 스킬은 **정적 제품 매뉴얼 대신 공식 문서 조회 절차**를 제공합니다.
 
 - 각 기술 스킬의 `references/sources.md`에서 관련 공식 URL을 골라 웹 조회 도구,
@@ -219,7 +220,7 @@ sdlc 문서 검색 화면의 빈 상태를 개선해줘
 이 명칭은 Jira의 특정 이슈 타입을 강제하지 않습니다. 로컬 작업은 Jira 발행이 없고,
 Jira light는 부모 티켓을 사용하며 Jira strict/legacy만 승인 후 자식 티켓을 발행합니다.
 단일 sub task는 현재 checkout의 브랜치에서, 독립적인 병렬 sub task는 별도 Git 워크트리에서
-수행한 뒤 통합 검증합니다. 백엔드는 JUnit, 프런트엔드 E2E는 Gherkin을 사용합니다.
+수행한 뒤 통합 검증합니다. 백엔드는 JUnit(Spring) 또는 Go `testing`(Go), 프런트엔드 E2E는 Gherkin을 사용합니다.
 
 기존 실행과의 호환성을 위해 `tasks`, `taskPlan`, `slices`, `tasks.json`, `tasks/` 및
 `tasks.mjs` 명령은 유지합니다. 상세 대응은 [sub task 계약](skills/sdlc-subtasks/references/sub-task-contract.md)을 참고하세요.
@@ -310,6 +311,7 @@ GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니�
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
 | [SigNoz OSS](skills/signoz-oss/SKILL.md) · [ClickStack](skills/clickstack/SKILL.md) | 자체 호스팅 운영과 선택적 대안 평가. ClickStack은 필수 의존성이 아니며 자동 설치·이전하지 않습니다. |
 | [Mimir OSS](skills/mimir-oss/SKILL.md) · [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | 메트릭 저장소·쿼리 서비스 전환 평가와 운영, PromQL·BFF 쿼리 계약. 승인된 결정 없이 운영 전환하지 않습니다. |
+| [Go Backend](skills/go-backend/SKILL.md) · [Go Testing](skills/go-testing/SKILL.md) | Go BFF·백엔드 구현과 `go test` 증거. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang)은 작업 시 조회하는 비공식 체크리스트로만 쓰며, 의존성·`go` 버전 변경을 허가하지 않습니다. |
 
 ## 패키지 개발
 

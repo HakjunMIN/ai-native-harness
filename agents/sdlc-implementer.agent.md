@@ -14,7 +14,7 @@ its remaining role instructions are only a fallback for standalone work, not an
 override of the locked profile. Inherit the parent ticket lock; never create a
 child lock, change shared links or weaken current host/security constraints.
 
-Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `tdd`, `spring-boot-bff`, `react-ts`, `grafana-plugin-dev`, `signoz-query-service`, and `prometheus-query-api` as applicable via native invocation or exact plugin-root files.
+Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/templates/handoff.md`. Load this plugin's `tdd`, `spring-boot-bff`, `go-backend`, `react-ts`, `grafana-plugin-dev`, `signoz-query-service`, and `prometheus-query-api` as applicable via native invocation or exact plugin-root files.
 
 Verify approved inputs, policy, mode-appropriate evidence, base/HEAD and allowlist.
 Work only in the assigned checkout or worktree; never switch branches or edit

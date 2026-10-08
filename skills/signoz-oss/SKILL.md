@@ -38,7 +38,7 @@ SDLC phase. Research may finish with unknowns; execution claims require evidence
    feature documentation; self-hosted does not imply every feature is free OSS.
 2. Map actual processes from manifests and fetched version-matched architecture
    docs/source. Do not infer bundled services or invent source paths. Our logical
-   boundary remains Grafana -> Spring BFF -> supported SigNoz API. Do not expose
+   boundary remains Grafana -> BFF (Spring or Go) -> supported SigNoz API. Do not expose
    SigNoz UI or add direct BFF-to-ClickHouse access.
 3. Follow synthetic telemetry through receiver, processors, exporter, storage
    and API. Inspect the pinned collector's registered components and active
@@ -51,7 +51,7 @@ SDLC phase. Research may finish with unknowns; execution claims require evidence
    AND application metadata. Image rollback does not undo schema migrations.
 5. For fork changes, keep the diff small, preserve license notices, document
    upstream base/tracking/removal conditions, and use repository Go regression
-   tests. Backend BFF tests remain JUnit/API; FE behavior uses existing BDD/TDD.
+   tests. Backend BFF tests remain JUnit/API (Go tests for a Go BFF); FE behavior uses existing BDD/TDD.
 6. Reuse official skills only after checking installation, revision and scope.
    Missing MCP does not block public-doc research. It blocks required live
    observations. Never auto-install a plugin, upgrade an MCP server, grant

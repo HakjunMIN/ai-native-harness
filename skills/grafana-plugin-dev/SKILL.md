@@ -34,7 +34,7 @@ In SDLC the conductor supplies G2/policy; standalone work needs no Jira/state.
    - **Panel:** use `PanelProps`, options builder, resize behavior, and accessible empty/loading/error states.
    - **App:** use supported pages/routing, navigation, and permissions without exposing the SigNoz UI.
 4. Use `@grafana/ui`, `useStyles2`, and Grafana theme tokens for light/dark layouts. Avoid global CSS, hardcoded theme colors, and bespoke copies of Grafana controls.
-5. For a backend-less datasource, call the Spring BFF through configured Grafana proxy/resource access supported by the installed version. Store credentials in `secureJsonData`/server-managed secrets and proxy configuration; never expose them in browser bundles, `jsonData`, logs, or localStorage.
+5. For a backend-less datasource, call the BFF (Spring or Go) through configured Grafana proxy/resource access supported by the installed version. Store credentials in `secureJsonData`/server-managed secrets and proxy configuration; never expose them in browser bundles, `jsonData`, logs, or localStorage.
 6. Treat authenticated server context as identity authority. Browser-forged tenant headers must not choose another tenant. Query-service and ClickHouse are not direct browser targets.
 7. Keep changes inside production allowlists; run existing typecheck/build and affected tests without modifying test expectations.
 

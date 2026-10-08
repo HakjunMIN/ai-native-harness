@@ -32,7 +32,7 @@ Reference loading never starts setup or a later phase. Missing infrastructure bl
 2. Use Jest and React Testing Library for component behavior, accessible roles, state transitions, and DataFrame transformations. Mock external boundaries, not the behavior being asserted.
 3. Run frontend Gherkin with playwright-bdd. **Reuse the `@grafana/plugin-e2e` fixture**: where installed versions support it, compose its exported test with playwright-bdd `test.extend`, then use the same extended test for step definitions and generation/configuration.
 4. Confirm generated scenarios use that fixture and the provisioned plugin/datasource. Do not replace it with a bare Playwright page fixture or silently skip unsupported scenarios. Check actual test discovery; capture RED in implementation mode.
-5. Execute in local Grafana with controlled provisioning. Label mocked datasource/BFF tests as mock E2E. Separately exercise Grafana → real Spring BFF → real query-service for required integration evidence.
+5. Execute in local Grafana with controlled provisioning. Label mocked datasource/BFF tests as mock E2E. Separately exercise Grafana → real BFF (Spring or Go) → real query-service for required integration evidence.
 
 ## UX checks: sandbox or implemented plugin
 

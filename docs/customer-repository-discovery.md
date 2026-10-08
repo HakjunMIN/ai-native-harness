@@ -17,13 +17,14 @@ description: "고객 저장소의 도구, 공통 기준, 개발 절차와 승인
 현재 하네스의 기본 대상은 **Grafana datasource/panel/app + React/TypeScript →
 Spring Boot BFF(Gradle) → SigNoz query-service** 모노레포다.
 BFF의 ClickHouse 직접 접근과 SigNoz 자체 UI 노출을 기본 설계로 삼지 않는다.
+Go BFF·백엔드 모듈은 `go-backend`·`go-testing`으로 같은 경계와 증거 기준을 적용한다.
 ClickStack/HyperDX는 명시적인 대안 평가 또는 기존 사용 환경에만 해당한다.
 
 | 구분 | 탐색할 내용 | 판단 |
 |---|---|---|
 | 공통 개발 원칙 | AC 기반 요구사항, 위험 분류, 독립 리뷰, 증거 기반 검증, 사람 승인 | 고객 프로세스에 매핑할 수 있는지 확인 |
 | 저장소별 설정 | 실제 모듈 경로, 실행 명령, 허용 모델, Jira 매핑, 운영 경로 | `sdlc-setup`과 설정 파일로 연결할 항목 |
-| 기술 스택 의존 | Grafana, Spring/Gradle, SigNoz, 프런트엔드 Gherkin, Helm/ArgoCD | 다른 스택이라면 관련 스킬·검증·릴리스 계약의 적응 범위를 별도 산정 |
+| 기술 스택 의존 | Grafana, Spring/Gradle 또는 Go, SigNoz, 프런트엔드 Gherkin, Helm/ArgoCD | 다른 스택이라면 관련 스킬·검증·릴리스 계약의 적응 범위를 별도 산정 |
 | 실행 환경 의존 | CLI, 로컬 에이전트, 모델 라우팅, 브라우저, 훅, 네트워크 | 파일 존재가 아니라 실제 고객 환경의 실행 증거로 확인 |
 | 조직 통제 | 코드 외부 전송, 승인권자, 브랜치 보호, 배포 RBAC, 감사 | 프롬프트·훅으로 대신할 수 없는 통제 |
 
@@ -48,7 +49,7 @@ ArgoCD `Synced`/`Healthy` 등의 증거를 기대한다. 비컨테이너·비Arg
 |---|---|---|
 | 리포 목록·소유 팀·기본 브랜치 | 적용 단위와 책임 경계 | 접근 가능한 URL/식별자, 담당 역할 |
 | `AGENTS.md`, 개발 가이드, ADR, 아키텍처 그림 | 기존 규칙·설계 의도·에이전트 지침 충돌 | 승인된 문서 링크 |
-| manifests, lockfiles, Gradle wrapper/settings, plugin 설정 | 실제 스택·버전·빌드 단위 | 해당 파일 경로와 기준 commit SHA |
+| manifests, lockfiles, Gradle wrapper/settings, `go.mod`/`go.work`, plugin 설정 | 실제 스택·버전·빌드 단위 | 해당 파일 경로와 기준 commit SHA |
 | CI 정의·최근 성공/실패 결과·브랜치 보호 | 필수 체크와 현재 실패 기준선 | 비식별 실행 링크 및 설정 증거 |
 | 대표 요청·버그·PR·리뷰 사례 | 실제 업무 흐름과 승인 관행 | 단순 변경·복합 변경·긴급 수정 사례 |
 | API 계약·데이터 흐름·인증/테넌트 설계 | 연동 경계와 고위험 변경 영역 | OpenAPI, 흐름도, 비식별 예시 |
@@ -146,6 +147,7 @@ ArgoCD `Synced`/`Healthy` 등의 증거를 기대한다. 비컨테이너·비Arg
 | GitHub UI/API 또는 기존 CLI | PR, 보호 규칙, 필수 CI, 승인 근거 조회 | 최소 권한; 읽기와 게시/머지 권한 분리 |
 | Atlassian Rovo MCP | Jira 경로를 사용할 때만 요청 조회·동기화·발행 | 승인된 읽기/쓰기, 프로젝트/전이/관계 ID; 탐색용 이슈 생성 금지 |
 | Gradle wrapper, JDK, JUnit 및 기존 통합 테스트 도구 | Spring BFF 빌드·단위·통합·API 검증 | 실제 task 구분, DB/서비스 fixture, 재현 가능한 결과 |
+| Go 툴체인, `go test`·`go vet`, 기존 lint 설정 | Go BFF·백엔드 빌드·단위·통합·API 검증 | `go.mod`의 `go`/`toolchain`과 CI 버전, `-race`·build tag·Docker 등 실제 실행 조건 |
 | 저장소의 JS 패키지 관리자, TypeScript, lint, Jest/RTL | FE 정적·컴포넌트 검사 | lockfile과 실제 scripts; 임의 도구 교체 금지 |
 | Gherkin 생성 도구, Playwright, axe, 스크린샷 도구 | 해당 FE 동작·E2E·접근성·시각 검사 | 브라우저와 테스트 환경, 기준 이미지 승인 |
 | Grafana 개발 샌드박스, 실제 `@grafana/ui` | Grafana UI/플러그인 변경 시 | 합성 데이터, 테마·상태·키보드 검증 |
@@ -157,7 +159,7 @@ ArgoCD `Synced`/`Healthy` 등의 증거를 기대한다. 비컨테이너·비Arg
 | ClickStack/HyperDX | 명시적 평가 또는 기존 사용 범위에 한정 | 별도 평가 목표·비용·승인; 필수 도구 아님 |
 
 프런트엔드 관찰 가능 동작은 AC에 연결한 Gherkin/E2E로, 백엔드는 API 예시와
-JUnit 기반 검증으로 연결한다. 백엔드 검증을 위해 Cucumber 도입을 기본 요구하지 않는다.
+JUnit(Spring) 또는 Go `testing`(Go) 기반 검증으로 연결한다. 백엔드 검증을 위해 Cucumber·godog 도입을 기본 요구하지 않는다.
 
 ### 도구/명령 등록 양식
 

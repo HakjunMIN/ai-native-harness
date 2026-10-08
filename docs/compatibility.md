@@ -86,8 +86,8 @@ Codex 프로젝트 설치는 native 훅 설정과 에이전트 TOML을 생성하
 
 이 저장소 구현 시에는 별도 `COPILOT_HOME`으로 로컬 경로 설치를 실행해 당시
 스킬 27개의 발견과 로컬 마켓플레이스 등록을 확인했습니다. 이후 `sdlc-subtasks`,
-`signoz-oss`, `clickstack`, `mimir-oss`, `prometheus-query-api`, `pr`, `retro`를
-추가해 현재 배포 카탈로그는 <!-- skill-count -->34개입니다. 현재 개수는
+`signoz-oss`, `clickstack`, `mimir-oss`, `prometheus-query-api`, `pr`, `retro`,
+`go-backend`, `go-testing`을 추가해 현재 배포 카탈로그는 <!-- skill-count -->36개입니다. 현재 개수는
 `npm run validate`가 README·설치 안내와 함께 검사하며, 과거 CLI smoke에서
 발견한 개수와 구별합니다. 전체 카탈로그의 실제 설치 로딩·실행 보장을 뜻하지
 않습니다. 호스트별로 실제 확인한 범위와 미검증 항목은 다음 기록을 따릅니다.

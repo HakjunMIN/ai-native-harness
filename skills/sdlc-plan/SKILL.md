@@ -23,7 +23,8 @@ in the approved edit scope when changing a shared decision.
 For SigNoz lifecycle/collector/schema work, include `signoz-oss`; for explicit
 ClickStack/HyperDX research or an existing in-scope deployment, include `clickstack`.
 For Mimir/Prometheus metrics storage or migration include `mimir-oss`; for PromQL
-or Prometheus query API contracts include `prometheus-query-api`.
+or Prometheus query API contracts include `prometheus-query-api`. For Go backend
+modules include `go-backend` and `go-testing`.
 An alternative-stack study does not authorize changing the product boundary.
 
 The plan includes:
@@ -44,7 +45,7 @@ Markdown. Review policy, granularity, AC coverage and blockers with the
 human. Small bounded work can be one sub task; DB/API/UI-only division
 is not a vertical outcome. Resolve precise file allowlists and commands at
 implementation handoff from current code, keeping long-lived sub tasks behavior/contract focused.
-Reuse Gradle/JS tooling. Do not schedule backend Gherkin or direct ClickHouse.
+Reuse Gradle/Go/JS tooling. Do not schedule backend Gherkin or direct ClickHouse.
 
 Strict/legacy plans require independent `code-review`. For new strict policy,
 different-family review is recommended; a same-model independent session is valid

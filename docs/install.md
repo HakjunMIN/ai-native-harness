@@ -148,7 +148,7 @@ Codex용 `.codex/agents/`와 `.codex/hooks.json`입니다. 설치본에는 스�
 대상에서 새 세션을 열어 Copilot `/skills`, `/agent` 또는
 `copilot skill list`, Codex `/skills`, `/agent`, `/hooks`를 확인하세요. Codex는
 프로젝트 설정과 훅 정의의 신뢰 승인이 필요합니다. 실제로 두 CLI에서 스킬
-<!-- skill-count -->34개, 에이전트 9개, 훅의 차단 동작을 확인해야 합니다. 훅은 OS 보안 경계가
+<!-- skill-count -->36개, 에이전트 9개, 훅의 차단 동작을 확인해야 합니다. 훅은 OS 보안 경계가
 아니며 Codex는 에이전트 Markdown의 `tools`를 native 권한으로 해석하지
 않습니다. 자세한 한계는 [호환성](compatibility.md)을 참고하세요.
 

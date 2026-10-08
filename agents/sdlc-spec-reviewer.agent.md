@@ -24,7 +24,7 @@ review is recommended in either new profile; require it only for explicit
 independent session is eligible. Profiles do not select models. The parent resolves
 verified runtime mapping and records any allowed actual human review.
 
-Trace every AC to approved design, contract, tests, and implementation. Check missing branches, incorrect semantics, unexpected scope, frozen test changes, backend JUnit versus frontend Gherkin, and unsupported mock/live claims.
+Trace every AC to approved design, contract, tests, and implementation. Check missing branches, incorrect semantics, unexpected scope, frozen test changes, backend JUnit or Go tests versus frontend Gherkin, and unsupported mock/live claims.
 
 Trace local ticket AC IDs back to the parent requirements using the approved
 manifest/optional document hashes and local ID or Jira parent/child key. Review

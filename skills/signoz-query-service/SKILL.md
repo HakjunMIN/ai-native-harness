@@ -28,7 +28,7 @@ Read the [shared principles](../sdlc/references/principles.md) and this plugin's
 3. Confirm telemetry semantics from that revision: trace/span identifiers, resource/service attributes, metric temporality and units, log timestamps/severity, aggregation, nulls, and time precision. Do not infer physical table names from a generic OTel model.
 4. Enforce authenticated tenant scope, bounded time ranges, limits, and query cost at the BFF boundary. Raw SQL is **not an untrusted browser feature**. Never forward arbitrary browser SQL, identifiers, tenant headers, or credentials.
 5. Capture client contract tests and real integration evidence separately. Validate error mapping, empty responses, cancellation, and timeout behavior using approved representative data.
-6. If upstream behavior requires a Go patch, document the pinned base, minimal diff, regression test, compatibility impact, and upstream tracking reference. Use existing Go tests/build commands; avoid unrelated refactors and retain a clear rebase/removal strategy.
+6. If upstream behavior requires a Go patch, document the pinned base, minimal diff, regression test, compatibility impact, and upstream tracking reference. Use existing Go tests/build commands with `go-testing` evidence; avoid unrelated refactors and retain a clear rebase/removal strategy.
 
 ## Bounded example
 

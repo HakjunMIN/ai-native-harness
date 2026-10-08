@@ -14,8 +14,8 @@ this task. Local guidance below defines project policy and verification question
 not current upstream facts. Record fetched URL/section/date and matching version;
 failed retrieval blocks dependent guidance rather than falling back to memory.
 
-Prometheus-compatible querying behind the product boundary: Grafana -> Spring
-BFF -> Mimir or Prometheus query API. Read the
+Prometheus-compatible querying behind the product boundary: Grafana -> BFF (Spring
+or Go) -> Mimir or Prometheus query API. Read the
 [shared principles](../sdlc/references/principles.md) and this plugin's
 `api-contract` skill. Load `mimir-oss` for storage, ingestion,
 tenancy or migration operations.
@@ -28,6 +28,7 @@ tenancy or migration operations.
 | PromQL translation, histograms, rates, labels or parity | [PromQL semantics](references/promql-semantics.md) |
 | SigNoz parity or cutover evidence | `mimir-oss` and its migration reference |
 | Spring implementation and test style | `spring-boot-bff`, `spring-testing` |
+| Go implementation and test style | `go-backend`, `go-testing` |
 | Grafana datasource or panel behavior | `grafana-plugin-dev` |
 
 ## Procedure

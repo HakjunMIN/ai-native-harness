@@ -4,7 +4,8 @@ First fetch the relevant official URLs in [sources](sources.md) using the
 [live-documentation protocol](../../sdlc/references/live-documentation.md).
 The following defines local decisions and evidence, not an offline API manual.
 
-Use with `api-contract`, `spring-boot-bff` and `spring-testing`. The BFF owns
+Use with `api-contract` and the BFF's stack skills (`spring-boot-bff` and `spring-testing`,
+or `go-backend` and `go-testing`). The BFF owns
 authorization, query shape and public response compatibility.
 
 ## Request design

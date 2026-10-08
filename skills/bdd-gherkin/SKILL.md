@@ -5,7 +5,7 @@ description: Use when frontend acceptance behavior needs Gherkin scenarios or re
 
 # BDD Gherkin
 
-Gherkin belongs to frontend E2E behavior only. Backend acceptance criteria become JUnit 5 unit, integration, and API tests—not Cucumber.
+Gherkin belongs to frontend E2E behavior only. Backend acceptance criteria become JUnit 5 (Spring) or Go `testing` (Go) unit, integration, and API tests—not Cucumber or godog.
 
 Read the [shared principles](../sdlc/references/principles.md). Import `grafana-plugin-testing` as a reference through the native tool or exact `<PLUGIN_ROOT>/skills/grafana-plugin-testing/SKILL.md`; reuse it if already active. Importing a reference does not execute its workflow or recursively dispatch another skill.
 
