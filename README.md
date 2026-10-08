@@ -137,16 +137,26 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
 lock에는 실제 자산의 **콘텐츠 SHA256**과 소스 커밋(확인 가능할 때)을 기록합니다.
 미커밋 변경도 포함하므로, 커밋 번호만으로 항상 같은 자산을 복원할 수 있는 것은 아닙니다.
 
-대상 서비스 리포 루트에서 다음 명령을 사용합니다. Bash와 PowerShell 모두 동일합니다.
+`sdlc` 워크플로우로 시작하면 에이전트가 새 Jira 작업의 상태와 lock을 생성하고,
+로컬 자연어 작업은 intake 단계에서 자동으로 lock을 생성합니다. 재개 시에도
+에이전트가 기존 리비전과 상태를 검증하므로 **사용자가 별도로 명령을 실행할 필요는 없습니다.**
 
-```sh
-node .ai-native-sdlc/scripts/harness.mjs start ABC-123
-node .ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/ABC-123/state.json
-node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/ABC-123/state.json
-```
+> [!NOTE]
+> **선택 사항: 수동 수행·점검용 명령**
+> 아래 명령은 워크플로우의 필수 사전 작업이 아니라, 사용자가 직접 생성·재개·점검할 때의 예시입니다.
+> 대상 서비스 리포 루트에서 실행하며 Bash와 PowerShell 모두 동일합니다.
+>
+> ```sh
+> node .ai-native-sdlc/scripts/harness.mjs start ABC-123
+> node .ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/ABC-123/state.json
+> node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/ABC-123/state.json
+> ```
+>
+> 첫 줄은 **새 Jira 작업에만** 실행합니다. 기존 작업은 `resolve`부터 실행하며,
+> 로컬 자연어 작업에는 `start`를 중복 실행하지 않습니다.
+> 선택적인 것은 사용자의 수동 실행입니다. Node.js 런타임과 에이전트의 내부 스크립트 실행은 필요합니다.
 
-첫 줄은 **새 Jira 작업에만** 실행합니다. 로컬 자연어 작업은 intake 단계에서 자동으로
-lock을 생성합니다. 생성 시 설치된 자산을 그대로 보관하며, 원격 하네스를 자동으로
+생성 시 설치된 자산을 그대로 보관하며, 원격 하네스를 자동으로
 pull하지 않고 Jira 조회·동기화나 사람 승인도 대신하지 않습니다.
 기존 작업은 `resolve`부터 실행하고, 반환된 `root` 아래의 스킬·역할·템플릿을 읽습니다.
 `state.mjs`의 상태 관련 명령은 해당 티켓의 스냅샷 검증기로 자동 연결됩니다.
