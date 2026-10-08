@@ -5,6 +5,15 @@ description: Use when BFF tracing, telemetry semantics, log correlation, or obse
 
 # OTel Observability
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Trace the supported request path without leaking sensitive data or duplicating instrumentation.
 
 Read the [shared principles](../sdlc/references/principles.md) and this plugin's `spring-boot-bff` and `signoz-query-service` skills through native invocation or exact plugin-root files.

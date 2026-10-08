@@ -5,6 +5,15 @@ description: Use when building or changing Grafana datasource, panel, or app plu
 
 # Grafana Plugin Development
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Implement native Grafana behavior against approved tests and contracts.
 
 Read the [shared principles](../sdlc/references/principles.md). Import this plugin's `react-ts`, `api-contract`, and `grafana-plugin-testing` references natively or via their exact plugin-root skill files. Reuse active references; loading guidance does not execute their workflows.

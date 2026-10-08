@@ -5,6 +5,15 @@ description: Use when Spring Boot BFF controllers, services, upstream clients, a
 
 # Spring Boot BFF
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 The supported path is Grafana plugin → Spring BFF → SigNoz query-service. **The BFF never accesses ClickHouse directly.**
 
 Read the [shared principles](../sdlc/references/principles.md). Load this plugin's `api-contract`, `spring-testing`, and `signoz-query-service` skills natively or from their exact `<PLUGIN_ROOT>/skills/<name>/SKILL.md` files. When metrics are served by Mimir or another Prometheus-compatible API, load `prometheus-query-api` for those operations.

@@ -1,5 +1,9 @@
 # OSS investigation and change checklist
 
+First fetch task-relevant official URLs from [sources](sources.md) under the
+[live-documentation protocol](../../sdlc/references/live-documentation.md).
+This checklist does not supply upstream defaults or version-specific behavior.
+
 Use the [source map](sources.md) to choose version-matched material. This is a
 decision checklist, not an installation script or permission to run migrations.
 

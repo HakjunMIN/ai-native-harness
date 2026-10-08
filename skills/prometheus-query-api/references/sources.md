@@ -1,21 +1,31 @@
-# Prometheus query source map
+# prometheus-query-api live source map
 
-Reviewed: 2026-10-02. Use these as discovery entrypoints. Record the server,
-version, fetched URL, heading, access date and claim for applied behavior.
+Follow the [live-documentation protocol](../../sdlc/references/live-documentation.md).
+**Fetch relevant URL contents during the current task before applying technical
+claims.** This is a discovery index, not a cached manual or a list of verified
+current releases. Resolve latest/main links to version-matched docs or tagged
+source and record the fetched URL, section, retrieval date and target version.
 
-| Source | Verify |
-|---|---|
-| [Prometheus HTTP API](https://prometheus.io/docs/prometheus/latest/querying/api/) | Instant and range query parameters, form POST, response envelope, warnings, infos and status codes |
-| [PromQL basics](https://prometheus.io/docs/prometheus/latest/querying/basics/) | Selectors, string escaping, time durations, staleness and native histogram samples |
-| [PromQL functions](https://prometheus.io/docs/prometheus/latest/querying/functions/) | `rate`, `increase`, `histogram_quantile`, native histogram functions and `info` status |
-| [UTF-8 names](https://prometheus.io/docs/guides/utf8/) | Quoted metric and label names in Prometheus 3.x |
-| [Mimir HTTP API](https://grafana.com/docs/mimir/latest/references/http-api/) | Query-frontend endpoints, configurable prefix, build information and cardinality APIs |
-| [Mimir configuration parameters](https://grafana.com/docs/mimir/latest/configure/configuration-parameters/) | Query limits, lookback delta, query sharding and tenant limits for the pinned version |
-| [Mimir authentication](https://grafana.com/docs/mimir/latest/manage/secure/authentication-and-authorization/) | Tenant header and federation behavior |
-| [Grafana Prometheus datasource](https://grafana.com/docs/grafana/latest/datasources/prometheus/) | Mimir compatibility and datasource configuration boundaries |
-| [grafana/mcp-grafana](https://github.com/grafana/mcp-grafana) | Optional authorized PromQL and metadata exploration |
+## Select sources by task
 
-Prometheus docs describe Prometheus server behavior. Mimir is
-Prometheus-compatible but has its own query-frontend, limits, caching, sharding
-and tenancy. Verify Mimir behavior against the pinned Mimir version and a real
-or isolated instance.
+Select the HTTP API for request/response contracts; basics/functions/naming for
+PromQL; Mimir API/configuration/authentication for a Mimir deployment. Prometheus
+compatibility is not proof of identical limits, errors or feature support.
+Verify actual series and the pinned server after retrieving documentation.
+Optional MCP query access is separate from public documentation retrieval.
+
+## Official URLs to fetch
+
+- [Prometheus HTTP API](https://prometheus.io/docs/prometheus/latest/querying/api/)
+- [PromQL basics](https://prometheus.io/docs/prometheus/latest/querying/basics/)
+- [PromQL functions](https://prometheus.io/docs/prometheus/latest/querying/functions/)
+- [UTF-8 names](https://prometheus.io/docs/guides/utf8/)
+- [Mimir HTTP API](https://grafana.com/docs/mimir/latest/references/http-api/)
+- [Mimir configuration parameters](https://grafana.com/docs/mimir/latest/configure/configuration-parameters/)
+- [Mimir authentication](https://grafana.com/docs/mimir/latest/manage/secure/authentication-and-authorization/)
+- [Grafana Prometheus datasource](https://grafana.com/docs/grafana/latest/datasources/prometheus/)
+- [grafana/mcp-grafana](https://github.com/grafana/mcp-grafana)
+
+If a page moves or cannot be read, use its official documentation index or tagged
+source as described in the protocol. An inaccessible source is not permission to
+reuse a remembered summary; report dependent guidance as blocked when unresolved.

@@ -14,6 +14,48 @@ function copy(t) {
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
 });
+test('technical skills route to live documentation and official HTTPS sources', () => {
+  const names = ['mimir-oss', 'prometheus-query-api', 'signoz-oss', 'signoz-query-service',
+    'clickstack', 'otel-observability', 'react-ts', 'spring-boot-bff', 'spring-testing',
+    'grafana-plugin-dev', 'grafana-plugin-testing', 'helm-argocd-release'];
+  const allowedHosts = new Set(['grafana.com', 'prometheus.io', 'signoz.io',
+    'clickhouse.com', 'opentelemetry.io', 'react.dev', 'www.typescriptlang.org',
+    'docs.spring.io', 'docs.gradle.org', 'docs.junit.org', 'wiremock.org',
+    'java.testcontainers.org', 'playwright.dev', 'vitalets.github.io',
+    'testing-library.com', 'jestjs.io', 'helm.sh', 'argo-cd.readthedocs.io',
+    'kubernetes.io', 'github.com']);
+  const officialRepositories = new Set(['grafana/mimir', 'grafana/mcp-grafana',
+    'grafana/grafana', 'SigNoz/agent-skills', 'SigNoz/signoz',
+    'SigNoz/signoz-otel-collector', 'ClickHouse/agent-skills', 'hyperdxio/hyperdx',
+    'open-telemetry/opentelemetry-collector-contrib', 'rest-assured/rest-assured',
+    'dequelabs/axe-core-npm']);
+  const links = body => [...body.matchAll(/\[[^\]]*\]\(([^)\s]+)\)/g)].map(match => match[1]);
+  for (const name of names) {
+    const skill = readFileSync(resolve(`skills/${name}/SKILL.md`), 'utf8');
+    const skillLinks = links(skill);
+    assert.ok(skillLinks.includes('../sdlc/references/live-documentation.md'), name);
+    assert.ok(skillLinks.includes('references/sources.md'), name);
+    const sources = readFileSync(resolve(`skills/${name}/references/sources.md`), 'utf8');
+    const sourceLinks = links(sources);
+    assert.ok(sourceLinks.includes('../../sdlc/references/live-documentation.md'), name);
+    const remoteLinks = sourceLinks.filter(link => /^[a-z]+:\/\//i.test(link));
+    assert.ok(remoteLinks.length > 0, `${name}: no URLs to retrieve`);
+    for (const link of remoteLinks) {
+      const url = new URL(link);
+      assert.equal(url.protocol, 'https:', `${name}: ${link}`);
+      assert.ok(allowedHosts.has(url.hostname), `${name}: ${link}`);
+      assert.equal(url.username + url.password, '', `${name}: credentials in URL`);
+      if (url.hostname === 'github.com') {
+        assert.ok(officialRepositories.has(url.pathname.split('/').slice(1, 3).join('/')), `${name}: ${link}`);
+      }
+    }
+  }
+});
+test('missing live documentation protocol blocks package validation', t => {
+  const root = copy(t);
+  rmSync(join(root, 'skills/sdlc/references/live-documentation.md'));
+  assert.match(validatePackage(root).join('\n'), /missing or escaped path .*live-documentation\.md/);
+});
 test('SDLC stages and domain review share the project governance reference', () => {
   for (const name of ['sdlc-setup', 'sdlc-discover', 'sdlc-plan', 'sdlc-implement',
     'sdlc-verify', 'sdlc-release', 'sdlc-handoff', 'domain-context', 'code-review']) {

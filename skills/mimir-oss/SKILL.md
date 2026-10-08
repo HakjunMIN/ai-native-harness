@@ -5,11 +5,19 @@ description: Use when evaluating, deploying, operating, troubleshooting, or migr
 
 # Mimir OSS
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Platform-level reference for Mimir as the metrics store. Use it with
 `prometheus-query-api` for BFF query contracts and `otel-observability` for
 instrumentation semantics. Read the [shared principles](../sdlc/references/principles.md).
-Load only the references needed for the current task. Load the
-[source map](references/sources.md) when citing or checking version-specific facts.
+Load only task-relevant checklists after fetching their official sources.
 
 Moving metrics from SigNoz to Mimir changes a product boundary. Research or a
 deadline is not adoption approval. Production adoption needs a recorded project
@@ -32,9 +40,10 @@ decision and the workflow's human gates; production mutation stays human-owned.
    classic or ingest-storage architecture, deployment mode, Helm chart or
    Jsonnet revision, object storage, runtime overrides, gateway and tenant model.
    Use version-matched docs; current docs are not proof of an older deployment.
-2. Treat Mimir tenancy as an identity contract. Mimir trusts `X-Scope-OrgID`
-   and does not authenticate callers. An authenticated gateway, collector
-   pipeline or BFF must set the validated tenant; browsers never choose it.
+2. Fetch and verify the deployed version's authentication and tenant-header
+   contract. An authenticated gateway, collector pipeline or BFF must set the
+   validated tenant; browsers never choose it. Do not assume storage provides
+   caller authentication without evidence.
 3. Prove semantics with one approved synthetic fixture through the actual
    collector and endpoint. Inspect stored series names and labels before writing
    PromQL, dashboards, alerts or parity checks.

@@ -1,5 +1,9 @@
 # SigNoz metrics to Mimir migration
 
+First fetch the relevant official URLs in [sources](sources.md) using the
+[live-documentation protocol](../../sdlc/references/live-documentation.md).
+The following defines local decisions and evidence, not an offline API manual.
+
 Use this only for an explicit evaluation or approved migration. It does not
 authorize production cutover. Combine it with `signoz-oss` for the current
 SigNoz inventory and `prometheus-query-api` for query translation.

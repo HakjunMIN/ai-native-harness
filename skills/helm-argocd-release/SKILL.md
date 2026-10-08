@@ -5,6 +5,15 @@ description: Use when preparing Helm GitOps promotions, checking release readine
 
 # Helm and ArgoCD Release
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Produce reviewable promotion evidence; humans control application and production approval.
 
 Read the [shared principles](../sdlc/references/principles.md). Import this plugin's

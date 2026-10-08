@@ -1,60 +1,44 @@
-# PromQL semantics and translation
+# PromQL semantics investigation
 
-Discover actual series before writing PromQL:
+Fetch task-relevant URLs in [sources](sources.md) using the
+[live-documentation protocol](../../sdlc/references/live-documentation.md).
+Start with [PromQL basics](https://prometheus.io/docs/prometheus/latest/querying/basics/)
+and [functions](https://prometheus.io/docs/prometheus/latest/querying/functions/),
+then verify version and engine compatibility. This is a question checklist, not
+an offline catalog of PromQL expressions or OTel label mappings.
 
-1. Query metric metadata, labels or series for the approved fixture and tenant.
-2. Record exact names, label keys, units, metric type and histogram form.
-3. Write the smallest query that answers the approved product question.
-4. Test it against expected fixture values before comparing dashboards.
+## Discover before composing
+
+1. Identify the server/version and fetch docs for required selectors, functions,
+   experimental features, naming rules and result forms.
+2. Inspect metadata, labels and stored series for an approved fixture and tenant.
+3. Record exact names, labels, units, type, temporality and histogram form.
+4. Derive the smallest query answering the approved product question from the
+   retrieved syntax and observed data; do not invent a query from assumed labels.
+5. Test against expected fixture values before comparing dashboards.
 
 ## OTel-derived metrics
 
-Until the real series are observed, write a draft from Mimir's documented
-default mapping and label it as unverified:
+Fetch [Mimir collector documentation](https://grafana.com/docs/mimir/latest/configure/configure-otel-collector/)
+and its configuration reference at the matching version before inferring mappings.
+Check name escaping, suffixes, resource-to-label/metadata translation, promotion,
+join keys and cardinality against the active pipeline and stored series. Do not
+publish a ready-to-use query based only on a documented default. Verify support
+and meaning of every join or helper function on the actual query engine.
 
-* `service.name` and `service.namespace` become `job`.
-* `service.instance.id` becomes `instance`.
-* Filter or group by other resource attributes through `target_info`, joined on
-  `job` and `instance`.
-* Metric and point attribute names use the escaped form the pinned translation
-  strategy produces. Suffixes such as `_total` or `_seconds` are absent unless
-  observed.
+## Questions by query intent
 
-Replace the draft only with observed names and labels. A promoted label or
-quoted UTF-8 selector, such as `{"http.server.request.duration"}`, is valid
-only when the stored series shows it.
-
-Unverified draft for a production-filtered rate, assuming underscore escaping:
-
-```promql
-sum by (job) (
-  rate(http_server_request_count[5m])
-  and on (job, instance) target_info{deployment_environment="prod"}
-)
-```
-
-Use a `target_info` join or `info()` only after confirming the pinned engine
-support, join labels and cardinality. Prefer approved promoted labels for
-frequent product filters.
-
-## Query patterns
-
-| Need | Pattern and checks |
+| Intent | Resolve from fetched docs and fixtures |
 |---|---|
-| Counter rate | `sum by (job) (rate(<counter>[<window>]))`; check resets, scrape or export interval and stale series |
-| Counter increase | `increase` extrapolates; do not compare it with raw stored deltas without semantics review |
-| Classic histogram quantile | `histogram_quantile(q, sum by (<group>, le) (rate(<metric>_bucket[<window>])))` after confirming bucket series and `le` |
-| Native histogram quantile | `histogram_quantile(q, sum by (<group>) (rate(<metric>[<window>])))`; do not add `_bucket` or `le` |
-| Gauge current value | Instant query with an explicit aggregation; distinguish missing series from zero |
-
-Pick the range window from the export interval and product meaning. Range step
-controls output resolution; the range selector controls each calculation.
-Lookback and staleness can hide stopped series or keep recent values visible;
-check the pinned server's lookback delta.
+| Counter rate/increase | Reset handling, extrapolation, aggregation order, sample interval and window |
+| Histogram quantile | Stored representation, supported functions, required grouping and interpolation |
+| Gauge current value | Instant-query evaluation, aggregation, missing values and stale series |
+| Range display | Output step versus calculation window, lookback, evaluation timestamps and boundaries |
+| Resource filter/join | Actual keys, matching semantics, supported syntax and many-to-many risk |
 
 ## SigNoz parity
 
-Translate a SigNoz query only after recording its aggregation, temporal window,
-temporality, grouping, filters, unit and quantile method. Prove parity with known
-fixtures in at least two tenants. Define tolerances before comparison and
-explain differences instead of adjusting the target query until it matches.
+Retrieve the source query's semantics too. Record aggregation, temporal window,
+temporality, grouping, filters, unit and quantile method. Prove parity using known
+fixtures in at least two tenants and define tolerances before comparison. Explain
+differences instead of adjusting the target query or thresholds until it matches.

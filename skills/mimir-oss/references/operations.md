@@ -1,5 +1,9 @@
 # Mimir operations checklist
 
+First fetch task-relevant official URLs from [sources](sources.md) under the
+[live-documentation protocol](../../sdlc/references/live-documentation.md).
+This checklist does not supply upstream defaults or version-specific behavior.
+
 This is a decision checklist, not an installer. Use version-matched sources from
 the [source map](sources.md). Deployment inspection requires authorized read-only
 access and must not expose secrets.
@@ -14,8 +18,8 @@ Record:
 * Helm chart or Jsonnet revision, rendered values and runtime override source
 * Object storage backend, bucket ownership, encryption, lifecycle and retention
 * Gateway, network exposure, authentication, tenant mapping and federation;
-  Mimir uses `multitenancy_enabled`, so Cortex or Loki keys such as
-  `auth_enabled` are not Mimir evidence
+  fetch Mimir configuration keys for the deployed version rather than copying
+  similarly named Cortex or Loki settings
 * Ruler, Alertmanager, recording rules and dashboard ownership
 * Caches, persistent volumes, zone awareness and capacity owners
 

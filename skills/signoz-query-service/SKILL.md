@@ -5,6 +5,15 @@ description: Use when mapping SigNoz query-service requests, interpreting teleme
 
 # SigNoz Query-Service
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Query-service owns access to ClickHouse. The BFF consumes its supported API.
 
 For OSS topology, collector/exporter compatibility, migrations or fork upgrades,

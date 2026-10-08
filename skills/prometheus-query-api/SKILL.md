@@ -5,11 +5,19 @@ description: Use when a BFF, Grafana plugin, dashboard, alert, or migration need
 
 # Prometheus Query API
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Prometheus-compatible querying behind the product boundary: Grafana -> Spring
 BFF -> Mimir or Prometheus query API. Read the
 [shared principles](../sdlc/references/principles.md) and this plugin's
-`api-contract` skill. Load the [source map](references/sources.md) when citing or
-checking version-specific behavior. Load `mimir-oss` for storage, ingestion,
+`api-contract` skill. Load `mimir-oss` for storage, ingestion,
 tenancy or migration operations.
 
 ## Route before acting
@@ -25,7 +33,8 @@ tenancy or migration operations.
 ## Procedure
 
 1. Discover the pinned server, version, Prometheus HTTP prefix and enabled
-   features. For Mimir, the prefix defaults to `/prometheus` but is configurable.
+   features from fetched server-specific documentation and deployed configuration;
+   do not assume an upstream HTTP prefix or default.
 2. Map each approved product operation to a server-owned query template.
    Accept typed parameters, not browser PromQL, tenant IDs or upstream URLs.
 3. Inspect actual series and labels for every metric. Do not infer names,

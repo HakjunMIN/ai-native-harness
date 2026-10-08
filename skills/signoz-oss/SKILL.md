@@ -5,6 +5,15 @@ description: Use when assessing, customizing, troubleshooting, or planning upgra
 
 # SigNoz OSS
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Use this platform-level reference alongside `signoz-query-service`, not instead
 of its API contract checks. Read [shared principles](../sdlc/references/principles.md) and
 [source map](references/sources.md). Load references once; run only the current
@@ -27,9 +36,8 @@ SDLC phase. Research may finish with unknowns; execution claims require evidence
    and ClickHouse versions/digests, deployment mode, metadata store and volumes.
    Record OSS/enterprise boundaries from the pinned code/license and official
    feature documentation; self-hosted does not imply every feature is free OSS.
-2. Map actual processes from manifests and source. Current upstream describes
-   a bundled SigNoz binary with apiserver, frontend, OpAMP, ruler and alertmanager;
-   older forks may differ. Do not invent a `pkg/query-service` path. Our logical
+2. Map actual processes from manifests and fetched version-matched architecture
+   docs/source. Do not infer bundled services or invent source paths. Our logical
    boundary remains Grafana -> Spring BFF -> supported SigNoz API. Do not expose
    SigNoz UI or add direct BFF-to-ClickHouse access.
 3. Follow synthetic telemetry through receiver, processors, exporter, storage
@@ -54,7 +62,8 @@ SDLC phase. Research may finish with unknowns; execution claims require evidence
 Return Korean version/source provenance, component map, affected contract/schema,
 reproduction or upgrade plan, test/restore evidence and unresolved risks using the
 handoff. Unknown required migration/edition/API facts mean `BLOCKED` for execution.
-Noz is documented as Cloud-only; do not promise it in OSS.
+Verify feature availability and licensing from fetched version-matched sources
+before promising any capability in OSS.
 
 Example: collector replacement receives spans but queries return nothing. Check
 exporter/schema/API alignment with one synthetic trace before any migration or

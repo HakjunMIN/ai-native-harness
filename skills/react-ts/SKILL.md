@@ -5,6 +5,15 @@ description: Use when React and TypeScript state, hooks, typing, or large Grafan
 
 # React and TypeScript
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Keep UI state explicit and transformations predictable before optimizing.
 
 Read the [shared principles](../sdlc/references/principles.md). Use this plugin's `grafana-plugin-dev` and `tdd` skills through native invocation or exact plugin-root skill files.

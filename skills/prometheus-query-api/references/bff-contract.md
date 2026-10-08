@@ -1,5 +1,9 @@
 # BFF query contract
 
+First fetch the relevant official URLs in [sources](sources.md) using the
+[live-documentation protocol](../../sdlc/references/live-documentation.md).
+The following defines local decisions and evidence, not an offline API manual.
+
 Use with `api-contract`, `spring-boot-bff` and `spring-testing`. The BFF owns
 authorization, query shape and public response compatibility.
 
@@ -27,11 +31,11 @@ Keep status, result type and partial-result signals observable to tests.
 
 | Upstream signal | BFF handling to decide in the contract |
 |---|---|
-| `400` bad parameters | Usually a BFF bug or invalid typed input; do not echo internal query text |
-| `422` query cannot execute | Query/template or data-shape problem; log a query hash |
-| `429` or limit error | Stable rate or limit problem with retry guidance when appropriate |
-| `503` timeout or unavailable | Upstream unavailable or timeout; respect cancellation and budgets |
-| `status: success` with warnings | Success with an explicit warning field or documented suppression |
+| Invalid parameters | Fetch actual status/error type; distinguish BFF bugs from invalid typed input |
+| Query execution failure | Fetch error semantics; define a stable response without internal query text |
+| Rate or cost limit | Verify limit signals and any retry guidance |
+| Timeout or unavailability | Verify status/error distinctions; respect cancellation and budgets |
+| Successful response with warnings | Verify envelope fields; define explicit warning handling |
 
 Confirm exact codes and `errorType` values on the pinned server. Do not collapse
 all upstream failures into one status. Never return raw upstream error bodies,

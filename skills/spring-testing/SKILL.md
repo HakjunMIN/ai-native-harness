@@ -5,6 +5,15 @@ description: Use when backend unit, Spring integration, or BFF API tests need ne
 
 # Spring Testing
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Backend acceptance criteria are tested with **JUnit 5**, not Gherkin or Cucumber.
 
 Read the [shared principles](../sdlc/references/principles.md) and this plugin's `tdd` and `api-contract` skills through native invocation or exact plugin-root skill files.

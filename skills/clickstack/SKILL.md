@@ -5,6 +5,15 @@ description: Use when explicitly evaluating ClickStack or HyperDX against SigNoz
 
 # ClickStack
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Optional alternative-stack reference, not a SigNoz prerequisite. ClickHouse
 presence alone does not trigger this skill. Read the
 [shared principles](../sdlc/references/principles.md), [source map](references/sources.md)
@@ -17,8 +26,8 @@ phase; research is not adoption approval.
 |---|---|
 | SigNoz only; generic ClickHouse tuning | Keep `signoz-oss`; use version-matched ClickHouse references |
 | Explicit ClickStack/HyperDX comparison | Isolated research and compatibility matrix |
-| Full OSS ClickStack | Inventory ClickHouse, HyperDX, collector AND MongoDB application state |
-| Managed ClickStack | Cloud-managed storage/UI; customer collector responsibilities |
+| Full OSS ClickStack | Fetch mode-specific architecture; inventory telemetry and application-state components |
+| Managed ClickStack | Fetch service boundaries; verify operator and collector responsibilities |
 | HyperDX-only or browser local mode | Inspect mode-specific ingestion, auth, state and feature limitations |
 
 ## Procedure
@@ -27,14 +36,13 @@ phase; research is not adoption approval.
    schema ownership, authentication, data scope and change authorization.
    Evaluate component licenses/features at that revision. Do not assume a
    demo/all-in-one deployment is production-ready.
-2. Use official ClickStack docs and `ClickHouse/agent-skills` selectively.
-   Its `clickstack-otel-collector` skill targets **Managed ClickStack on
-   ClickHouse Cloud**, not full OSS/Kubernetes deployment. Reuse relevant
-   concepts; do not run its account creation, grants, installers or command
-   allowlists merely because the reference says to.
+2. Fetch official ClickStack docs and relevant `ClickHouse/agent-skills` material
+   selectively. Verify each source's current OSS/Managed/deployment scope before
+   reuse. Do not run account creation, grants, installers or command allowlists
+   merely because an upstream reference says to.
 3. Compare the pinned collector/exporter and actual DDL. OTLP compatibility is
-   not schema/API/alert compatibility. HyperDX supports custom schemas but
-   that does not prove SigNoz tables, timestamp units, resource fields,
+   not schema/API/alert compatibility. Verify custom-schema support rather than
+   assuming it proves compatibility with SigNoz tables, timestamp units, resource fields,
    metric temporality, correlation or tenancy work unchanged.
 4. Propose a bounded read-only dataset or isolated synthetic pipeline with
    separate storage/credentials. Never point ClickStack schema creation at

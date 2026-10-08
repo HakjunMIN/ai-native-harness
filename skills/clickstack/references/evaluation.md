@@ -1,5 +1,9 @@
 # ClickStack evaluation and operations checklist
 
+First fetch the relevant official URLs in [sources](sources.md) using the
+[live-documentation protocol](../../sdlc/references/live-documentation.md).
+The following defines local decisions and evidence, not an offline API manual.
+
 ## Decide whether this skill is needed
 
 | Observation | Decision |
@@ -58,8 +62,9 @@ access authorizes database access from our Spring BFF or Grafana browser.
 Record network/auth boundaries, secret references (not values), durable volumes,
 capacity and retention, collector backpressure, identity separation, monitoring,
 and upgrade compatibility across UI, state store, collector and ClickHouse.
-For full OSS, rehearse restoration of MongoDB application state as well as
-ClickHouse telemetry. Select mode-specific backup requirements for other modes.
+Fetch the selected mode's architecture and recovery docs to identify every
+application-state and telemetry store, then rehearse their restoration. Do not
+assume another mode's storage or backup requirements apply.
 Test recovery consistency; an old container tag is not a data rollback.
 
 End the research handoff with a recommendation, gaps and separately scoped next

@@ -5,6 +5,15 @@ description: Use when Grafana plugin behavior, frontend Gherkin, accessibility, 
 
 # Grafana Plugin Testing
 
+## Required live documentation
+
+Before technical advice, code, configuration or queries, follow the
+[live-documentation protocol](../sdlc/references/live-documentation.md) and
+**fetch the relevant official URLs** in [sources](references/sources.md) during
+this task. Local guidance below defines project policy and verification questions,
+not current upstream facts. Record fetched URL/section/date and matching version;
+failed retrieval blocks dependent guidance rather than falling back to memory.
+
 Test both isolated UI behavior and its actual Grafana environment.
 
 Read the [shared principles](../sdlc/references/principles.md). Import `bdd-gherkin` natively or from `<PLUGIN_ROOT>/skills/bdd-gherkin/SKILL.md` as a reference only; reuse an already-active reference without recursive dispatch.

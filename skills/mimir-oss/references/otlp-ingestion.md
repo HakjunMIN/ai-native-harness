@@ -1,55 +1,53 @@
-# OTLP and remote_write ingestion
+# Mimir ingestion investigation
 
-Use the [source map](sources.md) for exact links. Read the deployed Mimir
-configuration and runtime overrides before applying any default below.
+First fetch the relevant official URLs in [sources](sources.md) under the
+[live-documentation protocol](../../sdlc/references/live-documentation.md).
+Use [Collector ingestion docs](https://grafana.com/docs/mimir/latest/configure/configure-otel-collector/)
+and [configuration reference](https://grafana.com/docs/mimir/latest/configure/configuration-parameters/)
+as discovery entrypoints, then resolve the deployed version. This checklist
+intentionally does not embed endpoint defaults, translation rules or feature status.
 
-## Choose the write path
+## Choose the write path from live sources
 
-| Path | Use when | Check |
-|---|---|---|
-| `otlphttp` to `<gateway>/otlp` | OTel Collector already owns metrics | Collector and Mimir versions, auth extension, tenant header, retry and queue limits |
-| `prometheusremotewrite` to `/api/v1/push` | Existing Prometheus remote_write path or approved exporter requirement | Exporter translation options, resource-to-label conversion and remote-write protocol version |
-| Dual export to SigNoz and Mimir | Approved migration parity window | Independent queues, failure isolation, cost and tenant routing for both destinations |
+Record the collector distribution/version and Mimir version, architecture,
+gateway, active configuration and runtime overrides. Fetch the corresponding
+receiver/exporter docs before choosing OTLP or remote_write. Verify:
 
-Mimir documents OTLP as the recommended collector path. Do not swap exporters
-without comparing resulting series names, labels and failure behavior.
+- Supported protocols, endpoint paths, authentication and tenant-header ownership.
+- Required collector components and options in the pinned distribution.
+- Recommended write path and its prerequisites for this version and deployment.
+- Queue, retry, timeout, backpressure and partial-failure behavior.
+- For an approved dual-write window, independent failure isolation, cost and tenant
+  routing for both destinations. A docs example does not authorize exporter changes.
 
-## Tenant routing
+Choose an authenticated owner for tenant routing. Never trust telemetry labels or
+browser headers as identity. Fetch current tenant-ID/federation rules, then enforce
+project authorization. Keep credentials in the existing secret mechanism.
 
-Choose one owner for the tenant header: an authenticating gateway, a
-tenant-specific collector pipeline, or a validated routing component. Map the
-customer identity to a valid Mimir tenant ID. Reject reserved values and `|`
-unless an approved federation feature needs it. Never derive the tenant from
-untrusted telemetry labels without authentication. Keep credentials in the
-existing secret mechanism, not Helm values, reports or chat.
+## Translation questions to resolve
 
-## Translation checklist
-
-Run one approved synthetic fixture and inspect the resulting series with the
-query API before writing PromQL.
-
-| Topic | Current documented behavior to verify |
+| Topic | Evidence to retrieve and verify with stored series |
 |---|---|
-| Names | Unsupported characters may be escaped to `_`; the translation strategy depends on validation scheme and translation settings |
-| Suffixes | Current config defaults do not add OTLP metric suffixes; never assume `_total`, `_seconds` or `_bytes` |
-| Resource attributes | `service.namespace/service.name` maps to `job`; `service.instance.id` maps to `instance`; others go to `target_info` |
-| Promotion | Resource-attribute promotion is experimental and must list approved bounded attributes |
-| Temporality | Delta OTLP is rejected unless experimental native delta ingestion is enabled; cumulative conversion must be explicit |
-| Histograms | Explicit and exponential histograms may become classic, NHCB or native histograms; check flags and stored series |
-| Start time | Created-timestamp zero-sample ingestion is optional and affects counter resets |
-| Out-of-order | Disabled by default unless a time window is configured |
+| Names and suffixes | Which validation/translation options apply, and what names and unit/type suffixes result? |
+| Resource attributes | Which attributes become labels or metadata, and how are service/instance identities represented? |
+| Promotion | Which resource-promotion options are supported, with what stability and cardinality limits? |
+| Temporality | Which delta/cumulative forms are accepted, and where must conversion occur? |
+| Histograms | Which explicit/exponential representations are accepted and stored under the active settings? |
+| Start time | How do created timestamps affect resets and ingestion? |
+| Ordering | Which ordering windows and rejection rules apply at instance and tenant scope? |
 
-`service.name` is not automatically a `service_name` label. Query `job` or use
-an approved `target_info` join or `info()` only when the pinned query engine
-supports it. Promote `deployment.environment` or other resource attributes only
-after cardinality and query-contract review.
+Do not assume metric suffixes, service labels, joins or histogram forms from
+OTel input names or a historical default. Fetch relevant query-engine support
+before choosing joins/functions and inspect one approved synthetic fixture.
 
 ## Acceptance evidence
 
 1. Collector receives the fixture and exports without dropped or retried data.
-2. Mimir accepts the write for the expected tenant and rejects a wrong-tenant read.
-3. Series, labels, units, temporality and histogram representation match the plan.
-4. Active series, ingestion rate and discarded samples stay within tenant limits.
-5. Query, dashboard and alert evidence are recorded separately from write success.
+2. Mimir accepts the write for the expected tenant and rejects unauthorized reads.
+3. Observed names, labels, units, temporality and histogram form match expectations
+   derived from fetched version-matched docs and the active configuration.
+4. Active series, ingestion rate and discarded samples stay within agreed limits.
+5. Record query, dashboard and alert results separately from write success.
 
-A listening `/otlp` endpoint or HTTP 2xx alone does not prove usable metrics.
+HTTP success alone does not prove usable metrics. Missing docs or unknown mapping
+blocks the dependent configuration/query recommendation, not unrelated inventory.
