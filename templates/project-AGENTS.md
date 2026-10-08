@@ -20,7 +20,7 @@ For SDLC work, first select the ticket and resolve its `harness.lock.json` using
 returned root for that ticket's skills, references, role profiles and scripts;
 `.agents/skills/` is the discovery/bootstrap entrypoint, not an override of an
 existing lock. Local intake and `harness.mjs start JIRA-ID` pin new runs. Every
-child task inherits the conductor's lock and authoritative state path. Missing
+sub task inherits the conductor's lock and authoritative state path. Missing
 locks need explicit adoption; mismatched/missing snapshots block, never fall back
 to latest. Do not modify snapshots, switch shared links, or weaken current safety
 hooks. Project instructions and current security requirements remain applicable.

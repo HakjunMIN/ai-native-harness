@@ -5,7 +5,7 @@
 대상 리포에서 실행합니다. 새 작업 생성 전에는 설치 경로를 사용하지만,
 티켓 생성/재개 이후의 `PLUGIN_ROOT`는 `harness.mjs resolve STATE`가 반환하는
 **티켓별 스냅샷 경로**입니다. 설치 경로와 혼동하거나 공용 링크를 바꾸지 마세요.
-lock은 `docs/sdlc/<ID>/harness.lock.json`에 있고 하위 구현 태스크도 상속합니다.
+lock은 `docs/sdlc/<ID>/harness.lock.json`에 있고 sub task도 상속합니다.
 리비전 확인·복원·명시적 전환은 [티켓 리비전 관리](../skills/sdlc/references/harness-revisions.md)를 따릅니다.
 
 새 Jira 작업은 `node .ai-native-sdlc/scripts/harness.mjs start ABC-123`으로
@@ -146,12 +146,17 @@ false입니다. 같은 모델이라도 작성자와 독립된 세션에서 리�
 false일 때 인간 리뷰는 `allowHumanReview: true`인 경우에만 허용합니다
 (이 필드가 없으면 false, 제공되는 설정 템플릿은 true). 인간 G1/G2/G5b는 모두 유지합니다.
 
-G1 승인 후 [구현 태스크 정의 템플릿](../templates/task-plan.json)으로 draft를 작성합니다.
+G1 승인 후 [sub task 정의 템플릿](../templates/sub-task-plan.json)으로 draft를 작성합니다.
 정규 정의의 `tasks`와 상태의 `taskPlan`을 생성기가 연결합니다.
-구현 태스크는 Jira 발행 전에도 존재하며, 로컬 실행에서는 Jira 티켓을 만들지 않습니다.
+sub task는 Jira 발행 전에도 존재하며, 로컬 실행에서는 Jira 티켓을 만들지 않습니다.
+용어·스킬명 변경 후에도 기존 `tasks`, `taskPlan`, `slices`, 생성 경로 및 `tasks.mjs`
+명령은 유지합니다. 명칭을 바꾸기 위해 승인된 산출물이나 증거 해시를 다시 쓰지 않습니다.
+새 스킬을 설치에 반영할 때는 기존 설치기를 다시 실행해 관리 링크를 갱신합니다.
+진행 중인 lock은 자동 교체하지 않으며, 변경이 필요하면
+[명시적 리비전 전환](../skills/sdlc/references/harness-revisions.md)을 따릅니다.
 
 ```bash
-node "$PLUGIN_ROOT/scripts/tasks.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/task-draft.json
+node "$PLUGIN_ROOT/scripts/tasks.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/sub-task-draft.json
 ```
 
 도구는 `plans/<revision>/tasks.json`과 strict 상세 Markdown을 생성하고 해시와
@@ -164,7 +169,7 @@ config 편집만으로 승인된 정책이 바뀌지 않습니다. 변경은 G2 
 
 ```bash
 node "$PLUGIN_ROOT/scripts/state.mjs" invalidate docs/sdlc/ABC-123/state.json G2 "교차 모델을 권고 정책으로 전환"
-node "$PLUGIN_ROOT/scripts/tasks.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/task-draft.json
+node "$PLUGIN_ROOT/scripts/tasks.mjs" prepare docs/sdlc/ABC-123/state.json ai-native-sdlc.config.json docs/sdlc/ABC-123/sub-task-draft.json
 ```
 
 새 manifest·리뷰를 확인하고 **사람의 G2 재승인**을 받은 후 재개합니다.
@@ -181,11 +186,11 @@ Behavior는 RED/GREEN, refactor는 before/GREEN, 문서·config는 의미 있는
 
 ### Jira 자식 티켓 발행
 
-Strict/legacy의 `sdlc-plan`은 설계 뒤 `sdlc-tasks` draft를 사용합니다. 생성된
+Strict/legacy의 `sdlc-plan`은 설계 뒤 `sdlc-subtasks` draft를 사용합니다. 생성된
 manifest·문서 해시·AC·의존성 그래프를 리뷰하고 사람이 G2 승인합니다.
 `taskPlan`에는 manifest 경로/해시를 넣고 G2 evidence에도 같은 참조를 넣습니다.
-생성된 구현 태스크 뷰의 의미는 [안내](../templates/task.md), 상태 필드는
-[구현 태스크 계약](../skills/sdlc-tasks/references/task-contract.md)을 따릅니다.
+생성된 sub task 뷰의 의미는 [안내](../templates/sub-task.md), 상태 필드는
+[sub task 계약](../skills/sdlc-subtasks/references/sub-task-contract.md)을 따릅니다.
 
 Strict/legacy는 G2 이후 `phase=publish`, light는 `phase=implement`이며 자식을 만들지
 않습니다. Strict 발행은 setup에서 확인한 Jira 이슈 타입·필수 필드·
@@ -200,9 +205,9 @@ marker로 재조회하고, 이미 존재하면 그 Jira 티켓을 복구합니�
 있으므로 불명확한 생성 결과를 즉시 재시도하지 않습니다. 중복은 사람에게 인계합니다.
 
 `ready`는 구현 단계에서만 실행하며 `[{ "id": 1, "key": "ABC-124" }]` 형태의
-준비된 구현 태스크를 반환합니다(light의 key는 부모 `ABC-123`; 로컬 실행의 key는
+준비된 sub task를 반환합니다(light의 key는 부모 `ABC-123`; 로컬 실행의 key는
 로컬 ID). 부모 state 하나가 실행/승인을 관리합니다. 의존 Jira 티켓의 상태가
-아니라 선행 태스크의 실제 로컬 done 증거로 다음 태스크를 판단합니다.
+아니라 선행 sub task의 실제 로컬 done 증거로 다음 sub task를 판단합니다.
 G3 무효화는 ID/발행 정보를 유지하고 실행만 초기화합니다. 영향 분석이 있으면:
 
 ```bash
@@ -215,7 +220,7 @@ node "$PLUGIN_ROOT/scripts/state.mjs" invalidate docs/sdlc/ABC-123/state.json G3
 G2 이전 무효화는
 기존 발행 기록을 stale로 보존하고, 재승인 뒤 동일 Jira key를 갱신·재확인합니다.
 
-G3 재검증에서는 이미 완료된 구현 태스크의 historical RED를 별도 보존합니다.
+G3 재검증에서는 이미 완료된 sub task의 historical RED를 별도 보존합니다.
 변경 없는 동작·테스트는 담당 작성자(strict: test-writer)가 출처를 확인한 뒤 새 GREEN·리뷰와
 함께 사용할 수 있습니다. 새 회귀 수정이나 테스트 변경은 새 RED가 필요합니다.
 이미 정상인 테스트를 일부러 실패시키거나 이전 출력을 새 실행으로 표시하지 않습니다.
@@ -227,10 +232,10 @@ G2 무효화는 낡은 manifest 참조를 history에 보관하고 active 참조�
 schema 1은 자동 승인 승계 없이 명시적으로 차단합니다. 원본 state·문서·로그를
 별도 감사용 파일로 보존한 뒤, 재개할 실행에 대해서만 다음 절차를 적용합니다.
 
-1. 기존 G2 이후로 진행된 실행은 먼저 `invalidate <state> G2 "구현 태스크 워크플로우로 전환"`을 실행합니다. 이미 끝난 릴리스 기록은 재개하지 말고 보관합니다.
+1. 기존 G2 이후로 진행된 실행은 먼저 `invalidate <state> G2 "sub task 워크플로우로 전환"`을 실행합니다. 이미 끝난 릴리스 기록은 재개하지 말고 보관합니다.
 2. `schemaVersion`을 2로 바꾸고 `taskPlan: null`, `publications: []`를 추가합니다. 기존 Jira 자식이 있다면 빈 목록으로 잊지 말고 실제 키·marker·증거를 검토하여 stale 기록으로 옮깁니다. 기존 증거로 현재 승인을 꾸미지 않습니다.
-3. G0/G1의 유효한 원본 증거는 보존합니다. 상세 구현 태스크 draft와 pending slices를 만들고 `taskPlan` 해시를 등록합니다. 요구사항이 바뀌었으면 G1부터 재승인합니다.
-4. 새 계획·구현 태스크 그래프를 정책에 따라 독립 리뷰하고 G2를 다시 받습니다. 교차 계열은 새 정책의 명시적 강제 또는 policy 없는 legacy 기록일 때 필수입니다. 기존 Jira 이슈는 재사용/조정하고 새 발행은 승인 후에만 수행합니다. 마지막으로 `check`, `next`를 실행합니다.
+3. G0/G1의 유효한 원본 증거는 보존합니다. 상세 sub task draft와 pending slices를 만들고 `taskPlan` 해시를 등록합니다. 요구사항이 바뀌었으면 G1부터 재승인합니다.
+4. 새 계획·sub task 그래프를 정책에 따라 독립 리뷰하고 G2를 다시 받습니다. 교차 계열은 새 정책의 명시적 강제 또는 policy 없는 legacy 기록일 때 필수입니다. 기존 Jira 이슈는 재사용/조정하고 새 발행은 승인 후에만 수행합니다. 마지막으로 `check`, `next`를 실행합니다.
 
 schema 1의 단순 버전 숫자 변경만으로 구현을 재개할 수 없습니다. G2 미도달
 실행은 기존 pending 게이트를 유지하고 필요한 필드를 추가하면 됩니다.

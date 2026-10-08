@@ -17,8 +17,10 @@ const fixture = t => {
 };
 const bootstrappableRepository = t => {
   const repository = join(fixture(t),'source');
-  const clone = spawnSync('git',['clone','--quiet',source,repository],{encoding:'utf8'});
-  assert.equal(clone.status,0,clone.stderr);
+  mkdirSync(repository);
+  const initialized = spawnSync('git',['-C',repository,'init','--quiet','--initial-branch=main'],
+    {encoding:'utf8'});
+  assert.equal(initialized.status,0,initialized.stderr);
   const files = spawnSync('git',['ls-files','-z','--cached','--others','--exclude-standard'],
     {cwd:source,encoding:'utf8'});
   assert.equal(files.status,0,files.stderr);

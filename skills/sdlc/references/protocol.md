@@ -8,7 +8,7 @@ This is the phase-owner contract, not a prerequisite for standalone technical
 skills. Follow [shared principles](principles.md). Resolve `PLUGIN_ROOT` from the
 ticket's locked snapshot and `REPO_ROOT` from the selected repository. Only initial
 run selection/creation uses the installed plugin. Never edit the
-installed plugin while implementing a task. Invoke exact plugin skills, not
+installed plugin while implementing a sub task. Invoke exact plugin skills, not
 unrelated same-name skills. Loading a reference does not execute its procedure.
 
 Follow [project governance](project-governance.md) across phases. Project standards
@@ -36,7 +36,7 @@ remains `docs/sdlc`.
 Before entering a phase, resolve `STATE` with the installed `scripts/harness.mjs`
 and use the returned snapshot as `PLUGIN_ROOT` for all skills, references, role
 profiles, templates and scripts. See [ticket revisions](harness-revisions.md).
-Verify the lock on every resume and before dispatch; child tasks inherit the
+Verify the lock on every resume and before dispatch; sub tasks inherit the
 conductor's lock, not a lock from a worker's stale state copy. Then run:
 
 ```bash
@@ -54,7 +54,7 @@ There is no automatic human approval command.
 |---|---|---|
 | G0 | discover | Jira snapshot or hashed local user request, AC, module map |
 | G1 | human | approved requirements, relevant UI/BE/FE decisions |
-| G2 | human | plan, policy snapshot, canonical implementation task manifest, applicable contracts/test matrix; strict plan review |
+| G2 | human | plan, policy snapshot, canonical sub task manifest, applicable contracts/test matrix; strict plan review |
 | G3 | implement | completed slices, change-appropriate verification and independent reviews; integrated checks |
 | G4 | verify | applicable fresh checks, integrated spec/standards/security coverage, UX evidence when relevant |
 | G5a | release | exact-SHA required CI, immutable digest, dev/staging health and promotion evidence |
@@ -67,7 +67,7 @@ never use N/A for human gates or unavailable required checks.
 ## Risk-based policy
 
 The canonical manifest and state contain the same policy, bound by G2 evidence.
-See [implementation task contract](../../sdlc-tasks/references/task-contract.md) for drafting,
+See [sub task contract](../../sdlc-subtasks/references/sub-task-contract.md) for drafting,
 generation and publication. Config changes do not alter an approved snapshot.
 
 - **Light:** newly configured bounded, low-risk work with one independent outcome.
@@ -75,7 +75,7 @@ generation and publication. Config changes do not alter an approved snapshot.
   implement directly.
   One author may write tests and implementation; one independent combined review
   covers spec and standards. G2 still requires human approval, not a model review.
-- **Strict:** architectural/high-risk or decomposed work. Detailed generated task views,
+- **Strict:** architectural/high-risk or decomposed work. Detailed generated sub task views,
   Jira child-ticket publication (not for local work), separate test-writer/implementer
   assignments, spec/standards
   axes and independent plan/final reviews remain required.
@@ -181,11 +181,11 @@ clear the manifest and mark publications stale; reconcile existing keys later.
 To reuse an existing integration branch after G0–G2 invalidation (including a
 harness upgrade), renew required approvals/publication and commit the approved
 plan. Stop old workers, audit and preserve their work, then clean up archived
-worktrees and task branches. Run `workspaces.mjs reconcile STATE` before
+worktrees and sub task branches. Run `workspaces.mjs reconcile STATE` before
 `plan`/`start`; it records reuse without merging, deleting work or granting approval.
 It requires recorded ownership and ancestry, pending unassigned slices and clean
 source. A changed HEAD or a later plan invalidation requires fresh reconciliation.
-G3 preserves approved task identity and any Jira publication. By default it resets all
+G3 preserves approved sub task identity and any Jira publication. By default it resets all
 slices; with known slice IDs, complete graph and hashed impact analysis it resets
 only selected slices and transitive dependents. Explain changed paths, dependencies
 and why retained slices remain valid. Shared/uncertain impact requires full reset.

@@ -220,8 +220,8 @@ diff로 검토한다. 기존 `AGENTS.md`와 관리 파일·훅의 충돌도 변�
 | 접수/Discovery | `intake.md`(로컬) 또는 Jira snapshot, `01-discovery.md`, `state.json` | 불변 요청 근거, AC ID, 모듈 맵, 범위/위험/질문 |
 | 요구 구체화 | 해당 시 `features/*.feature`, 프로토타입 증거 | FE 관찰 동작, UI 상태·접근성; 선택과 승인은 별개 |
 | Plan | `02-plan.md`, 해당 시 ADR/`openapi.yaml`, 테스트 매트릭스 | 대안·계약·AC별 검사·릴리스/복구 |
-| 태스크 정의 | draft와 `plans/<revision>/tasks.json`, strict의 생성 상세 뷰 | `tasks.mjs prepare`로 정규 manifest 생성; AC 중복 수동 관리 금지 |
-| Implement | `03-impl-log.md`, 태스크별 실행·리뷰 증거 | 행동 변경 RED/GREEN, 리팩터링 before/GREEN, 문서/설정의 관련 검사 |
+| sub task 정의 | draft와 `plans/<revision>/tasks.json`, strict의 생성 상세 뷰 | `tasks.mjs prepare`로 정규 manifest 생성; AC 중복 수동 관리 금지 |
+| Implement | `03-impl-log.md`, sub task별 실행·리뷰 증거 | 행동 변경 RED/GREEN, 리팩터링 before/GREEN, 문서/설정의 관련 검사 |
 | Verify | `04-verify-report.md`, 실행 로그·UX·독립 리뷰 증거 | AC별 판정, 명령/cwd/종료 코드/시간, SHA, hash, 미검증 범위 |
 | Release | `05-release.md`, `production-proposal/` | CI SHA, digest, 환경별 상태, 사람 승인, smoke/rollback 근거 |
 
@@ -305,8 +305,8 @@ docs/
 |---|---|---|---|
 | G0 | 요청 접수·분석 준비 | 요청 원문 근거, AC, 모듈 맵 | Discovery 담당 |
 | G1 | 요구사항 확정 | 범위·AC·UI/BE/FE 결정의 실제 승인 | 지정된 사람 |
-| G2 | 설계·계획 확정 | 계획, 정책, 정규 태스크 manifest, 계약/검사, strict 계획 리뷰 | 지정된 사람 |
-| G3 | 구현 및 통합 완료 | 태스크별 검증, 독립 리뷰, 통합 검사, 소스 SHA | 구현 진행 담당 |
+| G2 | 설계·계획 확정 | 계획, 정책, 정규 sub task manifest, 계약/검사, strict 계획 리뷰 | 지정된 사람 |
+| G3 | 구현 및 통합 완료 | sub task별 검증, 독립 리뷰, 통합 검사, 소스 SHA | 구현 진행 담당 |
 | G4 | 릴리스 준비 검증 | 최신 AC 검사와 spec/standards/security 검토, 해당 UX 증거 | 검증 담당·독립 리뷰어 |
 | G5a | dev/staging 확인 | 현재 SHA의 필수 CI, digest, 사람이 수행한 프로모션과 health | 릴리스 담당 |
 | G5b | 운영 반영 확인 | 사람의 승인/머지 근거, 관측한 digest·Synced/Healthy·smoke | 지정된 사람·운영자 |
@@ -409,5 +409,5 @@ prod desired-state 수정·머지·sync는 하지 않는다. 운영 미반영 �
 - [설치 안내](install.md) · [호환성과 실제 검증 범위](compatibility.md)
 - [운영 절차](operations.md)
 - [설정 템플릿](../templates/ai-native-sdlc.config.json)
-- [태스크 정의 템플릿](../templates/task-plan.json) · [역할 인계 양식](../templates/handoff.md)
+- [sub task 정의 템플릿](../templates/sub-task-plan.json) · [역할 인계 양식](../templates/handoff.md)
 - [가상 산출물 예시](../examples/ABC-123/README.md)

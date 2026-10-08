@@ -1,7 +1,7 @@
-# Implementation task document view
+# Sub task document view
 
 This is a field guide, not a second authoring template. Write the canonical
-[task definition](task-plan.json); the conductor runs `scripts/tasks.mjs
+[sub task definition](sub-task-plan.json); the conductor runs `scripts/tasks.mjs
 prepare STATE CONFIG DRAFT`. Strict detailed Markdown is generated from that
 same definition. Light uses the canonical outcome on the parent without a child
 Markdown requirement. Never manually synchronize or edit generated AC copies.
@@ -15,10 +15,14 @@ Markdown requirement. Never manually synchronize or edit generated AC copies.
 
 Verification follows the approved change kind: behavior RED/GREEN, refactor
 before/GREEN, documentation/config meaningful checks. Independent review follows
-policy; task completion does not mean Jira Done or production release.
+policy; sub task completion does not mean Jira Done or production release.
 Exact edit paths/commands belong in the current handoff. Publication keys and
 execution logs belong in their ledgers, not approved generated documents.
 
+The runtime names `tasks`, `taskPlan`, `slices`, `tasks.json`, `tasks/<id>.md`
+and displayed `T<id>` identifiers remain stable for existing runs. They refer to
+sub tasks and do not imply separate Jira issues.
+
 Policy-less manifests remain strict and keep their document/hash semantics
 until explicitly invalidated, regenerated and reapproved under the
-[implementation task contract](../skills/sdlc-tasks/references/task-contract.md).
+[sub task contract](../skills/sdlc-subtasks/references/sub-task-contract.md).

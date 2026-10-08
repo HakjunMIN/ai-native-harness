@@ -12,7 +12,7 @@ Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->34�
 
 | 원칙 | 워크플로우에 적용하는 방식 |
 |---|---|
-| **작은 수직 단위로 전달** | DB/API/UI 계층별 작업 대신, 사용자 결과와 수용 기준(AC)을 갖춘 구현 태스크로 나눕니다. |
+| **작은 수직 단위로 전달** | DB/API/UI 계층별 작업 대신, 사용자 결과와 수용 기준(AC)을 갖춘 sub task로 나눕니다. |
 | **AC 기반 Verification & Validation** | 사용자 스토리·Jira 티켓 또는 요청에서 AC를 도출합니다. 프런트엔드 관찰 가능 동작은 AC에 연결된 Gherkin 시나리오로, 백엔드 AC는 API 예시와 JUnit 단위·통합·API 테스트로 연결합니다. 구현 전 G1에서 사람이 AC·시나리오(UI는 프로토타입 포함)로 요구 의도를 확인(Validation)하고, 최종 검증에서 AC별 테스트 결과로 구현 충족을 확인(Verification)합니다. |
 | **계약과 경계 우선** | 도메인 용어·API 계약·테스트 기대값을 맞추고, 인증·테넌트·제품 경계를 보존합니다. |
 | **위험 기반 검증** | 작고 저위험인 단일 결과는 light, 고위험·아키텍처 변경·다중 결과는 strict로 진행합니다. |
@@ -161,7 +161,7 @@ pull하지 않고 Jira 조회·동기화나 사람 승인도 대신하지 않습
 기존 작업은 `resolve`부터 실행하고, 반환된 `root` 아래의 스킬·역할·템플릿을 읽습니다.
 `state.mjs`의 상태 관련 명령은 해당 티켓의 스냅샷 검증기로 자동 연결됩니다.
 
-하위 구현 태스크·서브에이전트는 부모 conductor의 lock과 원본 상태 경로를 상속합니다.
+sub task·서브에이전트는 부모 conductor의 lock과 원본 상태 경로를 상속합니다.
 공유 링크는 티켓 전환 시 바꾸지 않으며, 현재 공통 안전 훅과 프로젝트 보안 지침은
 과거 스냅샷으로 되돌리지 않습니다.
 
@@ -213,10 +213,16 @@ sdlc 문서 검색 화면의 빈 상태를 개선해줘
 - **로컬:** 필요한 사항만 확인해 원래 요청과 답변을 `intake.md`에 기록합니다. Jira 없이 진행하되 사람 승인과 검증 기준은 동일하게 유지합니다.
 - **재개:** 산출물과 상태는 `docs/sdlc/<ID>/`에 저장합니다. `sdlc`로 목록을 보고, `sdlc <ID>`로 이어갑니다.
 
-**구현 태스크는 AC·범위·의존성을 가진 실행 단위이고, Jira 티켓은 원격 이슈입니다.**
-`sdlc-tasks`가 태스크 정의와 필요한 Jira 발행을 담당합니다.
-단일 태스크는 현재 checkout의 브랜치에서, 독립적인 병렬 태스크는 별도 Git 워크트리에서
+**sub task는 AC·범위·의존성을 가진 실행 단위이고, Jira 티켓은 원격 이슈입니다.**
+큰 티켓이나 요청은 여러 sub task로 나누며, 작은 범위의 작업은 하나의 sub task로
+진행합니다. `sdlc-subtasks`가 sub task 정의와 필요한 Jira 발행을 담당합니다.
+이 명칭은 Jira의 특정 이슈 타입을 강제하지 않습니다. 로컬 작업은 Jira 발행이 없고,
+Jira light는 부모 티켓을 사용하며 Jira strict/legacy만 승인 후 자식 티켓을 발행합니다.
+단일 sub task는 현재 checkout의 브랜치에서, 독립적인 병렬 sub task는 별도 Git 워크트리에서
 수행한 뒤 통합 검증합니다. 백엔드는 JUnit, 프런트엔드 E2E는 Gherkin을 사용합니다.
+
+기존 실행과의 호환성을 위해 `tasks`, `taskPlan`, `slices`, `tasks.json`, `tasks/` 및
+`tasks.mjs` 명령은 유지합니다. 상세 대응은 [sub task 계약](skills/sdlc-subtasks/references/sub-task-contract.md)을 참고하세요.
 
 ### PR 본문과 회고
 
@@ -296,11 +302,11 @@ GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니�
 | 문서 | 내용 |
 |---|---|
 | [설치 안내](docs/install.md) | MSA 공유·기존 복사 설치, Bash/PowerShell, 업데이트와 충돌 처리 |
-| [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md) | 티켓별 lock, 캐시, 재개·복구·명시적 버전 전환과 하위 태스크 상속 |
+| [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md) | 티켓별 lock, 캐시, 재개·복구·명시적 버전 전환과 sub task 상속 |
 | [고객 리포 적용 사전 탐색](docs/customer-repository-discovery.md) | 인터뷰 질문, 산출물 양식, 도구·권한 조사, 개발 프로세스 매핑과 파일럿 도입 기준 |
 | [운영 절차](docs/operations.md) | light/strict 정책, 승인·재개, 병렬 워크트리, 기존 상태 마이그레이션 |
 | [프로젝트 거버넌스](skills/sdlc/references/project-governance.md) | 공통 표준·ADR, 기준 버전, 승인·예외·승격·대체와 변경 영향 확인 |
-| [구현 태스크 예시](examples/ABC-123/README.md) | 계획·태스크·증거 산출물 구조 |
+| [sub task 예시](examples/ABC-123/README.md) | 계획·sub task·증거 산출물 구조 |
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
 | [SigNoz OSS](skills/signoz-oss/SKILL.md) · [ClickStack](skills/clickstack/SKILL.md) | 자체 호스팅 운영과 선택적 대안 평가. ClickStack은 필수 의존성이 아니며 자동 설치·이전하지 않습니다. |
 | [Mimir OSS](skills/mimir-oss/SKILL.md) · [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | 메트릭 저장소·쿼리 서비스 전환 평가와 운영, PromQL·BFF 쿼리 계약. 승인된 결정 없이 운영 전환하지 않습니다. |

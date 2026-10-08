@@ -140,7 +140,7 @@ test('rejects nonexistent manifest component path', t => {
   writeFileSync(file,JSON.stringify(manifest));
   assert.match(validatePackage(root).join('\n'),/missing.json/);
 });
-for (const name of ['signoz-oss', 'clickstack', 'sdlc-tasks', 'mimir-oss', 'prometheus-query-api', 'pr', 'retro']) {
+for (const name of ['signoz-oss', 'clickstack', 'sdlc-subtasks', 'mimir-oss', 'prometheus-query-api', 'pr', 'retro']) {
   test(`requires ${name} in the distributable skill catalog`, t => {
     const root = copy(t);
     rmSync(join(root, `skills/${name}`), {recursive:true, force:true});

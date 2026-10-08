@@ -85,7 +85,7 @@ Codex 프로젝트 설치는 native 훅 설정과 에이전트 TOML을 생성하
 훅 신뢰 승인 및 명령 차단 여부는 Codex 세션에서 별도로 확인해야 합니다.
 
 이 저장소 구현 시에는 별도 `COPILOT_HOME`으로 로컬 경로 설치를 실행해 당시
-스킬 27개의 발견과 로컬 마켓플레이스 등록을 확인했습니다. 이후 `sdlc-tasks`,
+스킬 27개의 발견과 로컬 마켓플레이스 등록을 확인했습니다. 이후 `sdlc-subtasks`,
 `signoz-oss`, `clickstack`, `mimir-oss`, `prometheus-query-api`, `pr`, `retro`를
 추가해 현재 배포 카탈로그는 <!-- skill-count -->34개입니다. 현재 개수는
 `npm run validate`가 README·설치 안내와 함께 검사하며, 과거 CLI smoke에서

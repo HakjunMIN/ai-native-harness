@@ -3,7 +3,7 @@ import { resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const skillNames = [
-  'sdlc','sdlc-setup','sdlc-discover','sdlc-plan','sdlc-tasks','sdlc-implement','sdlc-verify','sdlc-release','sdlc-handoff',
+  'sdlc','sdlc-setup','sdlc-discover','sdlc-plan','sdlc-subtasks','sdlc-implement','sdlc-verify','sdlc-release','sdlc-handoff',
   'grilling','domain-context','visual-companion','prototype','bdd-gherkin','tdd','api-contract','code-review','pr','retro',
   'verification-gate','jira-sync','diagnosing-bugs','spring-boot-bff','spring-testing','signoz-query-service','signoz-oss','clickstack',
   'mimir-oss','prometheus-query-api',

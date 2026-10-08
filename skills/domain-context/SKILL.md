@@ -5,7 +5,7 @@ description: Use when domain terms are new or conflicting, names drift across mo
 
 # Domain Context
 
-Use one agreed vocabulary across implementation tasks, contracts, tests, and code.
+Use one agreed vocabulary across sub tasks, contracts, tests, and code.
 
 Read the [shared principles](../sdlc/references/principles.md) before changing task artifacts. Load related skills with the native tool when available; otherwise read this plugin's exact skill file, not a same-name external skill.
 

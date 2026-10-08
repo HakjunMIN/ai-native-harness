@@ -14,7 +14,7 @@ const draft = {changeKind:'behavior',risks:[],tasks:[{
 }]};
 
 function fixture(t, classification = 'bounded') {
-  const root = mkdtempSync(join(tmpdir(),'sdlc-tasks-'));
+  const root = mkdtempSync(join(tmpdir(),'sdlc-subtasks-'));
   t.after(() => rmSync(root,{recursive:true,force:true}));
   const state = JSON.parse(readFileSync('templates/state.json','utf8'));
   const output = 'Synthetic evidence for unit tests only.\n';

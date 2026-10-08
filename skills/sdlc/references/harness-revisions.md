@@ -97,7 +97,7 @@ must resolve the run before importing a revision-specific helper. Legacy unlocke
 state remains inspectable with old commands for compatibility, but the conductor
 must not resume it until explicit adoption.
 
-Every child task and subagent uses the parent's lock and authoritative conductor
+Every sub task and subagent uses the parent's lock and authoritative conductor
 state path. A worker's application worktree or a published Jira child key does
 not create a new workflow baseline. Native agent registration is a bootstrap:
 read the locked role, not the current installed role's remaining instructions.
@@ -141,7 +141,7 @@ workflow, use the same explicit upgrade operation with the older snapshot as sou
 Both operations archive the complete previous state and lock under
 `harness-history/<hash>.json`, record the reason and old/new references in history,
 and conservatively invalidate G0 and every downstream gate. Previous evidence files
-remain; active task plans/slices are archived, publications become stale and policy
+remain; active sub task plans/slices are archived, publications become stale and policy
 must be established again. There is no automatic approval carry-forward. The new
 revision must support the current schema; other schema migrations remain explicit.
 Finished runs are not rewritten. Create a new run for follow-up work.

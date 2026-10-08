@@ -19,9 +19,9 @@ continue phase routing. Do not keep using the installed revision's phase content
 after resolving a different root. Never resolve by changing a repository-wide link.
 
 Missing locks require explicit legacy adoption; missing or modified snapshots
-block execution, never fall back to current skills. All implementation tasks and
+block execution, never fall back to current skills. All sub tasks and
 specialists inherit the conductor's state path and resolved root. Do not start a
-separate run/lock for a child task already assigned by a conductor. See
+separate run/lock for a sub task already assigned by a conductor. See
 [ticket revisions](references/harness-revisions.md) for restore and upgrade.
 
 For bare `sdlc` without a substantive request, list `docs/sdlc/*/state.json`
@@ -55,7 +55,7 @@ it through the protocol, preserving the audit trail. Do not repair by marking pa
 |---|---|
 | discover | sdlc-discover |
 | plan | sdlc-plan |
-| publish | sdlc-tasks (publish mode) |
+| publish | sdlc-subtasks (publish mode) |
 | implement | sdlc-implement |
 | verify | sdlc-verify |
 | release | sdlc-release |
@@ -64,9 +64,9 @@ it through the protocol, preserving the audit trail. Do not repair by marking pa
 Route one phase at a time. Continue automatically only across agent-owned gates.
 Plan snapshots risk/review policy before G2. Local work uses its local ID and
 routes directly to implementation, even when strict. Jira light uses the parent
-issue; Jira strict/legacy publishes child Jira tickets for approved implementation tasks.
+issue; Jira strict/legacy publishes child Jira tickets for approved sub tasks.
 `publish` is a phase, not a new human gate. Never treat
-local implementation task drafts or an outbox as successfully published Jira tickets.
+local sub task drafts or an outbox as successfully published Jira tickets.
 At G1/G2/G5b request explicit human approval through the host question tool and
 stop dependent work if absent. Return BLOCKED for required unavailable dependencies
 or routing, without stopping unrelated authorized work.

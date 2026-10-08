@@ -1,11 +1,36 @@
-# Implementation task and Jira publication contract
+# Sub task and Jira publication contract
 
-An implementation task is defined locally before G2 and approved at G2; a Jira
+A sub task is defined locally within a ticket or local request before G2 and approved at G2; a Jira
 ticket is a remote issue (the originating parent or a child published from an
-approved task for Jira strict/legacy runs).
-The `sdlc-tasks` skill owns this workflow. Local `tasks`, `taskPlan`,
-`tasks.json`, and `tasks/<id>.md` describe implementation work; only published
+approved sub task for Jira strict/legacy runs).
+The `sdlc-subtasks` skill owns this workflow. Local `tasks`, `taskPlan`,
+`tasks.json`, and `tasks/<id>.md` describe sub tasks; only published
 Jira issues are tickets.
+
+## Terminology and compatibility
+
+Use **sub task** in user-facing prose and **sub tasks** for the plural. A sub
+task has its own goal, scope, ACs and dependencies, but shares the parent run's
+approval and release lifecycle. Large work is decomposed into multiple sub tasks;
+small bounded work may contain one. This term does not select Jira's native
+Sub-task issue type: use the project's verified issue type and parent mapping.
+
+The terminology and skill rename do not migrate runtime contracts:
+
+| Meaning | Stable identifier or artifact |
+|---|---|
+| Canonical sub task definitions | `tasks` in the draft and manifest |
+| Approved sub task plan reference | `taskPlan` in state |
+| Sub task execution records | `slices` keyed by the same local IDs |
+| Canonical manifest and generated views | `tasks.json`, `tasks/<id>.md` and `T<id>` labels |
+| Preparation command | `scripts/tasks.mjs prepare STATE CONFIG DRAFT` |
+| Jira publication identity | Existing `publications`, Jira keys and `sdlc:<PARENT>:ticket:<id>` markers |
+
+Do not rename or regenerate approved artifacts, IDs or hashes merely to change
+terminology. Locked runs retain their pinned skill names and renderer; use the
+[harness revision procedure](../../sdlc/references/harness-revisions.md) for an
+explicit run upgrade. Existing installation links are refreshed by rerunning the
+installer, not by editing historical snapshots.
 
 ## Sequence and ownership
 
@@ -18,9 +43,9 @@ The conductor owns state, preparation and publication; specialists return drafts
 
 ## Canonical definitions and policy
 
-Write one draft using the [definition template](../../../templates/task-plan.json).
+Write one draft using the [definition template](../../../templates/sub-task-plan.json).
 It contains changeKind, risks, tasks and (for non-behavior work) verificationReason.
-Each implementation task requires stable positive id, title, goal, nonempty scope/nonGoals,
+Each sub task requires stable positive id, title, goal, nonempty scope/nonGoals,
 blockedBy IDs and acceptanceCriteria. Each AC has a locally unique id, parent
 requirement reference, observable text and checks. Supported kinds: junit, jest,
 playwright-bdd, go, chart, manual, static. Select applicable checks; manual cannot
@@ -73,8 +98,8 @@ This section applies to Jira strict/legacy work only. Jira light uses the parent
 key and may retain historical stale records. Local work must not create any Jira
 publication receipts, outbox, or remote writes.
 
-`publications` holds one durable record per implementation task ID. Never recycle
-an ID for a different outcome or discard old records when a task is removed.
+`publications` holds one durable record per sub task ID. Never recycle
+an ID for a different outcome or discard old records when a sub task is removed.
 A Jira publication record uses:
 
 ```json
@@ -132,9 +157,9 @@ node "$PLUGIN_ROOT/scripts/state.mjs" ready "docs/sdlc/ABC-123/state.json"
 
 This checks state and emits JSON such as `[{"id":1,"key":"ABC-124"}]` (Jira light:
 parent key `ABC-123`; local: local ID in `key` for CLI compatibility), only for
-pending implementation tasks whose blockers have evidenced `done` slices and, for workspace
+pending sub tasks whose blockers have evidenced `done` slices and, for workspace
 assignments, commits integrated into the current source. It does not dispatch.
-An empty array means no pending ready task; inspect running assignments or,
+An empty array means no pending ready sub task; inspect running assignments or,
 if all slices are done, perform integrated G3 checks. It does not mean success.
 
 Use the [workspace protocol](../../sdlc/references/protocol.md#source-workspaces)
@@ -158,12 +183,12 @@ All old slice records are archived under the invalidation history's `previous`.
 This record alone cannot restore done or unlock a dependent.
 
 For unchanged behavior/tests, the assigned author (strict: test-writer) checks historical RED against the
-unchanged approved task, previous source and current tests, and records the
+unchanged approved sub task, previous source and current tests, and records the
 reuse rationale. Use that historical RED reference (never relabel it as freshly
 executed), run fresh GREEN on current code and obtain policy-required fresh reviews.
 Changed tests, added behavior or a regression fix require a new relevant failing
 test before that implementation. Missing valid historical RED blocks reuse;
-do not make an already-correct test fail artificially. Task scope changes still
+do not make an already-correct test fail artificially. Sub task scope changes still
 invalidate G2. All execution completion evidence must be rebuilt before a
 dependent can run; historical RED is only one input.
 Write fresh results to new evidence paths; do not overwrite the retained RED log.
@@ -180,7 +205,7 @@ automatically. Removed or merged work requires a human disposition.
 ## Reference and limits
 
 The [upstream ticket decomposition reference](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md)
-informs independently verifiable outcomes, dependency edges and separate tasks.
+informs independently verifiable outcomes, dependency edges and separate sub tasks.
 This package adds Jira reconciliation, approval hashes, BDD/TDD evidence and its
 existing runtime gates; it does not import upstream tracker setup or permissions.
 The JSON ledger is auditable evidence, not authenticated remote truth: the

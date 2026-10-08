@@ -26,7 +26,7 @@ Jira strict publication is not a test-writing assignment. Local strict has no
 publication requirement. Keep each test mapped to ticket ACs.
 
 For a G3 revalidation assignment with unchanged behavior/tests, use the
-`sdlc-tasks` historical-RED procedure. Verify the archived source/RED and ticket
+`sdlc-subtasks` historical-RED procedure. Verify the archived source/RED and ticket
 hashes, record a reuse rationale and require fresh GREEN/reviews. Never relabel
 historical output as a new run. New regression coverage or changed tests need new
 RED; unavailable historical provenance is a blocker, not permission to invent it.

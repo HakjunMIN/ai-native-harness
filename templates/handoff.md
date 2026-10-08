@@ -4,16 +4,16 @@ description: "Scoped SDLC assignment inputs, constraints and evidence return for
 
 # Handoff: <from> -> <to>
 
-Run: <Jira key or local ID> | Intake: <Jira snapshot or hashed local request> | Phase: <phase> | Slice: <id or N/A>
+Run: <Jira key or local ID> | Intake: <Jira snapshot or hashed local request> | Phase: <phase> | Sub task: <id or N/A>
 Policy: <approved snapshot/profile, verification mode and review flags; legacy strict if absent>
-Implementation reference: <local ID, Jira parent key for light, or Jira child key for strict>
-Implementation task definition: <manifest path/hash and optional generated document path/hash>
+Sub task reference: <local ID, Jira parent key for light, or Jira child key for strict>
+Sub task definition: <manifest path/hash and optional generated document path/hash>
 Acceptance criteria: <local AC IDs -> parent requirement references>
 Goal: <one observable result>
 Base: <commit> | Head: <commit>
 Source workspace: <integration branch; assigned branch, absolute worktree path or current checkout, base/slice HEAD, merge status>
 Conductor state: <absolute state.json path in the integration checkout; worker worktree copy is not authoritative>
-Harness lock: <conductor-run harness.lock.json path and SHA256; inherited by every child task>
+Harness lock: <conductor-run harness.lock.json path and SHA256; inherited by every sub task>
 Harness revision: <content SHA256; source Git commit if known, not the application Head>
 Harness root: <verified snapshot root from harness.mjs resolve; re-resolve on another machine/session>
 Role profile: <exact file under the locked root's agents directory; do not substitute the installed profile>

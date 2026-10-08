@@ -255,7 +255,7 @@ test('unsafe IDs, linked run/cache paths and forged lock references are rejected
 test('lock-aware entrypoints and all role profiles require the conductor revision', () => {
   const conductor = readFileSync(resolve('skills/sdlc/SKILL.md'), 'utf8');
   assert.match(conductor, /harness\.mjs.*resolve STATE/);
-  assert.match(conductor, /child task/);
+  assert.match(conductor, /sub task/);
   const handoff = readFileSync(resolve('templates/handoff.md'), 'utf8');
   assert.match(handoff, /Harness lock:/);
   assert.match(handoff, /Harness root:/);
