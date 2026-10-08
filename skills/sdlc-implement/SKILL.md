@@ -14,7 +14,11 @@ Run `state.mjs ready <state>` and audit dependencies, edit paths and shared
 contracts. Use `workspaces.mjs plan|start`: one nonconcurrent slice stays on a
 normal branch; independent, nonoverlapping slices run in separate Git worktrees.
 `start` records assignments as `in_progress`. Reconcile existing assignments
-on resume, never start them twice. Handoffs include policy, Jira key, manifest/AC
+on resume, never start them twice. After G0–G2 invalidation or a harness upgrade,
+renew approvals, commit the approved plan, preserve and clean up old task workspaces,
+then run `workspaces.mjs reconcile STATE` before `plan`/`start`; follow the
+[recovery procedure](../../docs/operations.md#브랜치와-병렬-워크트리).
+Handoffs include policy, Jira/local ID, manifest/AC
 references, worktree path/branch/base, exact allowed paths and commands.
 
 Include the plan's Project baseline and approved exceptions in each handoff.

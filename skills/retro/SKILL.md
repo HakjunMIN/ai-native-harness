@@ -82,6 +82,8 @@ User selection authorizes drafting the change, not bypassing its owner:
 - Checks are code: make them through a normally authorized change sized by risk,
   run them against the current repository first, and never install hooks silently.
 - AGENTS.md and configuration changes use an authorized `sdlc-setup` diff.
+  Follow [project-instruction safety](../sdlc-setup/references/project-instructions.md)
+  before editing AGENTS.md; localize a managed shared symlink, never edit through it.
 - Retiring a no-op rule or a check whose cause is gone follows the same process.
 - Never modify closed-run evidence, approval-bound artifacts, gate state, the
   installed harness or ticket snapshots. Active runs treat new standards as

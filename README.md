@@ -4,7 +4,7 @@ description: "프로젝트 공통 기준과 증거 기반 검증, 사람 승인�
 ---
 
 **AI가 구현하고, 증거로 검증하며, 사람이 승인하는 로컬 개발 워크플로우.**
-Jira 티켓 또는 자연어 요청에서 시작하며, 34개 스킬과 9개 전문 에이전트를 제공합니다.
+Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->34개 스킬과 9개 전문 에이전트를 제공합니다.
 
 ## 소프트웨어 엔지니어링 원칙
 
@@ -166,6 +166,9 @@ pull하지 않고 Jira 조회·동기화나 사람 승인도 대신하지 않습
 상태 파일 경로입니다. `adopt`와 `upgrade`는 이전 상태·lock을 `harness-history/`에
 보존하고 **G0부터 모든 게이트를 재검증**하도록 초기화합니다. `--confirm`은 버전 변경
 의사 표시이지 게이트 승인이 아니며, 완료된 작업은 변경하지 않습니다.
+기존 integration 브랜치가 있으면 재승인된 계획을 commit하고 이전 작업 공간을
+보존·정리한 뒤 `workspaces.mjs reconcile STATE`로 재개합니다.
+상세 조건은 [브랜치·워크트리 운영 절차](docs/operations.md#브랜치와-병렬-워크트리)를 따릅니다.
 
 스냅샷 캐시는 `.ai-native-sdlc-revisions/<SHA256>/`에 둡니다. 공유 설치는 실제 하네스
 클론 옆에서 여러 서비스가 공유하고, 복사 설치는 각 서비스 리포 내부에 보관합니다.
@@ -267,7 +270,10 @@ Discovery에서 적용 기준과 충돌을 식별하고, Plan의 `Project baseli
 
 ## 안전 범위
 
-**v1 훅은 모든 shell push/merge와 직접 cluster 변경을 보수적으로 차단합니다.**
+**v1 훅은 `git push`·`gh pr merge`와 직접 cluster 변경을 보수적으로 차단합니다.**
+로컬 `git merge`에 대한 훅의 중립 응답은 실행 허가가 아닙니다. 사용자 허가와
+프로젝트 보호규칙 아래 컨덕터만 검토된 소스 작업을 integration 브랜치에 통합하며,
+작업자·릴리스 역할은 직접 merge하지 않습니다.
 브랜치 게시와 dev/staging 프로모션은 사람이 실행합니다. 에이전트는 운영 변경안을
 `production-proposal/`에만 작성하며, 실제 prod values 변경·머지·ArgoCD sync는 사람이 담당합니다.
 

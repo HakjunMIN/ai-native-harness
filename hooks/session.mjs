@@ -6,7 +6,7 @@ import { resolveRun } from '../scripts/harness.mjs';
 try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const root = resolve(input.cwd ?? process.cwd(), 'docs/sdlc');
-  const lines = ['ai-native-sdlc: use sdlc-setup once, then sdlc with a Jira key. Human gates cannot be self-approved.'];
+  const lines = ['ai-native-sdlc: use sdlc-setup once, then sdlc with a Jira key, natural-language request, or existing local ID. Human gates cannot be self-approved.'];
   if (existsSync(root)) {
     for (const dir of readdirSync(root, {withFileTypes:true}).filter(d => d.isDirectory())) {
       const file = resolve(root, dir.name, 'state.json');

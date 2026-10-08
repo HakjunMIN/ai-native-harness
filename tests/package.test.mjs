@@ -14,6 +14,26 @@ function copy(t) {
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
 });
+test('package rejects stale current skill counts while keeping historical counts separate', testContext => {
+  const root = copy(testContext);
+  for (const file of ['README.md','docs/install.md','docs/compatibility.md']) {
+    const path = join(root,file);
+    const original = readFileSync(path,'utf8');
+    writeFileSync(path,original.replace(/<!-- skill-count -->\d+/,'<!-- skill-count -->999'));
+    assert.ok(validatePackage(root).some(error => error.includes(`${file}: current skill count`)),file);
+    writeFileSync(path,original);
+  }
+});
+test('setup and retro share a safe project-guidance localization procedure', () => {
+  assert.match(readFileSync('skills/sdlc-setup/SKILL.md','utf8'),/\]\(references\/project-instructions\.md\)/);
+  assert.match(readFileSync('skills/retro/SKILL.md','utf8'),/\]\(\.\.\/sdlc-setup\/references\/project-instructions\.md\)/);
+  const procedure = readFileSync('skills/sdlc-setup/references/project-instructions.md','utf8');
+  assert.match(procedure,/lstat/);
+  assert.match(procedure,/\.ai-native-sdlc\.links\.json/);
+  assert.match(procedure,/\.ai-native-sdlc\.install-lock/);
+  assert.match(procedure,/Never edit through/);
+  assert.match(readFileSync('templates/project-AGENTS.md','utf8'),/symlink/);
+});
 test('technical skills route to live documentation and official HTTPS sources', () => {
   const names = ['mimir-oss', 'prometheus-query-api', 'signoz-oss', 'signoz-query-service',
     'clickstack', 'otel-observability', 'react-ts', 'spring-boot-bff', 'spring-testing',

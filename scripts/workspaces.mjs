@@ -63,7 +63,72 @@ function branchExists(repo, branch) {
 
 function cleanSource(repo) {
   const changes = execFileSync('git',['-C',repo,'status','--porcelain','-z','--untracked-files=all'],{encoding:'utf8'}).split('\0').filter(Boolean);
-  if (changes.some(line => !line.slice(3).startsWith('docs/sdlc/'))) throw new Error('clean source checkout required before starting branches/worktrees');
+  if (changes.some(line => !line.slice(3).startsWith('docs/sdlc/'))) throw new Error('clean source checkout required for workspace operations');
+}
+
+const samePlan = (first, second) => Boolean(first && second && first.path === second.path && first.sha256 === second.sha256);
+const lastPlanInvalidation = state => (state.history ?? []).findLastIndex(entry =>
+  entry.event === 'invalidate' && ['G0','G1','G2'].includes(entry.gate));
+
+function matchingReconciliation(state, integrationBranch, baseHead) {
+  const history = state.history ?? [];
+  const index = history.findLastIndex(entry => entry.event === 'workspaces-reconciled');
+  const entry = history[index];
+  const invalidation = lastPlanInvalidation(state);
+  return invalidation >= 0 && index > invalidation && entry?.integrationBranch === integrationBranch &&
+    entry.baseHead === baseHead && samePlan(entry.taskPlan,state.taskPlan) ? entry : null;
+}
+
+function requireCommittedPlan(statePath, state, repo) {
+  const message = 'commit the approved plan before workspace operations';
+  let committed;
+  try { committed = JSON.parse(git(repo,'show',`HEAD:${relative(repo,statePath)}`)); }
+  catch { throw new Error(message); }
+  if (committed.gates?.G2?.status !== 'passed' || !samePlan(committed.taskPlan,state.taskPlan)) throw new Error(message);
+}
+
+function writeState(statePath, state, original) {
+  const temporary = `${statePath}.${randomUUID()}.tmp`;
+  try {
+    writeFileSync(temporary,`${JSON.stringify(state,null,2)}\n`,{flag:'wx'});
+    if (readFileSync(statePath,'utf8') !== original) throw new Error('state changed during workspace operation; reconcile assignments');
+    renameSync(temporary,statePath);
+  } finally {
+    if (exists(temporary)) rmSync(temporary);
+  }
+}
+
+export function reconcileWorkspaces(statePath, state, repo, original) {
+  const integrationBranch = `sdlc/${state.ticket}/integration`;
+  if (git(repo,'symbolic-ref','--short','HEAD') !== integrationBranch) throw new Error('switch to the recorded integration branch before reconciliation');
+  if (state.slices.some(slice => slice.status !== 'pending' || slice.workspace)) throw new Error('reconciliation requires pending, unassigned slices; do not replace active assignments');
+  if (lastPlanInvalidation(state) < 0) throw new Error('reconciliation requires recorded G0–G2 invalidation history');
+  const archived = state.history.filter(entry => entry.event === 'invalidate')
+    .flatMap(entry => entry.previous?.slices ?? []).map(slice => slice.workspace)
+    .filter(workspace => workspace?.integrationBranch === integrationBranch);
+  if (!archived.length) throw new Error('no recorded workspace history owns this integration branch');
+  cleanSource(repo);
+  requireCommittedPlan(statePath,state,repo);
+  const baseHead = git(repo,'rev-parse','HEAD');
+  if (archived.some(workspace => !/^[a-f0-9]{40,64}$/.test(workspace.baseHead ?? '') ||
+      spawnSync('git',['-C',repo,'merge-base','--is-ancestor',workspace.baseHead,baseHead]).status !== 0)) {
+    throw new Error('recorded workspace base must be an ancestor of the current integration history');
+  }
+  const registered = git(repo,'worktree','list','--porcelain','-z').split('\0')
+    .filter(field => field.startsWith('worktree ')).map(field => field.slice('worktree '.length));
+  const remaining = archived.find(workspace => workspace.mode === 'worktree' &&
+    (exists(workspace.path) || registered.includes(workspace.path)));
+  if (remaining) throw new Error(`archived worktree still exists or is registered: ${remaining.path}; audit and preserve its work before cleanup`);
+  const prefix = `sdlc/${state.ticket}/t`;
+  const branches = git(repo,'for-each-ref','--format=%(refname:short)',`refs/heads/sdlc/${state.ticket}/`).split('\n')
+    .filter(branch => branch.startsWith(prefix) && /^[1-9]\d*$/.test(branch.slice(prefix.length)));
+  if (branches.length) throw new Error(`old task branches require audited integration or archival and cleanup: ${branches.join(', ')}`);
+  const existing = matchingReconciliation(state,integrationBranch,baseHead);
+  if (existing) return existing;
+  const record = {at:new Date().toISOString(),event:'workspaces-reconciled',integrationBranch,baseHead,taskPlan:state.taskPlan};
+  if (git(repo,'rev-parse','HEAD') !== baseHead || git(repo,'symbolic-ref','--short','HEAD') !== integrationBranch) throw new Error('integration branch changed during reconciliation');
+  writeState(statePath,{...state,history:[...state.history,record]},original);
+  return record;
 }
 
 export function startWorkspaces(statePath, state, repo, plan, scopes, original) {
@@ -73,19 +138,22 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
   const initial = !previous.length;
   const currentBranch = git(repo,'symbolic-ref','--short','HEAD');
   const integrationExists = branchExists(repo,integrationBranch);
-  const resuming = state.history?.some(entry => entry.event === 'invalidate' && entry.gate === 'G3' &&
-    entry.previous?.taskPlan?.sha256 === state.taskPlan?.sha256 &&
+  const baseHead = git(repo,'rev-parse','HEAD');
+  const invalidation = lastPlanInvalidation(state);
+  const resuming = state.history?.some((entry,index) => index > invalidation && entry.event === 'invalidate' && entry.gate === 'G3' &&
+    samePlan(entry.previous?.taskPlan,state.taskPlan) &&
     entry.previous?.slices?.some(slice => slice.workspace?.integrationBranch === integrationBranch));
-  if (initial && integrationExists && !(resuming && currentBranch === integrationBranch)) throw new Error('integration branch already exists; reconcile before resuming');
+  const reconciled = matchingReconciliation(state,integrationBranch,baseHead);
+  if (initial && integrationExists && !((resuming || reconciled) && currentBranch === integrationBranch)) {
+    throw new Error(`integration branch already exists; after reapproval and cleanup run node ${JSON.stringify(fileURLToPath(import.meta.url))} reconcile ${JSON.stringify(statePath)}`);
+  }
   if (!initial && (currentBranch !== integrationBranch || !branchExists(repo,integrationBranch))) throw new Error('switch to the recorded integration branch before resuming');
   for (const slice of state.slices.filter(item => item.status === 'in_progress')) {
     if (slice.workspace.mode === 'worktree' && (!exists(slice.workspace.path) ||
         git(slice.workspace.path,'symbolic-ref','--short','HEAD') !== slice.workspace.branch)) throw new Error(`slice ${slice.id}: reconcile missing worktree`);
   }
   cleanSource(repo);
-  const committed = JSON.parse(git(repo,'show',`HEAD:${relative(repo,statePath)}`));
-  if (committed.gates?.G2?.status !== 'passed' || committed.taskPlan?.sha256 !== state.taskPlan?.sha256) throw new Error('commit the approved plan before starting workspaces');
-  const baseHead = git(repo,'rev-parse','HEAD');
+  requireCommittedPlan(statePath,state,repo);
   const worktreeRoot = join(dirname(repo),`${basename(repo)}.sdlc-worktrees`,state.ticket);
   const assignments = plan.selected.map(id => ({id, mode:plan.mode,
     branch:plan.mode === 'branch' ? integrationBranch : `sdlc/${state.ticket}/t${id}`,
@@ -96,26 +164,20 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
   }
   let createdIntegration = false;
   const created = [];
-  let temporary;
   try {
     if (initial && !integrationExists) { git(repo,'switch','-c',integrationBranch); createdIntegration = true; }
     for (const item of assignments) if (item.mode === 'worktree') {
       git(repo,'worktree','add','-b',item.branch,item.path,baseHead);
       created.push(item);
     }
-    if (readFileSync(statePath,'utf8') !== original) throw new Error('state changed during workspace creation; reconcile assignments');
     const updated = structuredClone(state);
     for (const item of assignments) {
       const slice = updated.slices.find(candidate => candidate.id === item.id);
       slice.status = 'in_progress';
       slice.workspace = Object.fromEntries(Object.entries(item).filter(([field]) => field !== 'id'));
     }
-    temporary = `${statePath}.${randomUUID()}.tmp`;
-    writeFileSync(temporary,`${JSON.stringify(updated,null,2)}\n`,{flag:'wx'});
-    renameSync(temporary,statePath);
-    temporary = undefined;
+    writeState(statePath,updated,original);
   } catch (error) {
-    if (temporary && exists(temporary)) rmSync(temporary);
     for (const item of created.reverse()) {
       git(repo,'worktree','remove','--force',item.path);
       git(repo,'branch','-D',item.branch);
@@ -131,7 +193,9 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
 
 function main() {
   const [command,file,scopeFile] = process.argv.slice(2);
-  if (!['plan','start'].includes(command) || !file || process.argv.length > 5) throw new Error('Usage: workspaces.mjs plan|start STATE [SCOPES.json]');
+  if (!['plan','start','reconcile'].includes(command) || !file || process.argv.length > 5 || (command === 'reconcile' && scopeFile)) {
+    throw new Error('Usage: workspaces.mjs plan|start STATE [SCOPES.json] | reconcile STATE');
+  }
   if (dispatchPinned('workspaces.mjs',file)) return;
   const statePath = realpathSync(resolve(file));
   const original = readFileSync(statePath,'utf8');
@@ -139,6 +203,10 @@ function main() {
   const repo = realpathSync(git(dirname(statePath),'rev-parse','--show-toplevel'));
   if (relative(repo,statePath).startsWith('..') || isAbsolute(relative(repo,statePath))) throw new Error('state must be inside the source repository');
   const ready = JSON.parse(execFileSync(process.execPath,[fileURLToPath(new URL('./state.mjs',import.meta.url)),'ready',statePath],{encoding:'utf8'}));
+  if (command === 'reconcile') {
+    console.log(JSON.stringify(reconcileWorkspaces(statePath,state,repo,original)));
+    return;
+  }
   const scopes = scopesFor(scopeFile,ready,repo);
   const plan = planWorkspaces(state,ready,scopes);
   if (command === 'plan') console.log(JSON.stringify(plan));

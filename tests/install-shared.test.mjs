@@ -72,6 +72,32 @@ test('rerun pulls fast-forward updates; other repositories see shared changes im
   assert.equal(git(fixture_.shared, 'rev-parse', 'HEAD'), git(fixture_.remote, 'rev-parse', 'HEAD'));
 });
 
+test('localizing project guidance preserves the shared template, siblings and reinstall ownership', testContext => {
+  const fixture_ = fixture(testContext);
+  assert.equal(install(fixture_).status,0);
+  const target = fixture_.targets[0];
+  const guidance = join(target,'AGENTS.md');
+  const template = join(fixture_.shared,'templates/project-AGENTS.md');
+  const original = readFileSync(guidance);
+  const manifestPath = join(target,'.ai-native-sdlc.links.json');
+  const manifest = JSON.parse(readFileSync(manifestPath));
+  assert.equal(manifest.entries.find(entry => entry.path === 'AGENTS.md').kind,'link');
+  const retained = manifest.entries.filter(entry => entry.path !== 'AGENTS.md');
+  unlinkSync(guidance);
+  writeFileSync(guidance,original,{flag:'wx'});
+  writeFileSync(manifestPath,JSON.stringify({...manifest,entries:retained},null,2)+'\n');
+  const local = original.toString()+'\nProject-specific standards: docs/team/standards.md\n';
+  writeFileSync(guidance,local);
+  assert.deepEqual(readFileSync(template),original);
+  for (const sibling of fixture_.targets.slice(1)) assert.deepEqual(readFileSync(join(sibling,'AGENTS.md')),original);
+  const updated = install(fixture_,[target]);
+  assert.equal(updated.status,0,updated.stderr);
+  assert.equal(lstatSync(guidance).isSymbolicLink(),false);
+  assert.equal(readFileSync(guidance,'utf8'),local);
+  assert.deepEqual(JSON.parse(readFileSync(manifestPath)).entries,retained);
+  assert.equal(git(fixture_.shared,'status','--porcelain'),'');
+});
+
 test('existing project instructions are preserved and conflicts preflight the entire batch', t => {
   const fixture_ = fixture(t);
   writeFileSync(join(fixture_.targets[0], 'AGENTS.md'), 'project-specific policy');

@@ -161,7 +161,8 @@ alone does not prove contract/behavior independence; defer coupled work.
 `start` records `in_progress` assignments and never commits, merges or dispatches.
 Workers edit only their workspace and allowlist; only the conductor writes shared
 state and evidence. Reconcile recorded branches/worktrees on resume. Integrate
-reviewed slice commits on the integration branch before unblocking dependents.
+reviewed slice commits on the integration branch with explicit user authorization
+before unblocking dependents; workers do not merge.
 G3 checks each completed slice SHA is an ancestor of the final integrated SHA;
 rerun combined checks/reviews after merges or conflict fixes. See
 [operations](../../../docs/operations.md) for commands and cleanup.
@@ -177,6 +178,13 @@ Use G1 for requirements/UX, G2 for plan/policy/contracts, G3 for code, G4 for fr
 integrated verification, G5a for changed promotion artifacts. Invalidation clears
 the named gate and downstream gates. G0–G2 archive active plan/slices in history,
 clear the manifest and mark publications stale; reconcile existing keys later.
+To reuse an existing integration branch after G0–G2 invalidation (including a
+harness upgrade), renew required approvals/publication and commit the approved
+plan. Stop old workers, audit and preserve their work, then clean up archived
+worktrees and task branches. Run `workspaces.mjs reconcile STATE` before
+`plan`/`start`; it records reuse without merging, deleting work or granting approval.
+It requires recorded ownership and ancestry, pending unassigned slices and clean
+source. A changed HEAD or a later plan invalidation requires fresh reconciliation.
 G3 preserves approved task identity and any Jira publication. By default it resets all
 slices; with known slice IDs, complete graph and hashed impact analysis it resets
 only selected slices and transitive dependents. Explain changed paths, dependencies
@@ -208,7 +216,10 @@ requires G5b except approved research-only spikes. Jira light syncs the parent;
 Jira strict publishes children. Local runs have no Jira outbox or remote status.
 G5b and production authority remain human-controlled even for local runs.
 
-v1 hooks conservatively deny shell push/merge and direct deployment mutation.
+v1 hooks conservatively deny `git push`, `gh pr merge` and direct deployment mutation.
+Local `git merge` is neutral to the hook, not pre-approved: only the conductor
+integrates reviewed source slices with explicit user authorization and repository
+protections. Workers, including the release role, must not merge.
 Humans publish branches and merge GitOps promotions. Production proposals are
 allowed, actual production desired-state edits are not. Hooks are not a sandbox:
 external CI protections, human approvals and production RBAC remain necessary.

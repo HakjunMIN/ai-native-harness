@@ -45,6 +45,27 @@ test('Codex session start provides additional context', () => {
   assert.equal(result.status,0,result.stderr);
   assert.equal(JSON.parse(result.stdout).hookSpecificOutput.hookEventName,'SessionStart');
 });
+test('session bootstrap describes Jira and Jira-free entrypoints in every adapter', () => {
+  for (const adapter of ['copilot','claude','codex']) {
+    const result = spawnSync(process.execPath,[resolve('hooks/session.mjs'),adapter],
+      {input:JSON.stringify({cwd:process.cwd()}),encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);
+    const output = JSON.parse(result.stdout);
+    const context = (output.hookSpecificOutput ?? output).additionalContext;
+    assert.match(context,/Jira key/);
+    assert.match(context,/natural-language request/);
+    assert.match(context,/existing local ID/);
+    assert.match(context,/Human gates cannot be self-approved/);
+  }
+});
+test('local integration merges stay neutral without authorizing remote publication', () => {
+  for (const adapter of ['copilot','claude','codex']) {
+    const local = hook(shell('git merge --no-commit --no-ff sdlc/local-work/t1'),adapter);
+    assert.deepEqual(local,adapter === 'claude' ? {hookEventName:'PreToolUse'} : {});
+    const remote = hook(shell('gh pr merge 42'),adapter);
+    assert.equal((remote.hookSpecificOutput ?? remote).permissionDecision,'deny');
+  }
+});
 test('keeps deployment observation and in-memory rendering neutral in both adapters', () => {
   for (const adapter of ['copilot','claude']) {
     for (const command of [

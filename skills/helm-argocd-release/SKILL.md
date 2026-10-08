@@ -50,6 +50,10 @@ Return all three revision identities, digest, corresponding CI/chart/health evid
 
 **Never edit actual production desired-state**, including indirect production configuration. No alternate writes or emergency `kubectl patch` bypass.
 
-The v1 guard denies **all** shell pushes/merges and direct Helm/kubectl/ArgoCD mutations. Agents never push, merge, deploy, or sync in any environment—even with urgent authorization.
+The v1 guard denies `git push`, `gh pr merge` and direct Helm/kubectl/ArgoCD
+mutations. It is neutral to local `git merge`, not an authorization to run it.
+Only the conductor may integrate reviewed source slices with explicit user
+authorization during implementation; this release skill never pushes, merges,
+deploys or syncs in any environment—even with urgent authorization.
 
 Failed/unavailable checks or mismatched provenance are `BLOCKED`. Human actions require `NEEDS_HUMAN`; keep release incomplete until approval and production health are confirmed.

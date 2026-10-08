@@ -85,12 +85,12 @@ Codex 프로젝트 설치는 native 훅 설정과 에이전트 TOML을 생성하
 훅 신뢰 승인 및 명령 차단 여부는 Codex 세션에서 별도로 확인해야 합니다.
 
 이 저장소 구현 시에는 별도 `COPILOT_HOME`으로 로컬 경로 설치를 실행해 당시
-스킬 27개의 발견과 로컬 마켓플레이스 등록을 확인했습니다. 이후 구현 태스크
-스킬(현재 `sdlc-tasks`), `signoz-oss`, `clickstack`, `mimir-oss`,
-`prometheus-query-api`를 추가해 현재 32개이며,
-추가분은 `npm run validate` 구조 검사만 거쳤고 설치 로딩은 재확인하지 않았습니다. Claude 실행
-파일은 현재 환경에서 사용할 수 없어 native validator를 실행하지 못했습니다.
-Claude/Codex 실환경 실행은 검증되지 않았으며 구조/어댑터 테스트와 구별합니다.
+스킬 27개의 발견과 로컬 마켓플레이스 등록을 확인했습니다. 이후 `sdlc-tasks`,
+`signoz-oss`, `clickstack`, `mimir-oss`, `prometheus-query-api`, `pr`, `retro`를
+추가해 현재 배포 카탈로그는 <!-- skill-count -->34개입니다. 현재 개수는
+`npm run validate`가 README·설치 안내와 함께 검사하며, 과거 CLI smoke에서
+발견한 개수와 구별합니다. 전체 카탈로그의 실제 설치 로딩·실행 보장을 뜻하지
+않습니다. 호스트별로 실제 확인한 범위와 미검증 항목은 다음 기록을 따릅니다.
 
 2026-09-29 추가 점검:
 - 공식 문서와 9개 프로필의 도구 선언을 대조했습니다. 새 Codex native 어댑터는 추가하지 않았습니다.

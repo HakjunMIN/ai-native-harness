@@ -146,6 +146,14 @@ must be established again. There is no automatic approval carry-forward. The new
 revision must support the current schema; other schema migrations remain explicit.
 Finished runs are not rewritten. Create a new run for follow-up work.
 
+Existing source branches/worktrees remain intact. Resolve the new locked root,
+renew the required gates/publication and commit the approved plan on the recorded
+integration branch. Audit and preserve old worker changes before cleanup, then
+run that root's `workspaces.mjs reconcile STATE` and `plan`/`start` as described in
+[workspace recovery](../../../docs/operations.md#브랜치와-병렬-워크트리).
+Reconciliation records reuse, not gate approval; never fabricate ownership for an
+unrecorded legacy branch or delete unfinished work to resume.
+
 Revision changes use a run-local `.harness-operation-lock`. Readers refuse to
 proceed during the update. A normal write failure restores the old lock if state
 replacement failed. After abrupt termination, inspect the state, lock and archived

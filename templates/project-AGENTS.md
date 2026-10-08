@@ -10,6 +10,11 @@ a new natural-language request, or a paused SDLC run, use `sdlc`. Use
 `sdlc-setup` to map the actual project modules, commands, and host capabilities
 before running the workflow. Technical skills can be used independently.
 
+Before editing this project's AGENTS.md, inspect it with `lstat`: shared installs
+may make it a symlink to a common template. Never edit through that symlink.
+Follow `sdlc-setup`'s `references/project-instructions.md` to create a local regular
+file and update its ownership manifest before adding project-specific guidance.
+
 For SDLC work, first select the ticket and resolve its `harness.lock.json` using
 `.ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/<ID>/state.json`. Use the
 returned root for that ticket's skills, references, role profiles and scripts;

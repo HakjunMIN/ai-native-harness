@@ -20,7 +20,9 @@ drift returns to the affected gate; release approval does not waive shared rules
    Merge Danger from compatibility and plan risks, and Traceability with the Jira
    link only for Jira work, release artifact and rollback. Rewrite it when the
    candidate SHA changes. Human publishes the branch; v1 hooks deny
-   shell push and merge. Agents may create a draft PR only on an already-published,
+   `git push` and `gh pr merge`. Release work never merges; conductor-owned,
+   user-authorized local source integration belongs to implement, not promotion.
+   Agents may create a draft PR only on an already-published,
    explicitly selected non-production branch with authorization.
 2. Inspect GitHub Actions required checks for the exact PR head SHA, including
    dependency/security/build/chart checks required by repository rules. Pending,

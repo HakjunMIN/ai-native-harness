@@ -97,7 +97,7 @@ node "$PLUGIN_ROOT/scripts/workspaces.mjs" start docs/sdlc/ABC-123/state.json do
 워크트리와 허용 경로만 변경하고 SHA/검증 증거를 반환합니다. 재개 시 기록된
 branch/path와 진행 중인 작업을 확인하고 `start`를 다시 호출해 중복 생성하지 않습니다.
 
-컨덕터는 결과와 충돌을 검토하고 commit 허가가 있을 때만 워크트리 커밋을
+컨덕터는 결과와 충돌을 검토하고 사용자에게 로컬 통합·commit 허가를 받은 경우에만 워크트리 커밋을
 integration 브랜치에 한 개씩 통합합니다. 자동 merge/commit은 없습니다.
 `git merge --no-commit --no-ff <slice-branch>`로 검토·충돌 해결 후 허가된
 commit을 만들 수 있습니다. 작업자가 기록한 `slice.subjectHead`는 원본
@@ -111,6 +111,26 @@ G3 무효화 후에도 승인 계획이 같으면 기존 integration 브랜치�
 시작합니다. 이전 슬라이스 워크트리가 남아 있으면 변경사항을 먼저 대조하고
 통합/보관한 뒤 정리하세요. 기존 워크트리 경로·슬라이스 브랜치를 무조건
 덮어쓰지 않으며, 충돌이 있으면 `start`가 중단됩니다.
+
+G0–G2 재계획이나 하네스 `adopt`/`upgrade`는 기존 소스·브랜치를 지우지 않습니다.
+기존 integration 브랜치를 재사용하려면 필요한 게이트와 Jira 발행(해당 시)을
+다시 충족하고, 그 브랜치에서 새 G2 승인 계획을 사용자 허가를 받아 commit하세요.
+이전 작업자를 중단하고 이력에 보존된 작업 공간의 변경·증거를 대조하여 통합하거나
+별도 참조/경로에 안전하게 보관한 뒤, 이전 워크트리 경로·등록과 `t<N>` 브랜치를
+정리합니다. 미완료 변경을 버리거나 강제 삭제하지 마세요.
+
+```bash
+node "$PLUGIN_ROOT/scripts/workspaces.mjs" reconcile docs/sdlc/ABC-123/state.json
+node "$PLUGIN_ROOT/scripts/workspaces.mjs" plan docs/sdlc/ABC-123/state.json docs/sdlc/ABC-123/scopes.json
+node "$PLUGIN_ROOT/scripts/workspaces.mjs" start docs/sdlc/ABC-123/state.json docs/sdlc/ABC-123/scopes.json
+```
+
+`reconcile`은 승인된 계획, pending·미할당 상태, 현재 integration 브랜치와
+과거 할당의 조상 관계, 깨끗한 소스 및 이전 작업 공간 정리를 확인한 뒤
+재사용 기록만 추가합니다. 코드·브랜치·승인 변경, commit·merge·dispatch는 하지
+않습니다. 소유 이력이 없거나 충돌하면 수동 검토가 필요하며 이력을 꾸며내지 않습니다.
+기록은 현재 HEAD와 계획에 묶입니다. `start` 전에 commit하거나 계획을 무효화하면
+다시 `reconcile`해야 합니다. 같은 조건의 반복 실행은 상태를 바꾸지 않습니다.
 
 ## 정책과 계획 생성
 
