@@ -58,7 +58,7 @@ test('missing live documentation protocol blocks package validation', t => {
 });
 test('SDLC stages and domain review share the project governance reference', () => {
   for (const name of ['sdlc-setup', 'sdlc-discover', 'sdlc-plan', 'sdlc-implement',
-    'sdlc-verify', 'sdlc-release', 'sdlc-handoff', 'domain-context', 'code-review']) {
+    'sdlc-verify', 'sdlc-release', 'sdlc-handoff', 'domain-context', 'code-review', 'retro']) {
     const body = readFileSync(resolve(`skills/${name}/SKILL.md`), 'utf8');
     assert.match(body, /\]\(\.\.\/sdlc\/references\/project-governance\.md\)/, name);
   }
@@ -72,6 +72,26 @@ test('missing project governance blocks package validation', t => {
   const root = copy(t);
   rmSync(join(root, 'skills/sdlc/references/project-governance.md'));
   assert.match(validatePackage(root).join('\n'), /missing or escaped path .*project-governance\.md/);
+});
+test('release paths write PR bodies with pr and retro feeds governed standards', () => {
+  const read = path => readFileSync(resolve(path), 'utf8');
+  for (const path of ['skills/sdlc-release/SKILL.md', 'skills/helm-argocd-release/SKILL.md',
+    'agents/sdlc-release-engineer.agent.md']) {
+    assert.match(read(path), /`pr`/, path);
+  }
+  const pr = read('skills/pr/SKILL.md');
+  for (const section of ['## Summary', '## Evidence', '## Merge Danger', '## Traceability']) {
+    assert.ok(pr.includes(section), section);
+  }
+  const retro = read('skills/retro/SKILL.md');
+  assert.match(retro, /^disable-model-invocation: true$/m);
+  assert.match(retro, /`Enforcement: review`/);
+  assert.match(read('skills/sdlc/SKILL.md'), /user-invoked `retro`/);
+  const governance = read('skills/sdlc/references/project-governance.md');
+  assert.match(governance, /## Standard rule record/);
+  assert.match(governance, /\| Enforcement \| `check: .*` or `review`/);
+  assert.match(governance, /CODING_STANDARDS\.md/);
+  assert.match(read('skills/code-review/SKILL.md'), /`check` rules confirm the\s+named check ran/);
 });
 test('package requires the Bash installation entrypoint', t => {
   const root = copy(t);
@@ -100,7 +120,7 @@ test('rejects nonexistent manifest component path', t => {
   writeFileSync(file,JSON.stringify(manifest));
   assert.match(validatePackage(root).join('\n'),/missing.json/);
 });
-for (const name of ['signoz-oss', 'clickstack', 'sdlc-tasks', 'mimir-oss', 'prometheus-query-api']) {
+for (const name of ['signoz-oss', 'clickstack', 'sdlc-tasks', 'mimir-oss', 'prometheus-query-api', 'pr', 'retro']) {
   test(`requires ${name} in the distributable skill catalog`, t => {
     const root = copy(t);
     rmSync(join(root, `skills/${name}`), {recursive:true, force:true});

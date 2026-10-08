@@ -216,9 +216,12 @@
       "col": 5,
       "type": "security",
       "label": "helm-argocd-release",
-      "sublabel": "CI · GitOps · 운영 제안",
+      "sublabel": "pr 본문 · GitOps · 운영 제안",
       "width": 154,
-      "sources": [{ "path": "skills/sdlc-release/SKILL.md", "line": 6, "end_line": 25 }]
+      "sources": [
+        { "path": "skills/sdlc-release/SKILL.md", "line": 6, "end_line": 25 },
+        { "path": "skills/pr/SKILL.md", "line": 2, "end_line": 3 }
+      ]
     },
     {
       "id": "optional-start",
@@ -275,10 +278,13 @@
       "lane": "optional",
       "col": 5,
       "type": "external",
-      "label": "jira-sync",
-      "sublabel": "Jira만 상태 동기화",
+      "label": "jira-sync · retro",
+      "sublabel": "Jira 동기화 · 완료 후 회고",
       "width": 154,
-      "sources": [{ "path": "skills/sdlc-release/SKILL.md", "line": 9, "end_line": 10 }]
+      "sources": [
+        { "path": "skills/sdlc-release/SKILL.md", "line": 9, "end_line": 10 },
+        { "path": "skills/retro/SKILL.md", "line": 2, "end_line": 4 }
+      ]
     },
     {
       "id": "technical-start",

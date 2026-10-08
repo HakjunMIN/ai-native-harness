@@ -46,3 +46,6 @@ the feature plan. Check for relevant drift on resume, review and verification;
 the state validator does not automatically track project-document changes.
 Project-wide changes and exceptions require the designated owner's explicit
 approval; a feature gate approval alone does not authorize changing shared policy.
+Each standard rule states its enforcement: a named automated check for mechanical
+rules, or review for judgement calls. Keep this file to navigation pointers; put
+rules proposed by `retro` into standards or checks, not here.

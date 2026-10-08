@@ -49,7 +49,8 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
 7. Configure production paths/application identities from GitOps files; keep
    `production: human-only`. Confirm branch protections and prod RBAC with operator.
 8. Follow [project governance](../sdlc/references/project-governance.md): discover
-   existing architecture, standards and ADR locations and their owners. Preserve
+   existing architecture, standards (including `CODING_STANDARDS.md` or
+   `CONTRIBUTING.md`) and ADR locations and their owners. Preserve
    those conventions; when absent, use `docs/architecture/overview.md`,
    `docs/architecture/adr/` and `docs/standards/` for needed project documents.
    Record locations, index entrypoints and reading rules in the project's AGENTS.md

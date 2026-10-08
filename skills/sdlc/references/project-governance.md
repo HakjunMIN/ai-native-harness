@@ -31,6 +31,8 @@ Create only documents needed by the authorized work. Do not scaffold empty topic
 files, invent accepted policies, move historical run artifacts, or replace an
 existing convention. Record existing locations and reading rules in the project's
 AGENTS.md; do not add unsupported fields to the SDLC configuration or state.
+An existing `CODING_STANDARDS.md` or `CONTRIBUTING.md` is a standards source:
+register it in the standards index instead of creating a parallel document.
 
 ## Document responsibilities
 
@@ -51,6 +53,29 @@ Keep one canonical source for each rule. Standards describe what applies now;
 ADRs explain why. Link standards to their decision sources instead of copying
 ADR narratives. Feature plans reference applicable sections instead of duplicating
 the standards. Read the indexes and relevant documents, not every historical ADR.
+
+## Standard rule record
+
+Record each actionable rule with these fields, adapting to an existing format:
+
+| Field | Content |
+|---|---|
+| ID / rule | Stable identifier and the rule in one or two sentences |
+| Applicability | Paths, modules or change types it governs |
+| Enforcement | `check: <lint rule, test, hook or CI job>` or `review` for judgement calls |
+| Status / owner | `proposed`, `accepted` or `retired`, and the designated owner |
+| Origin / decision source | Originating run ID and artifact, retro finding or ADR |
+
+Mechanical rules (banned APIs, import shapes, file locations, fixed syntax) use
+`check`: the check is canonical and the standard only points to it. Prose rules
+are reserved for judgement calls enforced by independent review. Implementers
+follow the sections their plan references; reviewers enforce `review` rules and
+confirm that named checks ran on the subject revision. A `proposed` rule is not
+active. Retire rules whose cause is gone or that keep firing on good code
+through the same approval process, preserving history.
+
+`retro` feeds this loop: it proposes checks and rules from traced session or run
+friction. Its selection authorizes drafting only; owner approval still applies.
 
 ## Decisions, approval and exceptions
 
@@ -92,6 +117,7 @@ project-wide rule. Expired or unapproved exceptions block dependent work.
 | Implement | Follow the approved baseline; report drift and avoid unapproved shared-file edits |
 | Review and verify | Check applicable rules, exception validity, decision status and changes since the baseline |
 | Release and handoff | Carry approved shared changes and remaining migration or exception obligations into the handoff |
+| Retrospective | User-invoked `retro` proposes checks, standards or pointers from the run record; accepted rules use the record above |
 
 In `02-plan.md`, include a Project baseline section with these columns:
 

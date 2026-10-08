@@ -76,4 +76,6 @@ Use `sdlc-handoff` before session changes. All specialists receive the handoff
 contract and exact skill references. You own shared state; validate results and
 allowed-path diffs before accepting them. Final report in Korean: phase, evidence,
 Jira sync status only for Jira runs (local runs: not applicable), and next human
-action. A production PR is not a deployment.
+action. A production PR is not a deployment. At `done`, or when a run stops
+BLOCKED/NEEDS_HUMAN after repeated attempts, invalidations or review-found
+defects, mention the user-invoked `retro` as an optional next action; never run it.

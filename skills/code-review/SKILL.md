@@ -28,6 +28,9 @@ supplied approved policy and handoff, not mutable config or guessed model routin
    relevant standards and accepted ADRs, compare them with the supplied Project
    baseline, and report violations by document/section. Check shared-change
    approval, exception scope/expiry, and index/standard updates for replaced ADRs.
+   Enforce accepted `review` rules by judgement; for `check` rules confirm the
+   named check ran on the subject revision instead of re-deriving it. Ignore
+   `proposed` rules. Note a repeated mechanical finding as a `retro` candidate.
    Ask the conductor for comparison evidence when tools cannot establish drift;
    a passing state check is not that evidence. Standalone reviews use applicable
    current project rules without inventing an SDLC baseline or gate requirements.

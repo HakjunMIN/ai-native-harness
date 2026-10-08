@@ -26,8 +26,10 @@ from exact plugin-root files; reuse references without executing their workflows
    the conductor supplies valid G4 and policy-required review/approvals. Standalone
    rendering or health observation needs no ticket and authorizes no deployment.
 2. Record three separate identities: **source candidate SHA** with exact-SHA required CI and immutable image digest; **promotion commit** containing chart/values changes and their checks; **observed ArgoCD desired revision** resolved for each environment. Do not equate these revisions.
-3. Draft PR text with verification links (Jira links only when applicable),
-   revision identities, digest, risks and rollback criteria. Humans publish
+3. Draft PR text with this plugin's `pr` skill: verification links (Jira links
+   only when applicable), revision identities, digest, risks and rollback criteria.
+   Merge Danger states when merge triggers ArgoCD sync and whether rollback
+   recovers data. Humans publish
    branches. Draft non-production PRs require an already-published selected branch.
 4. Prepare allowed dev/staging changes using the candidate digest. If actual charts/values change, have the conductor invalidate affected gates and reverify rendered manifests, required chart checks, and review against the new promotion commit before resuming. Proposal-only text is not an applied chart change. Source changes additionally require refreshed source verification, exact-SHA CI, and image provenance.
 5. Humans merge dev/staging promotion PRs and control application. Observe desired and synced revisions, workload image digest, health, readiness, and smoke results. Match ArgoCD's resolved revision to the intended promotion commit, not automatically to the source candidate SHA.

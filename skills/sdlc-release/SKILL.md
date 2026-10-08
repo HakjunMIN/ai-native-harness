@@ -6,8 +6,8 @@ description: Use when a verified Jira ticket or local run needs release PR prepa
 # Release
 
 Read [protocol](../sdlc/references/protocol.md). Require `next=release`, valid G4,
-unchanged source and fresh verification. Invoke `helm-argocd-release` and use
-`jira-sync` only for Jira-originated work. Dispatch `sdlc-release-engineer`
+unchanged source and fresh verification. Invoke `helm-argocd-release` and `pr`,
+and use `jira-sync` only for Jira-originated work. Dispatch `sdlc-release-engineer`
 with the handoff and production denylist when specialized work is needed.
 
 Apply [project governance](../sdlc/references/project-governance.md): confirm the
@@ -16,8 +16,10 @@ Carry approved shared ADR/standard changes, migration obligations and exception
 owners/exit conditions into `05-release.md` and the production handoff. Material
 drift returns to the affected gate; release approval does not waive shared rules.
 
-1. Prepare PR title/body with Jira link only for Jira work; always include AC/test/UX reports, compatibility,
-   release artifact and rollback. Human publishes the branch; v1 hooks deny
+1. Prepare PR title/body with `pr`: Summary, Evidence from AC/test/UX reports,
+   Merge Danger from compatibility and plan risks, and Traceability with the Jira
+   link only for Jira work, release artifact and rollback. Rewrite it when the
+   candidate SHA changes. Human publishes the branch; v1 hooks deny
    shell push and merge. Agents may create a draft PR only on an already-published,
    explicitly selected non-production branch with authorization.
 2. Inspect GitHub Actions required checks for the exact PR head SHA, including
@@ -28,7 +30,7 @@ drift returns to the affected gate; release approval does not waive shared rules
    promotion PRs; observe ArgoCD desired revision, Synced/Healthy and smoke tests.
    ArgoCD auto-sync means merge is a deployment action.
 4. Record G5a only after current-SHA CI and both dev/staging promotion evidence.
-5. Write production proposed patch and PR text ONLY under
+5. Write production proposed patch and PR text (`pr` shape) ONLY under
    `docs/sdlc/<ID>/production-proposal/`. Do not edit live prod values, push,
    merge, sync, kubectl patch or assume chat approval grants deployment authority.
    Human applies/reviews/merges the prod PR and controls ArgoCD.
