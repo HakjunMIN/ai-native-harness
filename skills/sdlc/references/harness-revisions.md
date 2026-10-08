@@ -70,7 +70,9 @@ node "$INSTALLED_HARNESS_ROOT/scripts/harness.mjs" resolve docs/sdlc/ABC-123/sta
 Local `intake.mjs start` and `start-text` pin automatically; do not create a second
 lock. Jira start creates pending state only, not a Jira snapshot or approval.
 The selected installation is snapshotted as-is: starting a run does not pull or
-fetch a newer version. Updates of the shared installation affect new runs only.
+fetch a newer version. Updating the shared installation changes the workflow
+baseline for new runs, not existing locked runs. Standalone skills and common
+safety hooks still use the current installation.
 
 `resolve` returns JSON with the lock identity, authoritative state path, snapshot
 `root`, `skills` and `agents`. Read the selected revision's conductor, protocol,

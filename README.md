@@ -26,9 +26,11 @@ Jira 티켓 또는 자연어 요청에서 시작하며, 34개 스킬과 9개 전
 
 ## 대상과 흐름
 
-**Grafana datasource/panel/app + React/TypeScript → Spring Boot BFF (Gradle)
-→ SigNoz query-service** 모노레포를 대상으로 합니다.
+기본 기술 지침은 **Grafana datasource/panel/app + React/TypeScript → Spring Boot BFF (Gradle)
+→ SigNoz query-service** 관측성 스택을 대상으로 합니다.
 BFF는 ClickHouse에 직접 접근하지 않으며, SigNoz 자체 UI는 노출하지 않습니다.
+모노레포 또는 여러 MSA 서비스 리포에서 사용할 수 있으며, 공유 설치를 사용해도
+각 리포의 경로·명령·공통 기준은 `sdlc-setup`으로 별도 확인합니다.
 
 **Discovery → Plan → Implement → Verify → Release**
 
@@ -68,13 +70,15 @@ Git과 **Node.js 22 이상**이 필요합니다.
 ```text
 workspace/
 ├── ai-native-harness/       # 공통 스킬·훅·에이전트의 Git 클론
+├── .ai-native-sdlc-revisions/ # 첫 티켓 생성 시 만드는 공유 리비전 캐시
 ├── service-api/
 ├── service-web/
 └── service-worker/
     ├── .ai-native-sdlc -> ../ai-native-harness
     ├── AGENTS.md -> .ai-native-sdlc/templates/project-AGENTS.md
     ├── .agents/skills/* -> ../../.ai-native-sdlc/skills/*
-    └── .github/agents/* -> ../../.ai-native-sdlc/agents/*
+    ├── .github/agents/* -> ../../.ai-native-sdlc/agents/*
+    └── docs/sdlc/<ID>/      # 해당 서비스의 상태·lock·작업 이력
 ```
 
 **Bash/zsh** — 대상은 미리 존재하는 리포 경로입니다.
@@ -96,7 +100,10 @@ $url = 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/insta
 이미 하네스가 있다면 [install-shared.sh](install-shared.sh) 또는
 [install-shared.ps1](install-shared.ps1)를 직접 실행할 수 있습니다.
 Windows에서 심볼릭 링크를 만들려면 **개발자 모드 또는 관리자 권한**이 필요합니다.
-같은 명령을 재실행하면 공통 자산 변경이 연결된 모든 리포에 반영됩니다.
+같은 명령을 재실행하면 공통 설치 자산이 갱신됩니다. 새 티켓과 standalone 스킬은
+갱신된 자산을 사용하지만, 기존 티켓의 실행 기준은 해당 lock을 유지합니다.
+현재 공통 안전 훅은 계속 갱신되며, 스킬·에이전트 추가/삭제와 리포별 설정 변경은
+모든 대상 리포를 지정해 재설치해야 반영됩니다.
 기존 `AGENTS.md`는 보존하며, 새로 만드는 `AGENTS.md`만 프로젝트용 공통 템플릿에
 연결합니다. 훅 실행 코드와 역할 원문은 공유하고, 대상 경로가 들어가는 CLI 훅 설정과
 Codex 네이티브 에이전트 TOML은 리포별로 생성합니다.
@@ -124,20 +131,56 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
 
 ### 티켓별 스킬 리비전
 
-**설치는 공유하고, 실행 기준은 티켓별로 고정합니다.** 새 로컬 작업은 자동으로,
-Jira 작업은 `node .ai-native-sdlc/scripts/harness.mjs start ABC-123`으로
-`docs/sdlc/<ID>/harness.lock.json`과 초기 상태를 생성합니다.
-lock에는 하네스 소스 커밋(확인 가능할 때)과 실제 자산의 콘텐츠 SHA256을 기록합니다.
+**설치는 공유할 수 있고, 실행 기준은 티켓별로 고정합니다.** 공유·복사 설치 모두
+`docs/sdlc/<ID>/harness.lock.json`을 만들며 `state.json`에 lock 파일의 해시를 연결합니다.
+서비스 리포 전체에 하나의 버전을 고정하는 방식이 아닙니다.
+lock에는 실제 자산의 **콘텐츠 SHA256**과 소스 커밋(확인 가능할 때)을 기록합니다.
+미커밋 변경도 포함하므로, 커밋 번호만으로 항상 같은 자산을 복원할 수 있는 것은 아닙니다.
 
-기존 티켓을 재개할 때는 `harness.mjs resolve docs/sdlc/<ID>/state.json`으로
-스냅샷을 확인하고 그 버전의 스킬·역할·검증기를 사용합니다. 하위 태스크도 부모의
-lock을 상속합니다. 공유 하네스를 업데이트해도 진행 중인 티켓은 바뀌지 않습니다.
-공용 링크나 현재 안전 훅은 티켓별로 전환하지 않습니다.
+대상 서비스 리포 루트에서 다음 명령을 사용합니다. Bash와 PowerShell 모두 동일합니다.
 
-lock 없는 과거 작업은 명시적 `adopt`, 진행 중 버전 전환은 `upgrade`로 처리합니다.
-두 명령은 이전 상태를 보관하고 모든 게이트를 다시 검증하도록 초기화합니다.
-캐시 유실 시에는 정확한 이전 소스로 `restore`하며 최신 버전으로 대체하지 않습니다.
-상세 명령·PowerShell 예제·저장 위치는 [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md)를 참고하세요.
+```sh
+node .ai-native-sdlc/scripts/harness.mjs start ABC-123
+node .ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/ABC-123/state.json
+node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/ABC-123/state.json
+```
+
+첫 줄은 **새 Jira 작업에만** 실행합니다. 로컬 자연어 작업은 intake 단계에서 자동으로
+lock을 생성합니다. 생성 시 설치된 자산을 그대로 보관하며, 원격 하네스를 자동으로
+pull하지 않고 Jira 조회·동기화나 사람 승인도 대신하지 않습니다.
+기존 작업은 `resolve`부터 실행하고, 반환된 `root` 아래의 스킬·역할·템플릿을 읽습니다.
+`state.mjs`의 상태 관련 명령은 해당 티켓의 스냅샷 검증기로 자동 연결됩니다.
+
+하위 구현 태스크·서브에이전트는 부모 conductor의 lock과 원본 상태 경로를 상속합니다.
+공유 링크는 티켓 전환 시 바꾸지 않으며, 현재 공통 안전 훅과 프로젝트 보안 지침은
+과거 스냅샷으로 되돌리지 않습니다.
+
+| 작업 | 명령과 조건 |
+|---|---|
+| 재개 | `resolve STATE` — lock과 캐시 무결성 확인. 누락·불일치 시 중단하며 최신 버전으로 대체하지 않습니다. |
+| 캐시 복구 | `restore STATE --source PATH` — 정확한 이전 자산 또는 해당 커밋을 포함한 로컬 Git 소스 필요. 원격 fetch는 하지 않습니다. |
+| 과거 작업에 최초 적용 | `adopt STATE --reason "이유" --confirm` — lock 없는 작업에 현재 기준을 명시적으로 설정합니다. |
+| 진행 중 기준 변경 | `upgrade STATE --reason "이유" --confirm` — 기본은 현재 설치본, 다른 소스는 `--source PATH`로 지정합니다. |
+
+표의 명령은 `node .ai-native-sdlc/scripts/harness.mjs` 뒤에 붙이며, `STATE`는 티켓의
+상태 파일 경로입니다. `adopt`와 `upgrade`는 이전 상태·lock을 `harness-history/`에
+보존하고 **G0부터 모든 게이트를 재검증**하도록 초기화합니다. `--confirm`은 버전 변경
+의사 표시이지 게이트 승인이 아니며, 완료된 작업은 변경하지 않습니다.
+
+스냅샷 캐시는 `.ai-native-sdlc-revisions/<SHA256>/`에 둡니다. 공유 설치는 실제 하네스
+클론 옆에서 여러 서비스가 공유하고, 복사 설치는 각 서비스 리포 내부에 보관합니다.
+**lock·상태·작업 이력은 함께 커밋하고 캐시는 제외**하세요. 참조 중인 캐시는 임의로
+지우거나 편집하지 마세요. 미커밋 자산으로 만든 스냅샷은 복구용 원본도 보존해야 합니다.
+
+Windows와 함께 사용한다면 대상 서비스의 기존 `.gitattributes`에 다음 규칙을 추가해
+새 lock·증거 파일의 줄바꿈을 유지하세요. 하네스 리포의 설정은 서비스에 자동 적용되지
+않으며, 과거 증거의 줄바꿈이나 해시는 임의로 다시 쓰지 않습니다.
+
+```gitattributes
+docs/sdlc/** text=auto eol=lf
+```
+
+상세 복구 절차·PowerShell 예제·제약은 [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md)를 참고하세요.
 
 ### 워크플로 시작
 
@@ -199,6 +242,8 @@ docs/
     <topic>.md                    # 현재 규칙과 검증 방법
   sdlc/
     <ID>/
+      state.json                 # 진행 상태와 lock 해시
+      harness.lock.json          # 티켓별 하네스 콘텐츠 리비전
       02-plan.md                  # 공통 기준 참조와 기능 설계
       adr/<feature-decision>.md   # 필요한 경우에만 기능 한정 결정
 ```
@@ -234,6 +279,8 @@ GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니�
 
 | 문서 | 내용 |
 |---|---|
+| [설치 안내](docs/install.md) | MSA 공유·기존 복사 설치, Bash/PowerShell, 업데이트와 충돌 처리 |
+| [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md) | 티켓별 lock, 캐시, 재개·복구·명시적 버전 전환과 하위 태스크 상속 |
 | [고객 리포 적용 사전 탐색](docs/customer-repository-discovery.md) | 인터뷰 질문, 산출물 양식, 도구·권한 조사, 개발 프로세스 매핑과 파일럿 도입 기준 |
 | [운영 절차](docs/operations.md) | light/strict 정책, 승인·재개, 병렬 워크트리, 기존 상태 마이그레이션 |
 | [프로젝트 거버넌스](skills/sdlc/references/project-governance.md) | 공통 표준·ADR, 기준 버전, 승인·예외·승격·대체와 변경 영향 확인 |

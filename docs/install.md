@@ -128,8 +128,10 @@ curl 경로에서 스크립트를 스트리밍하면 매번 공개 HTTPS Git 저
 
 설치 결과는 대상의 실제 `.ai-native-sdlc/` 파일, `.agents/skills/` 스킬 링크,
 Copilot용 `.github/agents/`와 `.github/hooks/ai-native-sdlc.json`,
-Codex용 `.codex/agents/`와 `.codex/hooks.json`입니다. `scripts/`와 `templates/`는
-프로젝트 안의 런타임 자산이고 `tests/`와 `examples/`는 대상 루트에 복사되지
+Codex용 `.codex/agents/`와 `.codex/hooks.json`입니다. 설치본에는 스킬·에이전트·훅과
+`scripts/`, `templates/`, 런타임 참조 문서 `docs/operations.md`, `docs/compatibility.md`를
+포함합니다. 이 경로들은 `.ai-native-sdlc/` 내부이며 서비스의 `docs/`를 덮어쓰지 않습니다.
+`tests/`와 `examples/`는 대상 루트에 복사되지
 않습니다. 대상에 `AGENTS.md`가 없으면 프로젝트용 템플릿을 복사해
 로컬 스킬 우선 사용, setup, 승인 게이트를 안내합니다. 하네스 루트의
 `AGENTS.md`는 하네스 저장소 전용이므로 복사하지 않습니다. 이미 대상에
