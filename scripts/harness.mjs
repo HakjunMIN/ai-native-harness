@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
+import { copyFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
   realpathSync, renameSync, rmSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -72,6 +72,14 @@ function sourceCommit(source) {
   return revision.status === 0 && /^[a-f0-9]{40,64}$/.test(revision.stdout.trim()) ? revision.stdout.trim() : null;
 }
 
+function copyTree(from, to) {
+  mkdirSync(to, { recursive: true });
+  for (const entry of readdirSync(from, { withFileTypes: true })) {
+    if (entry.isDirectory()) copyTree(join(from, entry.name), join(to, entry.name));
+    else copyFileSync(join(from, entry.name), join(to, entry.name));
+  }
+}
+
 function snapshot(repositoryRoot, source, expected) {
   const root = realpathSync(source);
   const contents = inventory(root);
@@ -84,7 +92,8 @@ function snapshot(repositoryRoot, source, expected) {
   } else {
     const stage = mkdtempSync(join(cache, '.snapshot-'));
     try {
-      for (const path of assetDirectories) cpSync(join(root, path), join(stage, path), { recursive: true });
+      // Node's recursive cpSync silently copies nothing into non-ASCII destinations on Windows.
+      for (const path of assetDirectories) copyTree(join(root, path), join(stage, path));
       mkdirSync(join(stage, 'docs'));
       for (const path of assetDocuments) cpSync(join(root, path), join(stage, path));
       if (inventory(stage).contentSha256 !== contents.contentSha256) throw new Error('Harness source changed while creating the snapshot');
