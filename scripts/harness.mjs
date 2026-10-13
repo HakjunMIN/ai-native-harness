@@ -66,7 +66,8 @@ function sourceCommit(source) {
     return /^[a-f0-9]{40,64}$/.test(revision) ? revision : null;
   }
   const result = spawnSync('git', ['-C', source, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' });
-  if (result.status !== 0 || realpathSync(result.stdout.trim()) !== source) return null;
+  // Native resolution expands Windows 8.3 short names that git reports in long form.
+  if (result.status !== 0 || realpathSync.native(result.stdout.trim()) !== realpathSync.native(source)) return null;
   const revision = spawnSync('git', ['-C', source, 'rev-parse', 'HEAD'], { encoding: 'utf8' });
   return revision.status === 0 && /^[a-f0-9]{40,64}$/.test(revision.stdout.trim()) ? revision.stdout.trim() : null;
 }
