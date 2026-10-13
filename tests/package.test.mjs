@@ -7,7 +7,8 @@ import { validatePackage } from '../scripts/validate.mjs';
 
 function copy(t) {
   const root = mkdtempSync(join(tmpdir(),'sdlc-package-'));
-  cpSync(process.cwd(),root,{recursive:true,filter:src => !['.git','node_modules','.worktrees'].includes(basename(src))});
+  cpSync(process.cwd(),root,{recursive:true,filter:src => !['.git','node_modules','.worktrees'].includes(basename(src)) &&
+    !basename(src).startsWith('.installer-test-')});
   t.after(() => rmSync(root,{recursive:true}));
   return root;
 }

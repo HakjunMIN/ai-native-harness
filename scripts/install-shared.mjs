@@ -200,7 +200,8 @@ try {
     renameSync(join(stage, 'source'), sharedPath);
     console.log(`Cloned shared harness: ${sharedPath}`);
   } else {
-    if (realpathSync(git(sharedPath, 'rev-parse', '--show-toplevel')) !== sharedPath) fail(`Not a standalone Git clone: ${sharedPath}`);
+    // Native resolution expands Windows 8.3 short names (RUNNER~1) that git reports in long form.
+    if (realpathSync.native(git(sharedPath, 'rev-parse', '--show-toplevel')) !== realpathSync.native(sharedPath)) fail(`Not a standalone Git clone: ${sharedPath}`);
     if (git(sharedPath, 'remote', 'get-url', 'origin') !== options.repo) fail('Shared clone origin does not match --repo-url / AI_NATIVE_SDLC_REPO_URL');
     if (git(sharedPath, 'status', '--porcelain')) fail('Shared clone has local changes; commit or stash them before installing');
     if (git(sharedPath, 'branch', '--show-current') !== options.ref) fail(`Shared clone must be on branch ${options.ref}`);
