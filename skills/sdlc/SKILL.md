@@ -25,7 +25,8 @@ separate run/lock for a sub task already assigned by a conductor. See
 [ticket revisions](references/harness-revisions.md) for restore and upgrade.
 
 For bare `sdlc` without a substantive request, list `docs/sdlc/*/state.json`
-phases and blockers without creating work. A Jira key starts or resumes a Jira
+phases and blockers without creating work, using the progress summary below.
+A Jira key starts or resumes a Jira
 run; an existing local ID resumes that run. For a new non-Jira natural-language
 request, interview the user before discovery: preserve the original request,
 ask one consequential question at a time only for unknown scope, outcome, users,
@@ -46,6 +47,31 @@ modify `intake.md` after creation: a changed original request needs a new ID.
 Recording the request needs no separate approval; it leaves G0/G1/G2 pending.
 Never invent approval or mark a gate passed. Then check repository setup and
 invoke `sdlc-setup` if missing, without requiring Jira mappings for local work.
+
+## Chat progress
+
+On status requests, session resume, phase changes, approval/blocker pauses and
+completion, run `node "$PLUGIN_ROOT/scripts/state.mjs" progress STATE` after
+resolving the run's lock. Paste its compact Mermaid block and next action into
+the chat, not just a file or tool result. Identify the run on every summary.
+Avoid repeating unchanged diagrams after routine tool calls. For bare `sdlc`,
+resolve each discovered run separately and show its own summary; never mix
+different runs' gates or claim to enumerate live host sessions.
+
+The command is read-only: gate evidence determines progress, not a stale `phase`
+field or conversation memory. A current stage is not proof a worker is running.
+Show approval waits, failed gates and sub task counts as returned. On a nonzero
+exit, report BLOCKED with the relevant error and next action; never turn
+unvalidated claims into completed nodes. Lock, JSON or Git failures may produce
+only an error, not a diagram. Preserve that limitation.
+
+Use `progress STATE --text` when Mermaid is unsupported. This summary does not
+replace `check`, `next`, approvals or shared-document drift checks. If an older
+pinned revision lacks `progress`, keep its validator and report the limitation
+with a validated text summary; do not switch to installed code or upgrade the
+run merely for visualization.
+
+## Phase routing
 
 For a new run invoke `sdlc-discover`. For an existing run, run `state.mjs check`
 then `next`. On stale evidence, explain the earliest invalid gate and invalidate

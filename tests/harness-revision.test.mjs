@@ -37,6 +37,27 @@ test('local intake pins a ticket-scoped harness lock without creating a reposito
   assert.equal(existsSync(join(fixture_.repo, 'harness.lock.json')), false);
 });
 
+test('progress uses the pinned snapshot and validates local intake without Jira publication', t => {
+  const fixture_ = fixture(t);
+  assert.equal(fixture_.start('local-progress').status, 0);
+  const path = fixture_.state('local-progress');
+  const before = readFileSync(path, 'utf8');
+  const script = join(fixture_.source, 'scripts/state.mjs');
+  writeFileSync(script, readFileSync(script, 'utf8').replace("'요구사항'", "'WRONG_INSTALLED'"));
+  const result = fixture_.run('state.mjs', 'progress', path);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /local-progress/);
+  assert.match(result.stdout, /요구사항 · 현재/);
+  assert.doesNotMatch(result.stdout, /티켓 발행|· 완료|WRONG_INSTALLED/);
+  assert.equal(readFileSync(path, 'utf8'), before);
+  writeFileSync(join(fixture_.repo, 'docs/sdlc/local-progress/intake.md'), 'changed request');
+  const stale = fixture_.run('state.mjs', 'progress', path);
+  assert.notEqual(stale.status, 0);
+  assert.match(stale.stdout, /BLOCKED/);
+  assert.match(stale.stderr, /hash mismatch/);
+  assert.doesNotMatch(stale.stdout, /· 완료/);
+});
+
 test('existing tickets retain their snapshot while new tickets use changed skills', t => {
   const fixture_ = fixture(t);
   assert.equal(fixture_.start('local-first').status, 0);

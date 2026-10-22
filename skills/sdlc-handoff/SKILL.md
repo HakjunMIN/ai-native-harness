@@ -50,4 +50,7 @@ If source, contracts, approvals or evidence changed, invalidate the earliest
 affected gate. No fresh approval is implied by a session summary.
 
 Return Korean summary with path and explicit BLOCKED/NEEDS_HUMAN status when
-applicable. End only processes owned by this run; do not kill by process name.
+applicable. Include the read-only chat progress summary from
+[the conductor](../sdlc/SKILL.md#chat-progress), using the resolved run state.
+The next session regenerates it from current evidence, not the previous diagram.
+End only processes owned by this run; do not kill by process name.

@@ -310,11 +310,78 @@ export function integrationErrors(state, repo, currentHead) {
   return errors;
 }
 
+function renderProgress(state, errors, textOnly) {
+  const id = ticketKey(state?.ticket) || /^local-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state?.ticket ?? '')
+    ? state.ticket : 'unknown';
+  if (errors.length) {
+    return [
+      `**${id} · BLOCKED**`,
+      `차단 사유: 상태/증거 검증 실패 (${errors.length}건). 상세 원인은 stderr를 확인하세요.`,
+      ...(textOnly ? [] : ['```mermaid', 'flowchart LR', '  blocked["상태 검증 실패 · 차단"]', '```']),
+      '다음 행동: 검증 오류를 해결하고 다시 조회하세요. 승인이나 완료 상태를 추정하지 마세요.'
+    ].join('\n');
+  }
+  const phase = nextPhase(state);
+  const spike = state.outcome === 'spike-complete';
+  const pending = gates.find(g => state.gates[g].status !== 'passed');
+  const failed = pending && state.gates[pending].status === 'failed';
+  const approval = ['G1','G5b'].includes(pending) || (pending === 'G2' && state.taskPlan);
+  const steps = [
+    ['discover', '요구사항', state.gates.G1.status === 'passed'],
+    ...(!spike ? [
+      ['plan', '계획', state.gates.G2.status === 'passed'],
+      ...(!isLocal(state) && !isLight(state) ? [
+        ['publish', '티켓 발행', state.gates.G2.status === 'passed' && allPublished(state)]
+      ] : []),
+      ['implement', '구현', state.gates.G3.status === 'passed'],
+      ['verify', '검증', state.gates.G4.status === 'passed'],
+      ['release', '릴리스', state.gates.G5b.status === 'passed']
+    ] : [])
+  ].map(([name, label, complete]) => ({
+    label,
+    status: complete ? '완료' : name !== phase ? '대기' : failed ? '차단' : approval ? '승인 대기' : '현재',
+    active: name === phase
+  }));
+  const lines = [`**${id} · ${spike ? '조사 완료' : phase === 'done' ? '완료' : phase}**`];
+  if (textOnly) lines.push(steps.map(step => `${step.label} · ${step.status}`).join(' → '));
+  else {
+    lines.push('```mermaid', 'flowchart LR');
+    steps.forEach((step, index) => lines.push(`  p${index}["${step.label} · ${step.status}"]`));
+    if (steps.length > 1) lines.push(`  ${steps.map((_, index) => `p${index}`).join(' --> ')}`);
+    const active = steps.findIndex(step => step.active);
+    if (active >= 0) lines.push(`  style p${active} fill:${failed ? '#f8d7da' : '#fff3cd'},stroke:#8a6500,stroke-width:3px`);
+    lines.push('```');
+  }
+  if (state.slices.length && !spike) {
+    const count = status => state.slices.filter(slice => slice.status === status).length;
+    lines.push(`하위 작업: 완료 ${count('done')}/${state.slices.length} · 진행 ${count('in_progress')} · 대기 ${count('pending')}`);
+  }
+  const actions = {
+    G0: '요청, 수용 기준과 영향 모듈을 확인하고 G0 증거를 기록하세요.',
+    G1: '요구사항에 대한 G1 사람 승인을 받으세요.',
+    G2: '계획과 검토를 준비하고 G2 사람 승인을 받으세요.',
+    G3: '승인된 하위 작업의 구현·검증·독립 리뷰를 완료하세요.',
+    G4: '통합 검증과 최종 리뷰 증거를 확인하세요.',
+    G5a: '정확한 리비전의 CI와 dev/staging 배포 증거를 확인하세요.',
+    G5b: 'G5b 사람 승인과 실제 production 상태를 확인하세요.'
+  };
+  const action = spike ? '조사 결과를 인계하세요. 제품 구현·배포 완료가 아님.'
+    : phase === 'done' ? '완료 결과와 배포 증거를 인계하세요.'
+    : failed ? `${pending} 실패 원인을 확인하고 해당 단계의 증거를 재검증하세요.`
+    : phase === 'publish' ? '승인된 하위 티켓을 발행하고 원격 발행 결과를 확인하세요.'
+    : actions[pending];
+  lines.push(`다음 행동: ${action}`);
+  return lines.join('\n');
+}
+
 function main() {
   const [command, file, gate, reason, ...options] = process.argv.slice(2);
-  if (!file || !['check','next','ready','invalidate','hash'].includes(command)) throw new Error('Usage: state.mjs check|next|ready|invalidate|hash FILE [GATE REASON]');
+  if (!file || !['check','next','ready','progress','invalidate','hash'].includes(command)) throw new Error('Usage: state.mjs check|next|ready|progress|invalidate|hash FILE [GATE REASON] [--text (progress only)]');
   if (command === 'hash') { console.log(digest(readFileSync(file))); return; }
   if (dispatchPinned('state.mjs',file)) return;
+  const textOnly = command === 'progress' && parseArgs({
+    args:process.argv.slice(4), options:{text:{type:'boolean'}}
+  }).values.text === true;
   const path = resolve(file);
   const state = JSON.parse(readFileSync(path, 'utf8'));
   if (command === 'invalidate') {
@@ -339,15 +406,21 @@ function main() {
     return;
   }
   let head;
-  if (gates.slice(3).some(g => state.gates?.[g]?.status === 'passed')) {
+  const errors = [];
+  if (gates.slice(3).some(g => state?.gates?.[g]?.status === 'passed')) {
     head = execFileSync('git', ['rev-parse', 'HEAD'], {cwd: dirname(path), encoding:'utf8'}).trim();
     // Evidence must be collected after source changes, not over a dirty source tree.
     const status = execFileSync('git', ['status','--porcelain','--untracked-files=all'], {cwd: dirname(path), encoding:'utf8'});
     const sourceChanges = status.split('\n').filter(Boolean).filter(line => !/^docs\/sdlc\//.test(line.slice(3)));
-    if (sourceChanges.length) throw new Error('Uncommitted source changes invalidate release evidence; commit source and rerun verification');
+    if (sourceChanges.length) errors.push('Uncommitted source changes invalidate release evidence; commit source and rerun verification');
   }
-  const errors = validateState(state, dirname(path), head, {checkPhase: command !== 'next'});
+  errors.push(...validateState(state, dirname(path), head, {checkPhase: !['next','progress'].includes(command)}));
   if (head) errors.push(...integrationErrors(state, dirname(path),head));
+  if (command === 'progress') {
+    console.log(renderProgress(state, errors, textOnly));
+    if (errors.length) throw new Error(errors.join('\n'));
+    return;
+  }
   if (errors.length) throw new Error(errors.join('\n'));
   if (command === 'ready') {
     if (nextPhase(state) !== 'implement') throw new Error('ready requires implement phase and required publication');

@@ -15,6 +15,15 @@ function copy(t) {
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
 });
+test('conductor and handoff expose read-only chat progress with a legacy fallback', () => {
+  const conductor = readFileSync('skills/sdlc/SKILL.md','utf8');
+  assert.match(conductor, /state\.mjs" progress STATE/);
+  assert.match(conductor, /status requests, session resume, phase changes/);
+  assert.match(conductor, /chat, not just a file or tool result/);
+  assert.match(conductor, /progress STATE --text/);
+  assert.match(conductor, /older[\s\S]*pinned revision lacks `progress`/);
+  assert.match(readFileSync('skills/sdlc-handoff/SKILL.md','utf8'), /\.\.\/sdlc\/SKILL\.md#chat-progress/);
+});
 test('package rejects stale current skill counts while keeping historical counts separate', testContext => {
   const root = copy(testContext);
   for (const file of ['README.md','docs/install.md','docs/compatibility.md']) {

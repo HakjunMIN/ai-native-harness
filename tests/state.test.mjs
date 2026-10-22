@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -55,6 +55,149 @@ function planned(t) {
   f.state.phase = 'publish';
   return f;
 }
+
+function progress(state, root, ...options) {
+  const path = join(root, 'state.json');
+  const body = JSON.stringify(state);
+  writeFileSync(path, body);
+  const result = spawnSync(process.execPath, ['scripts/state.mjs', 'progress', path, ...options], {encoding:'utf8'});
+  assert.equal(readFileSync(path, 'utf8'), body, 'progress must not modify state');
+  return result;
+}
+
+test('progress renders compact Mermaid from gates rather than the saved phase', t => {
+  const {state, root} = planned(t);
+  state.phase = 'plan';
+  const result = progress(state, root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /ABC-123/);
+  assert.match(result.stdout, /```mermaid\nflowchart LR/);
+  assert.match(result.stdout, /요구사항 · 완료/);
+  assert.match(result.stdout, /계획 · 완료/);
+  assert.match(result.stdout, /티켓 발행 · 현재/);
+  assert.match(result.stdout, /구현 · 대기/);
+  assert.match(result.stdout, /다음 행동:.*발행/);
+  assert.ok(result.stdout.split('\n').length <= 25, 'summary must remain compact');
+});
+
+test('progress distinguishes human approval, failure and subsequent waiting stages', t => {
+  const {state, root} = planned(t);
+  state.gates.G2 = {status:'pending'};
+  state.phase = 'plan';
+  let result = progress(state, root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /계획 · 승인 대기/);
+  assert.match(result.stdout, /다음 행동:.*G2.*승인/);
+  state.gates.G2 = {status:'failed'};
+  result = progress(state, root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /계획 · 차단/);
+  assert.match(result.stdout, /다음 행동:.*G2.*실패/);
+  assert.doesNotMatch(result.stdout, /계획 · 완료/);
+});
+
+test('progress does not call unstarted implementation active or completed', t => {
+  const {state, root} = fixture(t);
+  for (const gate of ['G3','G4','G5a','G5b']) state.gates[gate] = {status:'pending'};
+  state.phase = 'implement';
+  state.slices = [{id:1, status:'pending'}];
+  let result = progress(state, root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /구현 · 현재/);
+  assert.match(result.stdout, /하위 작업: 완료 0\/1 · 진행 0 · 대기 1/);
+  state.slices[0].status = 'in_progress';
+  result = progress(state, root, '--text');
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /```|classDef/);
+  assert.match(result.stdout, /하위 작업: 완료 0\/1 · 진행 1 · 대기 0/);
+  assert.match(result.stdout, /구현 · 현재/);
+});
+
+test('progress fails closed on stale evidence, invalid approval and invalid phase', t => {
+  for (const mutate of [
+    state => { state.gates.G0.evidence[0].sha256 = '0'.repeat(64); },
+    state => { delete state.gates.G2.approval; },
+    state => { state.phase = 'unknown'; },
+    state => { state.ticket = 'ABC-123"] --> injected["unsafe'; }
+  ]) {
+    const {state, root} = planned(t);
+    mutate(state);
+    const result = progress(state, root);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stdout, /BLOCKED/);
+    assert.match(result.stdout, /검증 실패/);
+    assert.doesNotMatch(result.stdout, /· 완료|· 현재|injected/);
+    assert.notEqual(result.stderr, '');
+  }
+});
+
+test('progress marks an approved spike as research-only without pending delivery stages', t => {
+  const {state, root} = planned(t);
+  state.classification = 'spike';
+  state.gates.G2 = {status:'pending'};
+  state.slices = [];
+  state.outcome = 'spike-complete';
+  state.phase = 'done';
+  const result = progress(state, root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /조사 완료/);
+  assert.match(result.stdout, /제품 구현·배포 완료가 아님/);
+  assert.doesNotMatch(result.stdout, /구현 · 대기|릴리스 · 완료/);
+});
+
+test('progress rejects unsupported options instead of silently ignoring them', t => {
+  const {state, root} = planned(t);
+  const result = progress(state, root, '--unknown');
+  assert.notEqual(result.status, 0);
+  assert.equal(result.stdout, '');
+});
+
+test('progress separates production approval, completed release and invalid source evidence', t => {
+  const f = fixture(t);
+  const repo = join(f.root, 'repo');
+  const root = join(repo, 'docs/sdlc/ABC-123');
+  mkdirSync(root, {recursive:true});
+  for (const file of ['evidence.txt', 'tasks.json']) writeFileSync(join(root, file), readFileSync(join(f.root, file)));
+  const git = (...args) => {
+    const result = spawnSync('git', ['-C', repo, ...args], {encoding:'utf8'});
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  git('init', '-q');
+  git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false',
+    'commit', '--allow-empty', '-m', 'fixture');
+  const revision = git('rev-parse', 'HEAD');
+  const {state} = f;
+  for (const gate of Object.values(state.gates)) if (gate.status === 'passed') gate.subjectHead = revision;
+  state.slices[0].subjectHead = revision;
+  let result = progress(state, root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /릴리스 · 승인 대기/);
+  assert.match(result.stdout, /다음 행동:.*G5b.*production/);
+  assert.doesNotMatch(result.stdout, /릴리스 · 완료/);
+
+  state.gates.G5b = {...state.gates.G5a, deployment:{digest:'sha256:observed', health:'Healthy', sync:'Synced'}};
+  state.phase = 'done';
+  result = progress(state, root);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /ABC-123 · 완료/);
+  assert.match(result.stdout, /릴리스 · 완료/);
+  assert.doesNotMatch(result.stdout, /· 현재"|· 대기"|승인 대기/);
+
+  writeFileSync(join(repo, 'source.txt'), 'unverified change');
+  result = progress(state, root);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /BLOCKED/);
+  assert.match(result.stderr, /Uncommitted source changes/);
+  assert.doesNotMatch(result.stdout, /· 완료/);
+  git('add', 'source.txt');
+  git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false',
+    'commit', '-m', 'change source');
+  result = progress(state, root);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /source revision changed/);
+  assert.doesNotMatch(result.stdout, /· 완료/);
+});
 
 test('routes first incomplete gate, never treating empty gates as done', () => {
   assert.equal(nextPhase({ gates: {} }), 'discover');

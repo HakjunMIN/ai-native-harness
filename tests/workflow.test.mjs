@@ -57,6 +57,18 @@ test('approved light work routes to implementation on the existing parent issue'
   assert.deepEqual(JSON.parse(result.stdout),[{id:1,key:'ABC-123'}]);
 });
 
+test('light progress skips Jira child publication and keeps G3 pending despite completed slices', t => {
+  const {state,root,evidence,review} = fixture(t);
+  state.slices[0] = {id:1,status:'done',attempts:1,red:evidence,green:evidence,subjectHead:head,reviews:[review]};
+  const path = join(root,'state.json');
+  writeFileSync(path,JSON.stringify(state));
+  const result = spawnSync(process.execPath,['scripts/state.mjs','progress',path],{encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  assert.match(result.stdout,/구현 · 현재/);
+  assert.match(result.stdout,/하위 작업: 완료 1\/1/);
+  assert.doesNotMatch(result.stdout,/티켓 발행|구현 · 완료/);
+});
+
 test('light work accepts one independent combined review and still rejects self-review', t => {
   const {state,root,evidence,review} = fixture(t);
   state.slices[0] = {id:1,status:'done',attempts:1,red:evidence,green:evidence,subjectHead:head,reviews:[review]};
