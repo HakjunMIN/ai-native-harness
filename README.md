@@ -4,7 +4,7 @@ description: "프로젝트 공통 기준과 증거 기반 검증, 사람 승인�
 ---
 
 **AI가 구현하고, 증거로 검증하며, 사람이 승인하는 로컬 개발 워크플로우.**
-Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->36개 스킬과 9개 전문 에이전트를 제공합니다.
+Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->37개 스킬과 9개 전문 에이전트를 제공합니다.
 
 ## 소프트웨어 엔지니어링 원칙
 
@@ -264,6 +264,23 @@ Jira light는 부모 티켓을 사용하며 Jira strict/legacy만 승인 후 자
   보내며 AGENTS.md에는 탐색 포인터만 둡니다. 별도 회고 보고서는 남기지 않고,
   채택된 변경만 소유자 승인을 거쳐 표준·검사에 영속화합니다.
 
+### 불용 코드·스킬 수동 점검
+
+[prune-unused](skills/prune-unused/SKILL.md)는 사람이 필요할 때 호출하는 정리
+스킬입니다. 월 1회나 릴리스 전후 같은 주기로 직접 실행할 수 있지만, 스케줄러·CI·
+SDLC 단계에 자동 등록하지 않습니다. 기본 동작은 읽기 전용 점검입니다.
+
+```text
+prune-unused: 이 저장소의 불용 코드와 스킬 후보를 근거·위험도와 함께 보고해줘.
+```
+
+호출·import뿐 아니라 공개 API, 동적 로딩, CLI·설정과 스킬의 직접 호출·자동 발견을
+확인합니다. 참조나 사용 기록이 없다는 이유만으로 삭제하지 않으며, 후보 ID·근거·
+위험도·연관 변경·검증 계획을 보고한 뒤 사람이 선택한 항목만 정리합니다.
+다시 실행할 때는 현재 코드와 사용 근거를 재확인하며 지난 승인을 재사용하지 않습니다.
+공유 설치 링크, 티켓 스냅샷·과거 증거와 다른 사람의 미커밋 변경은 보존합니다.
+보고서는 기본적으로 채팅에 제공하며, 자동 커밋·푸시는 하지 않습니다.
+
 ## 프로젝트 공통 기준과 ADR
 
 **표준은 현재 지켜야 할 규칙, ADR은 그 결정을 내린 이유입니다.**
@@ -333,6 +350,7 @@ GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니�
 | [프로젝트 거버넌스](skills/sdlc/references/project-governance.md) | 공통 표준·ADR, 기준 버전, 승인·예외·승격·대체와 변경 영향 확인 |
 | [sub task 예시](examples/ABC-123/README.md) | 계획·sub task·증거 산출물 구조 |
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
+| [Prune Unused](skills/prune-unused/SKILL.md) | 사람이 호출하는 불용 코드·스킬 점검. 근거 보고 후 승인한 후보만 정리하고 검증합니다. |
 | [SigNoz OSS](skills/signoz-oss/SKILL.md) · [ClickStack](skills/clickstack/SKILL.md) | 자체 호스팅 운영과 선택적 대안 평가. ClickStack은 필수 의존성이 아니며 자동 설치·이전하지 않습니다. |
 | [Mimir OSS](skills/mimir-oss/SKILL.md) · [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | 메트릭 저장소·쿼리 서비스 전환 평가와 운영, PromQL·BFF 쿼리 계약. 승인된 결정 없이 운영 전환하지 않습니다. |
 | [Go Backend](skills/go-backend/SKILL.md) · [Go Testing](skills/go-testing/SKILL.md) | Go BFF·백엔드 구현과 `go test` 증거. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang)은 작업 시 조회하는 비공식 체크리스트로만 쓰며, 의존성·`go` 버전 변경을 허가하지 않습니다. |

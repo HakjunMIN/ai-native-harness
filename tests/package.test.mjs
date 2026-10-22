@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, basename, resolve } from 'node:path';
 import { validatePackage } from '../scripts/validate.mjs';
@@ -133,6 +133,17 @@ test('release paths write PR bodies with pr and retro feeds governed standards',
   assert.match(governance, /CODING_STANDARDS\.md/);
   assert.match(read('skills/code-review/SKILL.md'), /`check` rules confirm the\s+named check ran/);
 });
+test('prune-unused is manual-only and uses shared safety and verification guidance', () => {
+  const path = resolve('skills/prune-unused/SKILL.md');
+  assert.ok(existsSync(path), 'prune-unused must be shipped as a skill');
+  const body = readFileSync(path, 'utf8');
+  assert.match(body, /^disable-model-invocation: true$/m);
+  for (const reference of ['../sdlc/references/principles.md',
+    '../sdlc/references/project-governance.md', '../tdd/SKILL.md',
+    '../verification-gate/SKILL.md']) {
+    assert.ok(body.includes(`](${reference})`), reference);
+  }
+});
 test('package requires the Bash installation entrypoint', t => {
   const root = copy(t);
   rmSync(join(root,'install.sh'));
@@ -160,7 +171,7 @@ test('rejects nonexistent manifest component path', t => {
   writeFileSync(file,JSON.stringify(manifest));
   assert.match(validatePackage(root).join('\n'),/missing.json/);
 });
-for (const name of ['signoz-oss', 'clickstack', 'sdlc-subtasks', 'mimir-oss', 'prometheus-query-api', 'pr', 'retro', 'go-backend', 'go-testing']) {
+for (const name of ['signoz-oss', 'clickstack', 'sdlc-subtasks', 'mimir-oss', 'prometheus-query-api', 'pr', 'retro', 'go-backend', 'go-testing', 'prune-unused']) {
   test(`requires ${name} in the distributable skill catalog`, t => {
     const root = copy(t);
     rmSync(join(root, `skills/${name}`), {recursive:true, force:true});
