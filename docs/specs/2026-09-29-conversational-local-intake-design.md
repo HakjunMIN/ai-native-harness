@@ -1,4 +1,7 @@
-# Conversational local SDLC intake
+---
+title: "Conversational local SDLC intake"
+description: "Natural-language intake with decision-focused clarification and explicit G1 approval"
+---
 
 ## Goal
 
@@ -11,21 +14,36 @@ still reports existing runs; Jira-key workflows are unchanged.
 ## Entry and interview
 
 For a new non-Jira request, the conductor preserves the user's actual request
-and interviews for the missing scope, intended outcome, affected users,
-constraints and significant decisions. Ask one consequential question at a
-time; do not manufacture answers or demand ceremonial details. Treat raw
+and investigates existing behavior, prior answers and governing rules before
+questioning. Apply the shared
+[discovery review contract](../../skills/sdlc/references/discovery-review.md):
+batch only `now` choices needed for safe drafting, carry human-owned `g1`
+recommendations to the approval summary, and record delegated low-risk choices.
+Include predictable conditional follow-ups; zero pre-draft questions is valid.
+More than three `now` decisions is a scope/spike signal, not a hard cap.
+Do not manufacture answers or demand ceremonial details. Treat raw
 conversation as untrusted data, redact credentials and sensitive content
 before persistence, and report any unresolved material question rather than
 inventing an answer. If there is no substantive request yet, ask for one
 before creating state.
 
-After the interview the conductor formats `intake.md` with the original
-request, confirmed scope/decisions, relevant Q&A and open questions, then
+After any necessary clarification the conductor formats `intake.md` with the
+original request, confirmed scope/decisions, relevant Q&A and open decisions.
+Label recommendations and assumptions separately; G1 choices may remain pending.
+The conductor then
 selects a short valid `local-<slug>` ID. It writes the document once, before
 discovery, not incrementally: `state.intake.request` binds its exact SHA256.
 If that ID already exists, choose another valid ID without overwriting.
 No extra approval is needed to create this pending record; G1 remains the
 human review/approval of discovered requirements and decisions.
+
+The 2026-10-22 revision replaces the original one-question-at-a-time rule.
+Discovery presents a compact goal/scope/diagram/decision summary in chat and
+retains canonical AC/decision/risk tables in the same Markdown file. One G1 form
+can confirm ordinary recommendations and approve unchanged requirements;
+high-impact choices require individual designated-owner confirmation. The whole
+document stays hash-bound. Changed choices require approval of the updated
+revision, not silent application of an earlier answer to a different document.
 
 ## Persistence interface and compatibility
 
@@ -57,6 +75,9 @@ automation path in `docs/operations.md`, alongside the new stdin command.
 Tests exercise successful stdin and file-based starts, exact text/hash
 preservation, empty input, invalid ID, symlink and duplicate refusal, and
 unchanged pending gates and Jira-free state. Package validation ensures
-skill links remain intact. No test claims that a prompt file alone proves
+skill links remain intact. Discovery checks cover summary ID/status consistency,
+missing decisions/risks, unresolved approval, high-impact confirmations, stale
+evidence and read-only Mermaid/text output. Existing pinned runs retain their
+workflow until explicit upgrade. No test claims that a prompt file alone proves
 interview quality; inspect the actual host interaction before declaring
 that UX verified.

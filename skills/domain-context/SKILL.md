@@ -13,7 +13,12 @@ Read the [shared principles](../sdlc/references/principles.md) before changing t
 
 1. Read existing `CONTEXT.md`, relevant ADRs and affected names as needed.
    Standalone work needs no intake snapshot. Separate observed usage from agreed meaning.
-2. For each new or conflicting term, propose a definition, scope, example, counterexample, and aliases. Ask the domain owner to resolve competing meanings before treating a proposal as canonical.
+2. For each new or conflicting term, propose a definition, scope, example,
+   counterexample and aliases. In SDLC, classify the owner decision using
+   [discovery review](../sdlc/references/discovery-review.md) and return it to the
+   conductor as a `now` blocker or a `g1` recommendation rather than starting
+   another interview. Obtain domain-owner confirmation before treating a
+   proposal as canonical, including in standalone work.
 3. Record confirmed definitions and their decision sources in `CONTEXT.md`; label unresolved definitions as proposals. Use Korean explanations while preserving exact code identifiers.
 4. Map canonical terms to API fields, UI labels, Gherkin steps, and Java/Go/TypeScript identifiers. Identify migration impact before renaming public fields; use this plugin's `api-contract` skill for contract changes.
 5. Follow [project governance](../sdlc/references/project-governance.md) for

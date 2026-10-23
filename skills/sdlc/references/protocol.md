@@ -23,8 +23,11 @@ Use `docs/sdlc/<ID>/`. Jira IDs match `^[A-Z][A-Z0-9_]*-[1-9][0-9]*$`;
 local IDs match `^local-[a-z0-9]+(-[a-z0-9]+)*$`. Reject unsafe IDs. For a
 Jira-originated run, use `harness.mjs start KEY [REPO_ROOT]` only if no state exists;
 it creates pending state and a ticket lock without Jira evidence or approval. For a
-new natural-language request without Jira, interview for material unknowns,
-preserve the original request and confirmed answers in sanitized Markdown,
+new natural-language request without Jira, use
+[discovery review](discovery-review.md) to investigate first and batch only `now`
+decisions; carry disclosed `g1` recommendations into discovery without inventing
+confirmed answers. Preserve
+the original request and confirmed answers in sanitized Markdown,
 then pass it on stdin to `node "$PLUGIN_ROOT/scripts/intake.mjs" start-text
 local-<slug> [REPO_ROOT]`. Do not create a temporary request file. The optional
 prewritten automation path remains `start local-<slug> REQUEST_FILE [REPO_ROOT]`.
@@ -53,7 +56,7 @@ There is no automatic human approval command.
 | Gate | Owner | Evidence and scope |
 |---|---|---|
 | G0 | discover | Jira snapshot or hashed local user request, AC, module map |
-| G1 | human | approved requirements, relevant UI/BE/FE decisions |
+| G1 | human | hashed discovery summary and requirements, relevant UI/BE/FE decisions, individual high-impact confirmations |
 | G2 | human | plan, policy snapshot, canonical sub task manifest, applicable contracts/test matrix; strict plan review |
 | G3 | implement | completed slices, change-appropriate verification and independent reviews; integrated checks |
 | G4 | verify | applicable fresh checks, integrated spec/standards/security coverage, UX evidence when relevant |
@@ -103,6 +106,18 @@ are `{path, sha256}`, relative to the run directory, with actual SHA256; no
 parent traversal or external symlinks. Gates have `status` and nonempty `evidence`.
 G1/G2/G5b also require `approval: {actor: "human", reference, at}` from an observed,
 artifact-scoped decision. Silence, selection clicks and autopilot are not approval.
+For this revision's locked runs, G1 must bind `01-discovery.md` with the
+[discovery review format](discovery-review.md). The read-only
+`state.mjs discovery STATE [--text]` command checks and presents its summary.
+G1 validation checks summary coverage/status/IDs and rejects open decisions.
+An unchanged ordinary `recommended` choice is accepted by scoped G1 approval
+without rewriting the document. High-impact recommendations additionally require
+`approval.decisions: [{id, reference}]` for observed designated-owner confirmations.
+Each record accepts the exact bound recommendation, not an alternative or a
+general permission. Changed choices require updated evidence and final approval.
+The checker cannot authenticate the person or prove prose/diagram equivalence.
+Older locked revisions retain their own contracts; legacy unpinned gates remain
+unchanged until explicit adoption.
 G2 evidence includes the exact `taskPlan` reference. A local run always keeps
 its copied or interview-recorded request at `state.intake.request`; G0 evidence
 must include that exact reference. Changing its contents invalidates the state;

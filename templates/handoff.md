@@ -9,6 +9,7 @@ Policy: <approved snapshot/profile, verification mode and review flags; legacy s
 Sub task reference: <local ID, Jira parent key for light, or Jira child key for strict>
 Sub task definition: <manifest path/hash and optional generated document path/hash>
 Acceptance criteria: <local AC IDs -> parent requirement references>
+Discovery review: <summary path/hash; D/R IDs, now blockers, G1 recommendations, owner confirmations and deferred exclusions>
 Goal: <one observable result>
 Base: <commit> | Head: <commit>
 Source workspace: <integration branch; assigned branch, absolute worktree path or current checkout, base/slice HEAD, merge status>

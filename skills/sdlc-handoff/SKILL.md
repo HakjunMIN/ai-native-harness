@@ -24,6 +24,10 @@ approved artifact paths and hashes, decisions and non-goals, last command/exit
 code, unfinished changes, current evidence, Jira outbox status if applicable, running process
 ownership, exact allowed paths and one next action. Reference files rather than
 copying huge logs or private tokens into the summary.
+For discovery, carry the summary path/hash, stable AC/D/R IDs, `now` blockers,
+G1 recommendations, owner confirmations and excluded deferred work under
+[discovery review](../sdlc/references/discovery-review.md). Do not repeat settled
+questions on resume or convert a recommendation into a confirmed answer.
 For implementation, include the authoritative conductor state path, integration branch, active worktree paths and
 branches, base/slice HEADs, edit scopes, merge status and any unresolved conflicts.
 Reconcile recorded workspaces before a new assignment; never start duplicates.

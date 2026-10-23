@@ -13,9 +13,14 @@ Read the [shared principles](../sdlc/references/principles.md). Import `grafana-
 
 ### Discovery/draft mode: before G1 or during planning
 
-1. Read available intake AC, `CONTEXT.md`, and current design answers. Assign stable AC IDs and record unresolved behavior as questions.
+1. Read available intake AC, `CONTEXT.md`, and current design answers. Preserve
+   existing AC IDs and assign IDs only to new criteria. Classify unresolved
+   behavior using [discovery review](../sdlc/references/discovery-review.md);
+   return `now` blockers or `g1` recommendations to the caller, not a new interview.
 2. Draft declarative scenarios in `docs/sdlc/<KEY>/features/*.feature`, with an AC tag/map, one behavior each, domain vocabulary, minimal Background, and explicit outcomes. Write run artifacts in Korean.
-3. Reuse existing vocabulary where available; keep selectors and HTTP plumbing out of scenarios. Review the drafts with the human as G1 inputs.
+3. Reuse existing vocabulary where available; keep selectors and HTTP plumbing
+   out of scenarios. Link the drafts as G1 inputs from the discovery summary;
+   the conductor collects one scoped approval, not a separate scenario interview.
 
 **No approved discovery, approved BFF contract, step implementations, generated tests, or executed RED is required in draft mode.** Missing future implementation is not a blocker. Do not install tools, provision services, or execute E2E merely to draft scenarios.
 
@@ -37,7 +42,7 @@ Scenario: Identify a service above the error threshold
   Then that service shows a high-error-rate status
 ```
 
-Before G1, return this draft and threshold questions without demanding RED. After
+Before G1, return this draft and classified threshold decisions without demanding RED. After
 G2 (and strict publication), its step assertion checks the approved accessible state.
 For unchanged scenarios under G3 revalidation, use the historical-RED procedure
 in `sdlc-subtasks`; changed steps/scenarios require new RED.

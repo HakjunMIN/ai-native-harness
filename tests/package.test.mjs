@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, ex
 import { tmpdir } from 'node:os';
 import { join, basename, resolve } from 'node:path';
 import { validatePackage } from '../scripts/validate.mjs';
+import { inspectDiscovery } from '../scripts/discovery.mjs';
 
 function copy(t) {
   const root = mkdtempSync(join(tmpdir(),'sdlc-package-'));
@@ -23,6 +24,36 @@ test('conductor and handoff expose read-only chat progress with a legacy fallbac
   assert.match(conductor, /progress STATE --text/);
   assert.match(conductor, /older[\s\S]*pinned revision lacks `progress`/);
   assert.match(readFileSync('skills/sdlc-handoff/SKILL.md','utf8'), /\.\.\/sdlc\/SKILL\.md#chat-progress/);
+});
+test('discovery callers share question classification and a single scoped G1 review', () => {
+  for (const name of ['sdlc','sdlc-discover','grilling','domain-context','bdd-gherkin','sdlc-handoff']) {
+    const body = readFileSync(`skills/${name}/SKILL.md`, 'utf8');
+    assert.match(body, /\]\((?:\.\.\/sdlc\/)?references\/discovery-review\.md\)/, name);
+    assert.doesNotMatch(body, /ask one consequential question at a time/);
+  }
+  const contract = readFileSync('skills/sdlc/references/discovery-review.md', 'utf8');
+  for (const timing of ['now','g1','record']) assert.ok(contract.includes(`\`${timing}\``));
+  assert.match(contract, /one pre-draft question batch/);
+  assert.match(contract, /Zero questions is valid/);
+  assert.match(contract, /no preselected consent/);
+  assert.match(contract, /state\.mjs" discovery STATE --text/);
+  assert.match(contract, /G1\.approval\.decisions/);
+  assert.match(contract, /do not auto-upgrade/);
+  const protocol = readFileSync('skills/sdlc/references/protocol.md', 'utf8');
+  assert.match(protocol, /\]\(discovery-review\.md\)/);
+  const example = readFileSync('examples/ABC-123/01-discovery.md', 'utf8');
+  assert.deepEqual(inspectDiscovery(example).errors, []);
+  assert.match(inspectDiscovery(example, {approved:true}).errors.join('\n'), /D-1.*unresolved/);
+  const template = readFileSync('templates/discovery.md', 'utf8');
+  assert.ok(inspectDiscovery(template).errors.length, 'unfilled templates cannot serve as discovery evidence');
+});
+test('missing discovery runtime or template blocks package validation', t => {
+  const root = copy(t);
+  rmSync(join(root, 'scripts/discovery.mjs'));
+  rmSync(join(root, 'templates/discovery.md'));
+  const errors = validatePackage(root).join('\n');
+  assert.match(errors, /discovery\.mjs/);
+  assert.match(errors, /discovery\.md/);
 });
 test('package rejects stale current skill counts while keeping historical counts separate', testContext => {
   const root = copy(testContext);

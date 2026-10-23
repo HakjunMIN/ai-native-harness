@@ -6,6 +6,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { withDecision } from './helpers/discovery.mjs';
 
 const assets = ['skills', 'agents', 'hooks', 'scripts', 'templates', 'docs'];
 function fixture(t) {
@@ -78,6 +79,21 @@ test('existing tickets retain their snapshot while new tickets use changed skill
   assert.doesNotMatch(readFileSync(join(first.root, 'skills/sdlc/SKILL.md'), 'utf8'), /Changed procedure/);
   assert.match(readFileSync(join(third.root, 'skills/sdlc/SKILL.md'), 'utf8'), /Changed procedure/);
   assert.equal(existsSync(join(fixture_.repo, '.ai-native-sdlc')), false);
+});
+
+test('discovery rendering uses the run snapshot without adopting changed installed guidance', t => {
+  const fixture_ = fixture(t);
+  assert.equal(fixture_.start('local-discovery').status, 0);
+  const statePath = fixture_.state('local-discovery');
+  const before = readFileSync(statePath, 'utf8');
+  writeFileSync(join(fixture_.repo, 'docs/sdlc/local-discovery/01-discovery.md'), withDecision({impact:'high'}));
+  const script = join(fixture_.source, 'scripts/discovery.mjs');
+  writeFileSync(script, readFileSync(script, 'utf8').replace('개별 확인 ', 'WRONG_INSTALLED '));
+  const result = fixture_.run('state.mjs', 'discovery', statePath, '--text');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /개별 확인 대상.*D-1/);
+  assert.doesNotMatch(result.stdout, /WRONG_INSTALLED|```mermaid/);
+  assert.equal(readFileSync(statePath, 'utf8'), before);
 });
 
 test('snapshots retain referenced runtime docs but exclude ticket and unrelated docs', t => {

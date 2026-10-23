@@ -19,9 +19,14 @@ Identify impacted modules; classify spike/bounded/architectural and `uiChange`.
 Record change kind and material risks (auth/tenant, public contracts, destructive
 data/schema changes, security/deployment effects). Low-risk bounded work with one
 outcome can use light policy; unknown material risk requires clarification or strict.
-G0 needs AC and a module map. Draft missing questions; never invent customer intent.
-Write `01-discovery.md`: problem, users, glossary, existing behavior, scope/non-goals,
-AC IDs, edge cases, risks, assumptions, unanswered questions, decision evidence.
+G0 needs AC and a module map. Follow
+[discovery review](../sdlc/references/discovery-review.md): investigate facts,
+batch `now` blockers, carry disclosed recommendations to G1 and record delegated
+low-risk choices. Never label a proposal as customer intent.
+Write `01-discovery.md` using [the template](../../templates/discovery.md):
+approval summary first, then canonical AC/decision/risk tables and context.
+Retain problem, users, glossary, existing behavior, module map, edge cases,
+assumptions, alternatives, consequences and evidence. Preserve existing AC IDs.
 
 Read the project's standards and ADR indexes plus relevant documents using
 [project governance](../sdlc/references/project-governance.md). Record applicable
@@ -30,9 +35,9 @@ cross-feature decisions in discovery. If none exist, say so. Do not treat a
 feature requirement or proposal as authority to override a shared rule; obtain
 the designated owner's decision before dependent work.
 
-Use `grilling` for material ambiguity and `domain-context` for vocabulary conflicts.
-Do not ask a ceremonial question when intent is clear; record reversible low-risk
-assumptions and continue. Ask only decisions that affect correctness or authority.
+Use `grilling` for human-owned ambiguity and `domain-context` for vocabulary conflicts.
+Reuse intake answers and governance instead of asking again. No question is needed
+when all remaining choices can be recorded or confirmed together at G1.
 For UI uncertainty, offer `visual-companion` just when comparison helps. On consent,
 invoke `prototype`: 2–3 HTML variants, then validate the selected interaction with
 actual `@grafana/ui` in an isolated Grafana sandbox and mock data. Dispatch
@@ -43,10 +48,23 @@ Invoke `bdd-gherkin` for FE observable behavior. Store `features/*.feature` tied
 AC IDs; backend AC remains prose/API examples for JUnit or Go tests, not Cucumber or godog.
 For backend-only changes explicitly mark frontend checks inapplicable.
 
-Present G1 scope to the human: discovery, FE scenarios, BE AC and prototype
-evidence. Record actual approval and hashes, then update state; sync Jira only
-for Jira-originated work. The interview and intake creation do not count as G1
-approval.
+Before G1, run `node "$PLUGIN_ROOT/scripts/state.mjs" discovery STATE` and fix
+summary/record errors. Paste the validated summary into chat, using `--text` if
+Mermaid is not rendered. Show goal, scope/non-goals, behavior, all ACs, human
+decisions and risks, with FE scenarios, BE examples and applicable prototype
+evidence linked. Keep labels short and visually separate proposals from runtime
+branches. Validate rendering where available; do not claim the checker proves
+Mermaid syntax, completeness of requirements or prose equivalence.
+
+Use one form for ordinary recommendations and explicit G1 approval. High-impact
+choices need separate fields and actual designated-owner confirmation; record
+their observed references in `G1.approval.decisions`. Unresolved `open` decisions
+block G1; deferred work must be visible in Non-goals and excluded from dependent
+ACs. If choices change, update the affected artifacts, show the delta and obtain
+approval of the final revision. Never mutate the snapshot merely to mark a
+recommendation confirmed after approval. Bind the full `01-discovery.md` hash and
+other approval inputs, record actual approval, then check/update state. Sync Jira
+only for Jira-originated work. Interview answers and intake creation are not G1.
 Bounded work may omit C4/ADR/prototype with a reason, never omit G1. Architectural
 work requires alternatives and consequences. Hidden complexity upgrades scope.
 

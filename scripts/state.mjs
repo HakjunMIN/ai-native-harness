@@ -6,6 +6,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
 import { isLight, isLocal, policyErrors, verificationMode, renderTask, taskDefinitionErrors } from './workflow.mjs';
 import { dispatchPinned, readRunLock } from './harness.mjs';
+import { inspectDiscovery, renderDiscovery } from './discovery.mjs';
 
 export const gates = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5a', 'G5b'];
 const phases = ['discover', 'discover', 'plan', 'implement', 'verify', 'release', 'release'];
@@ -41,6 +42,31 @@ export function evidenceErrors(item, root, label) {
     return [`${label}: evidence unreadable (${item.path}): ${error.code ?? error.message}`];
   }
   return [];
+}
+
+function discoveryReview(state, root) {
+  const gate = state.gates?.G1;
+  const approved = gate?.status === 'passed';
+  const path = '01-discovery.md';
+  if (approved) {
+    const evidence = Array.isArray(gate.evidence) && gate.evidence.find(item => item?.path === path);
+    if (!evidence) return {errors:[`G1: ${path} must be bound in approval evidence`]};
+    const errors = evidenceErrors(evidence, root, 'G1 discovery');
+    if (errors.length) return {errors};
+  }
+  let body, sha256;
+  try {
+    const base = realpathSync(root), file = realpathSync(resolve(base, path));
+    const rel = relative(base, file);
+    if (rel.startsWith('..') || isAbsolute(rel) || !statSync(file).isFile()) return {errors:['discovery: invalid evidence path']};
+    const bytes = readFileSync(file);
+    body = bytes.toString('utf8');
+    sha256 = digest(bytes);
+  } catch (error) {
+    return {errors:[`discovery: unreadable ${path}: ${error.code ?? error.message}`]};
+  }
+  const report = inspectDiscovery(body, {approved,confirmations:approved ? gate.approval?.decisions : []});
+  return {...report,sha256,errors:report.errors.map(error => `discovery: ${error}`)};
 }
 
 function readTaskPlan(state, root) {
@@ -214,6 +240,9 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
       const a = gate.approval;
       if (!object(a) || a.actor !== 'human' || !text(a.reference) || !text(a.at) || Number.isNaN(Date.parse(a.at))) errors.push(`${name}: human approval record required`);
     }
+    if (name === 'G1' && (state.harness || existsSync(resolve(root,'harness.lock.json')))) {
+      errors.push(...discoveryReview(state, root).errors);
+    }
     if (index >= 3) {
       if (!sha(gate.subjectHead) || (currentHead && currentHead !== gate.subjectHead)) errors.push(`${name}: source revision changed or missing`);
     }
@@ -376,10 +405,10 @@ function renderProgress(state, errors, textOnly) {
 
 function main() {
   const [command, file, gate, reason, ...options] = process.argv.slice(2);
-  if (!file || !['check','next','ready','progress','invalidate','hash'].includes(command)) throw new Error('Usage: state.mjs check|next|ready|progress|invalidate|hash FILE [GATE REASON] [--text (progress only)]');
+  if (!file || !['check','next','ready','progress','discovery','invalidate','hash'].includes(command)) throw new Error('Usage: state.mjs check|next|ready|progress|discovery|invalidate|hash FILE [GATE REASON] [--text (progress/discovery only)]');
   if (command === 'hash') { console.log(digest(readFileSync(file))); return; }
   if (dispatchPinned('state.mjs',file)) return;
-  const textOnly = command === 'progress' && parseArgs({
+  const textOnly = ['progress','discovery'].includes(command) && parseArgs({
     args:process.argv.slice(4), options:{text:{type:'boolean'}}
   }).values.text === true;
   const path = resolve(file);
@@ -414,7 +443,7 @@ function main() {
     const sourceChanges = status.split('\n').filter(Boolean).filter(line => !/^docs\/sdlc\//.test(line.slice(3)));
     if (sourceChanges.length) errors.push('Uncommitted source changes invalidate release evidence; commit source and rerun verification');
   }
-  errors.push(...validateState(state, dirname(path), head, {checkPhase: !['next','progress'].includes(command)}));
+  errors.push(...validateState(state, dirname(path), head, {checkPhase: !['next','progress','discovery'].includes(command)}));
   if (head) errors.push(...integrationErrors(state, dirname(path),head));
   if (command === 'progress') {
     console.log(renderProgress(state, errors, textOnly));
@@ -422,6 +451,16 @@ function main() {
     return;
   }
   if (errors.length) throw new Error(errors.join('\n'));
+  if (command === 'discovery') {
+    const report = discoveryReview(state, dirname(path));
+    if (report.errors.length) throw new Error(report.errors.join('\n'));
+    const approved = state.gates.G1.status === 'passed';
+    const status = approved ? 'G1 승인 완료' : 'G1 검토용 초안 (미승인)';
+    const root = dirname(path);
+    const link = `[01-discovery.md](<${resolve(root, '01-discovery.md')}>)`;
+    console.log(`**${state.ticket} · ${status} · ${report.sha256.slice(0, 12)}**\n${link}\n\n${renderDiscovery(report, {textOnly,approved,root})}`);
+    return;
+  }
   if (command === 'ready') {
     if (nextPhase(state) !== 'implement') throw new Error('ready requires implement phase and required publication');
     const {tasks} = readTaskPlan(state,dirname(path));

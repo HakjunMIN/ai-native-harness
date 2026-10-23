@@ -1,4 +1,7 @@
-# 운영 절차
+---
+title: "운영 절차"
+description: "티켓별 리비전, discovery 승인, 상태 검사와 실행 복구 절차"
+---
 
 ## 상태 검사
 
@@ -16,7 +19,9 @@ lock은 `docs/sdlc/<ID>/harness.lock.json`에 있고 sub task도 상속합니다
 ### Jira 없는 로컬 시작
 
 일반 사용자는 대상 레포에서 `sdlc <자연어 요청>`으로 시작합니다. 필요한 내용만
-인터뷰하고 원문·확인된 범위·질문과 답변·미해결 질문을 기록합니다. `sdlc`만
+조사한 뒤 지금 답이 필요한 결정만 묶어 질문하고, 원문·확인된 범위·답변·미해결
+결정을 기록합니다. G1에서 확인할 추천안은 확정 답변과 구분하며 질문이 없을 수도
+있습니다. `sdlc`만
 호출하면 기존 실행 상태를 조회합니다. CLI는 인터뷰를 수행하지 않으며 아래 명령은
 자동화나 수동 초기화에 사용합니다. 비밀정보는 입력에서 제외하세요. 로컬 ID는
 소문자/숫자/하이픈으로 구성한 `local-<slug>`이며 기존 ID를 덮어쓰지 않습니다.
@@ -43,6 +48,50 @@ Jira 프로젝트/MCP 없이 시작할 수 있으며 strict 계획도 G2 후 pub
 로컬 실행은 Jira writeback/outbox/Done을 요구하거나 보고하지 않습니다.
 G1/G2/G5b 인간 승인과 실제 운영 배포 권한은 그대로 유지됩니다. 기존 Jira 실행을
 로컬로 재표기하지 말고 필요하면 별도 ID로 시작하세요.
+
+### Discovery 승인 요약
+
+새 리비전은 [discovery 템플릿](../templates/discovery.md)을 사용합니다.
+사람에게는 목표, 범위/제외, Mermaid 동작도, AC·결정·위험 요약을 보여 주고
+AI용 상세 기록은 같은 문서 아래에 둡니다. 상세 형식과 질문 분류는
+[discovery review](../skills/sdlc/references/discovery-review.md)를 따릅니다.
+
+```bash
+node "$PLUGIN_ROOT/scripts/state.mjs" discovery docs/sdlc/ABC-123/state.json
+node "$PLUGIN_ROOT/scripts/state.mjs" discovery docs/sdlc/ABC-123/state.json --text
+```
+
+명령은 상태나 문서를 바꾸지 않습니다. 요약의 ID/상태/필수 항목을 검사하고
+결과를 채팅에 붙일 수 있도록 출력합니다. 터미널이나 질문 폼에서 Mermaid가
+렌더링되지 않으면 `--text`를 사용하고, 같은 문서를 지원되는 Markdown 미리보기로
+여는 링크를 제공합니다. 브라우저/서버는 동의 없이 열지 않습니다.
+
+일반 추천안과 G1 승인은 한 폼에서 확인합니다. 인증·tenant 변경, 데이터 파괴,
+공개 계약 파괴, 정책 예외 등 고위험 추천안은 기본 동의를 선택해 두지 않고
+실제 결정권자가 항목별로 확인해야 합니다. 다음은 형식 예시이며 승인 증거가 아닙니다.
+
+```json
+{
+  "actor": "human",
+  "reference": "session:observed-g1-approval",
+  "at": "2026-10-22T00:00:00Z",
+  "decisions": [
+    {"id": "D-1", "reference": "session:observed-owner-confirmation"}
+  ]
+}
+```
+
+실제 관찰한 응답만 `G1.approval`에 기록합니다. G1 evidence에는 정확한
+`01-discovery.md`의 경로와 SHA256, 관련 시나리오/프로토타입 증거를 포함합니다.
+추천을 수용한 승인 뒤 문서의 `recommended`를 `confirmed`로 고쳐 해시를 바꾸지
+않습니다. 선택이 달라지면 문서·시나리오·요약을 갱신하고 변경점 중심으로 최종
+리비전을 승인받습니다. 미결정 항목, 요약 누락, 잘못된 ID, 고위험 개별 확인 누락은
+G1을 차단합니다. 검사는 Mermaid 구문, 자연어 의미 일치나 승인자 신원을 보증하지 않습니다.
+
+기존 고정 리비전은 기존 절차와 검증기를 유지합니다. `discovery` 명령이 없으면
+기존 검증 결과와 텍스트 요약을 제시하고 제약을 알리세요. 새 UX 적용은 명시적
+`harness.mjs upgrade` 및 재승인 대상이며, 미고정 legacy도 명시적으로 adopt합니다.
+진행 중인 작업을 요약 표시 목적으로 자동 전환하지 않습니다.
 
 ### Jira 키로 상태 검사
 

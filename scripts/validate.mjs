@@ -80,7 +80,8 @@ export function validatePackage(root) {
   }
   for (const file of ['install-shared.ps1','scripts/install-shared.mjs']) checkPath(file,'shared installer');
   checkPath('scripts/harness.mjs','ticket harness revision runtime');
-  for (const file of ['README.md','docs/install.md','docs/compatibility.md','docs/operations.md','templates/handoff.md']) {
+  checkPath('scripts/discovery.mjs','discovery approval validation');
+  for (const file of ['README.md','docs/install.md','docs/compatibility.md','docs/operations.md','templates/handoff.md','templates/discovery.md']) {
     const body = read(file);
     links(file,body);
     if (['README.md','docs/install.md','docs/compatibility.md'].includes(file)) {

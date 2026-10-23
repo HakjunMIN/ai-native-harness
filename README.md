@@ -214,6 +214,30 @@ sdlc 문서 검색 화면의 빈 상태를 개선해줘
 - **로컬:** 필요한 사항만 확인해 원래 요청과 답변을 `intake.md`에 기록합니다. Jira 없이 진행하되 사람 승인과 검증 기준은 동일하게 유지합니다.
 - **재개:** 산출물과 상태는 `docs/sdlc/<ID>/`에 저장합니다. `sdlc`로 목록을 보고, `sdlc <ID>`로 이어갑니다.
 
+### Discovery 질문과 승인
+
+AI가 코드·기존 답변·프로젝트 기준으로 확인할 수 있는 내용은 먼저 조사합니다.
+지금 답이 없으면 안전하게 진행할 수 없는 결정만 묶어 질문하고, 초안을 만들 수
+있는 사람 소유 결정은 추천안으로 G1에 모읍니다. 가역적인 저위험 구현 선택은
+근거를 기록하며, 사전 질문이 0개일 수도 있습니다.
+
+G1에서는 긴 문서 경로 목록 대신 목표, 범위/제외, 작은 Mermaid 동작도와
+AC·결정·위험 요약을 채팅에 보여 줍니다. 상세 근거는 같은 discovery 문서에 남기고
+ID로 연결합니다. 일반 추천안과 승인을 한 폼에서 확인하되 고위험 선택은
+결정권자에게 개별 확인합니다. 요약과 상세의 ID/상태 불일치, 누락과 미결정은
+검사로 차단하며, 승인은 문서 전체의 해시에 묶입니다.
+
+```sh
+node .ai-native-sdlc/scripts/state.mjs discovery docs/sdlc/ABC-123/state.json
+node .ai-native-sdlc/scripts/state.mjs discovery docs/sdlc/ABC-123/state.json --text
+```
+
+명령은 읽기 전용입니다. Mermaid 미지원 호스트는 텍스트 요약을 사용합니다.
+기존 실행은 고정 리비전을 유지하며 자동 업그레이드하지 않습니다.
+[승인 예시](examples/ABC-123/01-discovery.md) ·
+[형식과 질문 기준](skills/sdlc/references/discovery-review.md) ·
+[운영 절차](docs/operations.md#discovery-승인-요약)
+
 ### 채팅에서 진행 상황 확인
 
 상태 조회, 세션 재개, 단계 전환, 승인 대기·차단 및 완료 시 에이전트가

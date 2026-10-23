@@ -8,6 +8,7 @@ import { digest, invalidate } from '../scripts/state.mjs';
 import { renderTask } from '../scripts/workflow.mjs';
 import { prepareTasks } from '../scripts/tasks.mjs';
 import { pinRun } from '../scripts/harness.mjs';
+import { bindDiscovery } from './helpers/discovery.mjs';
 
 const tool = resolve('scripts/workspaces.mjs');
 function git(repo, ...args) {
@@ -432,6 +433,7 @@ test('harness upgrade can reconcile and resume through the newly pinned runtime'
   }
   writeFileSync(join(repo,'.git/info/exclude'),'.ai-native-sdlc-revisions/\n');
   const approved = JSON.parse(readFileSync(statePath));
+  bindDiscovery(dirname(statePath), approved);
   const original = pinRun(approved,dirname(statePath),repo,source);
   writeFileSync(statePath,JSON.stringify(approved));
   git(repo,'add','.');

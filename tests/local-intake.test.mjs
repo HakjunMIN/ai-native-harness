@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { digest, validateState, nextPhase } from '../scripts/state.mjs';
+import { bindDiscovery, discovery } from './helpers/discovery.mjs';
 
 function fixture(t) {
   const repo = mkdtempSync(join(tmpdir(),'sdlc-local-'));
@@ -145,6 +146,7 @@ test('local light work uses the same ID without requiring model plan review or J
   state.classification = 'bounded';
   state.gates.G0 = {status:'passed',evidence:[state.intake.request]};
   state.gates.G1 = {status:'passed',evidence:[state.intake.request],approval};
+  bindDiscovery(root, state, discovery.replaceAll('AC-1', 'local-AC-1'));
   state.phase = 'plan';
   writeFileSync(statePath,JSON.stringify(state));
   writeFileSync(join(repo,'draft.json'),JSON.stringify({changeKind:'documentation',risks:[],
@@ -176,6 +178,7 @@ test('local strict plan proceeds without child Jira publication while preserving
   const approval = {actor:'human',reference:'synthetic:approval',at:'2026-09-29T00:00:00Z'};
   state.gates.G0 = {status:'passed',evidence:[state.intake.request]};
   state.gates.G1 = {status:'passed',evidence:[state.intake.request],approval};
+  bindDiscovery(root, state, discovery.replaceAll('AC-1', 'local-AC-1'));
   state.phase = 'plan';
   writeFileSync(statePath,JSON.stringify(state));
   const draft = {changeKind:'documentation',risks:[],verificationReason:'Check Markdown links',tasks:[{
