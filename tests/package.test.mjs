@@ -16,6 +16,15 @@ function copy(t) {
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
 });
+test('README translations use visible titles and reciprocal language links', () => {
+  for (const [file, languageLink] of [['README.md', '[English](README.en.md)'],
+    ['README.en.md', '[한국어](README.md)']]) {
+    const body = readFileSync(file, 'utf8');
+    assert.ok(body.startsWith(`${languageLink}\n\n# ai-native-sdlc\n`), file);
+    assert.equal([...body.matchAll(/^# /gm)].length, 1, file);
+    assert.match(body, /\|---\|---\|/, `${file}: preserve content tables`);
+  }
+});
 test('skill map source and SVG include every shipped skill', () => {
   const diagram = JSON.parse(readFileSync('docs/diagrams/ai-native-sdlc-skills.json', 'utf8'));
   const labels = diagram.nodes.map(node => `${node.label} ${node.sublabel ?? ''}`).join('\n');
@@ -78,7 +87,7 @@ test('missing discovery runtime or template blocks package validation', t => {
 });
 test('package rejects stale current skill counts while keeping historical counts separate', testContext => {
   const root = copy(testContext);
-  for (const file of ['README.md','docs/install.md','docs/compatibility.md']) {
+  for (const file of ['README.md','README.en.md','docs/install.md','docs/compatibility.md']) {
     const path = join(root,file);
     const original = readFileSync(path,'utf8');
     writeFileSync(path,original.replace(/<!-- skill-count -->\d+/,'<!-- skill-count -->999'));

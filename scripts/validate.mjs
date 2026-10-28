@@ -81,10 +81,10 @@ export function validatePackage(root) {
   for (const file of ['install-shared.ps1','scripts/install-shared.mjs']) checkPath(file,'shared installer');
   checkPath('scripts/harness.mjs','ticket harness revision runtime');
   checkPath('scripts/discovery.mjs','discovery approval validation');
-  for (const file of ['README.md','docs/install.md','docs/compatibility.md','docs/operations.md','templates/handoff.md','templates/discovery.md']) {
+  for (const file of ['README.md','README.en.md','docs/install.md','docs/compatibility.md','docs/operations.md','templates/handoff.md','templates/discovery.md']) {
     const body = read(file);
     links(file,body);
-    if (['README.md','docs/install.md','docs/compatibility.md'].includes(file)) {
+    if (['README.md','README.en.md','docs/install.md','docs/compatibility.md'].includes(file)) {
       const counts = [...body.matchAll(/<!-- skill-count -->(\d+)/g)];
       if (counts.length !== 1 || Number(counts[0][1]) !== skillNames.length) errors.push(`${file}: current skill count must be marked once and equal ${skillNames.length}`);
     }

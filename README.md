@@ -1,7 +1,6 @@
----
-title: "ai-native-sdlc"
-description: "프로젝트 공통 기준과 증거 기반 검증, 사람 승인을 연결하는 로컬 SDLC 스킬 프레임워크"
----
+[English](README.en.md)
+
+# ai-native-sdlc
 
 **AI가 구현하고, 증거로 검증하며, 사람이 승인하는 로컬 개발 워크플로우.**
 Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->37개 스킬과 9개 전문 에이전트를 제공합니다.
