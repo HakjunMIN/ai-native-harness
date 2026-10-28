@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, basename, resolve } from 'node:path';
 import { validatePackage } from '../scripts/validate.mjs';
@@ -15,6 +15,18 @@ function copy(t) {
 }
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
+});
+test('skill map source and SVG include every shipped skill', () => {
+  const diagram = JSON.parse(readFileSync('docs/diagrams/ai-native-sdlc-skills.json', 'utf8'));
+  const labels = diagram.nodes.map(node => `${node.label} ${node.sublabel ?? ''}`).join('\n');
+  const svg = readFileSync('docs/assets/ai-native-sdlc-skills.svg', 'utf8');
+  const visible = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)]
+    .map(match => match[1].replace(/<[^>]*>/g, '')).join('\n');
+  for (const name of readdirSync('skills').filter(name => existsSync(`skills/${name}/SKILL.md`))) {
+    const pattern = new RegExp(`(?<![a-z0-9-])${name}(?![a-z0-9-])`);
+    assert.match(labels, pattern, `${name}: missing diagram label`);
+    assert.match(visible, pattern, `${name}: missing SVG text`);
+  }
 });
 test('conductor and handoff expose read-only chat progress with a legacy fallback', () => {
   const conductor = readFileSync('skills/sdlc/SKILL.md','utf8');
