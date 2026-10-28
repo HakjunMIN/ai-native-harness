@@ -20,6 +20,15 @@ test('skill map source and SVG include every shipped skill', () => {
   const diagram = JSON.parse(readFileSync('docs/diagrams/ai-native-sdlc-skills.json', 'utf8'));
   const labels = diagram.nodes.map(node => `${node.label} ${node.sublabel ?? ''}`).join('\n');
   const svg = readFileSync('docs/assets/ai-native-sdlc-skills.svg', 'utf8');
+  assert.deepEqual(diagram.lanes.map(lane => lane.id),
+    ['flow', 'agents', 'required', 'optional', 'technical', 'manual']);
+  for (const node of diagram.nodes.filter(node => node.id.startsWith('technical-'))) {
+    assert.equal(node.lane, 'technical', node.id);
+  }
+  assert.equal([...svg.matchAll(/data-composition-frame-kind="lane"/g)].length, 6);
+  assert.match(svg, /data-composition-frame-id="lane-4"[^>]*height="228"/);
+  assert.match(svg, /06 \/ 수동 유지보수/);
+  assert.doesNotMatch(svg, /추가 기술 스킬/);
   const visible = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)]
     .map(match => match[1].replace(/<[^>]*>/g, '')).join('\n');
   for (const name of readdirSync('skills').filter(name => existsSync(`skills/${name}/SKILL.md`))) {

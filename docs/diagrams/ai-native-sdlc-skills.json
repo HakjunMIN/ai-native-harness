@@ -17,7 +17,6 @@
     { "id": "required", "label": "필수 / 해당 범위이면 호출" },
     { "id": "optional", "label": "상황별 선택" },
     { "id": "technical", "label": "스택별 기술 스킬 · 실제 영향 범위에만 적용" },
-    { "id": "technical-extra", "label": "추가 기술 스킬 · 승인된 스택과 영향 범위에만 적용" },
     { "id": "manual", "label": "수동 유지보수 · SDLC 자동 흐름과 별개" }
   ],
   "mainPath": ["start", "discover", "plan", "implement", "verify", "release"],
@@ -354,7 +353,7 @@
     },
     {
       "id": "technical-mimir",
-      "lane": "technical-extra",
+      "lane": "technical",
       "col": 0,
       "type": "cloud",
       "label": "mimir-oss",
@@ -364,7 +363,7 @@
     },
     {
       "id": "technical-prometheus",
-      "lane": "technical-extra",
+      "lane": "technical",
       "col": 2,
       "type": "cloud",
       "label": "prometheus-query-api",
@@ -374,7 +373,7 @@
     },
     {
       "id": "technical-go-backend",
-      "lane": "technical-extra",
+      "lane": "technical",
       "col": 3,
       "type": "backend",
       "label": "go-backend",
@@ -384,7 +383,7 @@
     },
     {
       "id": "technical-go-testing",
-      "lane": "technical-extra",
+      "lane": "technical",
       "col": 4,
       "type": "frontend",
       "label": "go-testing",
