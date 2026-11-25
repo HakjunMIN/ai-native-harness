@@ -446,3 +446,9 @@ npm run validate
 These commands validate the package without external services. They do not replace
 target-service tests or actual Jira/ArgoCD connectivity checks. When changing skills,
 also run the [Pressure scenarios](tests/scenarios/pressure.md).
+
+### Maintaining the harness: `harness-dev`
+
+Use [`harness-dev`](.agents/skills/harness-dev/SKILL.md) in this source repository to improve the harness itself. It is not installed as a skill in consuming projects. For example, if a retrospective proposes changing an approval rule, ask: “Read `harness-dev` and check how this change would affect tickets already in progress.”
+
+A typo can be fixed directly. A change to approval rules or the state format calls for checking compatibility with existing tickets and planning a rollback first. When a change needs a design, record it in [`docs/specs/`](docs/specs/). Keep implementation plans in [`docs/plans/`](docs/plans/) regardless of the tool used.

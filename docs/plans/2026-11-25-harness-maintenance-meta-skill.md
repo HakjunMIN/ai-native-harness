@@ -1,14 +1,12 @@
 # Harness Maintenance Meta-Skill Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Add a maintainer-only, risk-scaled skill for improving `ai-native-harness`, with identity-safe validation and SemVer/change-log support.
 
 **Architecture:** Keep the maintainer skill in `.agents/skills/harness-dev/`, outside the customer runtime tree and ticket content hash, and point to it from `AGENTS.md`. Extend the existing Node validator and package tests to validate SemVer agreement across `package.json` and the three plugin manifests, while keeping the expected shipped-skill roster explicit. Add behavioral scenarios and verify host discovery separately from static validity.
 
 **Tech Stack:** Markdown; Node.js >=22; built-in `node:test`; existing npm scripts. No new dependencies.
 
-**Spec:** `docs/specs/2026-11-25-harness-maintenance-meta-skill-design.md`
+**Spec:** [Harness maintenance meta-skill design](../specs/2026-11-25-harness-maintenance-meta-skill-design.md)
 
 ## Global Constraints
 
