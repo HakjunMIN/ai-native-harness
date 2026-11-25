@@ -66,8 +66,7 @@ export function validatePackage(root) {
   const versions = [];
   for (const file of versionFiles) {
     const metadata = json(file);
-    if (!metadata) continue;
-    if (typeof metadata.version !== 'string' || !semverPattern.test(metadata.version)) {
+    if (typeof metadata?.version !== 'string' || !semverPattern.test(metadata.version)) {
       errors.push(`${file}: version must be valid SemVer 2.0.0`);
       continue;
     }
