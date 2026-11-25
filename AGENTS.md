@@ -11,6 +11,7 @@ These instructions apply to the entire `ai-native-harness` repository.
 - Do not invoke unrelated global or external skills when a matching local skill exists.
 - If no local skill matches the task, state that explicitly and use the smallest necessary fallback.
 - Treat files under `skills/` as the source of truth for this repository's workflows.
+- For changes to this harness, read `.agents/skills/harness-dev/SKILL.md` before editing. It is maintainer-only and is not part of the customer runtime skill catalog; read it directly if the current host does not discover it.
 
 ## Repository boundaries
 

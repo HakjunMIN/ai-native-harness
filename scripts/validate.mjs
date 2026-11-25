@@ -10,6 +10,8 @@ const skillNames = [
   'grafana-plugin-dev','grafana-plugin-testing','react-ts','otel-observability','helm-argocd-release'
 ];
 const agents = ['architect','ux-designer','test-writer','implementer','spec-reviewer','code-reviewer','cross-reviewer','verifier','release-engineer'];
+const semverPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+const versionFiles = ['package.json','plugin.json','.claude-plugin/plugin.json','.codex-plugin/plugin.json'];
 
 export function validatePackage(root) {
   const errors = [];
@@ -61,11 +63,27 @@ export function validatePackage(root) {
     if (!/^---\n[\s\S]*?\ndescription: .+\n/m.test(body)) errors.push(`${path}: description required`);
     links(path,body);
   }
+  const versions = [];
+  for (const file of versionFiles) {
+    const metadata = json(file);
+    if (typeof metadata?.version !== 'string' || !semverPattern.test(metadata.version)) {
+      errors.push(`${file}: version must be valid SemVer 2.0.0`);
+      continue;
+    }
+    versions.push([file, metadata.version]);
+  }
+  if (new Set(versions.map(([, version]) => version)).size > 1) {
+    for (const [file] of versions) errors.push(`${file}: package version mismatch`);
+  }
+  const changelog = read('CHANGELOG.md');
+  if (!/^## \[Unreleased\]$/m.test(changelog)) {
+    errors.push('CHANGELOG.md: required ## [Unreleased] heading is missing');
+  }
   const manifests = ['plugin.json','.claude-plugin/plugin.json','.codex-plugin/plugin.json'];
   for (const file of manifests) {
     const m = json(file);
     if (!m) continue;
-    if (m.name !== 'ai-native-sdlc' || m.version !== '0.1.0') errors.push(`${file}: inconsistent plugin identity`);
+    if (m.name !== 'ai-native-sdlc') errors.push(`${file}: inconsistent plugin identity`);
     for (const field of ['skills','agents','hooks']) {
       if (typeof m[field] === 'string') checkPath(m[field],file);
       else if (Array.isArray(m[field])) for (const p of m[field]) checkPath(p,file);
