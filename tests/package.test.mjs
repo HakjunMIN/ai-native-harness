@@ -16,6 +16,58 @@ function copy(t) {
 test('package is discoverable and all local links resolve', () => {
   assert.deepEqual(validatePackage(resolve('.')), []);
 });
+test('package version metadata accepts matching stable and prerelease versions', t => {
+  const root = copy(t);
+  const files = ['package.json', 'plugin.json', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json'];
+  const setVersion = version => {
+    for (const file of files) {
+      const path = join(root, file);
+      const manifest = JSON.parse(readFileSync(path, 'utf8'));
+      manifest.version = version;
+      writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
+    }
+  };
+
+  assert.deepEqual(validatePackage(root), []);
+  setVersion('0.2.0-rc.1');
+  assert.deepEqual(validatePackage(root), []);
+});
+test('package version metadata rejects malformed and mismatched versions', t => {
+  const root = copy(t);
+  const files = ['package.json', 'plugin.json', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json'];
+  const setVersion = (file, version) => {
+    const path = join(root, file);
+    const manifest = JSON.parse(readFileSync(path, 'utf8'));
+    manifest.version = version;
+    writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
+  };
+
+  for (const version of ['0.1', '0.1.0-01']) {
+    setVersion('package.json', version);
+    const errors = validatePackage(root).join('\n');
+    assert.match(errors, /package\.json.*version/i);
+    setVersion('package.json', '0.1.0');
+  }
+  for (const file of files) {
+    setVersion(file, '0.1.1');
+    assert.ok(validatePackage(root).some(error => error.includes(file)), file);
+    setVersion(file, '0.1.0');
+  }
+});
+test('package version validation requires an unreleased changelog', t => {
+  const root = copy(t);
+  rmSync(join(root, 'CHANGELOG.md'));
+  assert.ok(validatePackage(root).some(error => error.includes('CHANGELOG.md')));
+
+  writeFileSync(join(root, 'CHANGELOG.md'), '');
+  assert.ok(validatePackage(root).some(error => error.includes('CHANGELOG.md')));
+
+  writeFileSync(join(root, 'CHANGELOG.md'), '# Changelog\n');
+  assert.ok(validatePackage(root).some(error => error.includes('CHANGELOG.md')));
+
+  writeFileSync(join(root, 'CHANGELOG.md'), '# Changelog\n\n## [Unreleased]\n');
+  assert.deepEqual(validatePackage(root), []);
+});
 test('README translations use visible titles and reciprocal language links', () => {
   for (const [file, languageLink] of [['README.md', '[English](README.en.md)'],
     ['README.en.md', '[한국어](README.md)']]) {
