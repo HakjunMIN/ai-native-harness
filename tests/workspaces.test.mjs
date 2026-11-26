@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, existsSync, symlinkSync, cpSync, renameSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync, rmSync, existsSync, symlinkSync, cpSync, renameSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { digest, invalidate } from '../scripts/state.mjs';
@@ -9,22 +8,17 @@ import { renderTask } from '../scripts/workflow.mjs';
 import { prepareTasks } from '../scripts/tasks.mjs';
 import { pinRun } from '../scripts/harness.mjs';
 import { bindDiscovery } from './helpers/discovery.mjs';
+import { git, projectRepo, runBranches, runWorktree, sliceWorktree, worktreeCount } from './helpers/run-fixture.mjs';
 
 const tool = resolve('scripts/workspaces.mjs');
-function git(repo, ...args) {
-  const result = spawnSync('git', ['-C', repo, ...args], {encoding:'utf8'});
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
-}
+const integration = 'sdlc/local-work/integration';
 
-function fixture(t, dependencies = [[], []], objectFormat) {
-  const root = mkdtempSync(join(tmpdir(), 'sdlc-workspaces-'));
-  t.after(() => rmSync(root, {recursive:true,force:true}));
-  const repo = join(root,'repo');
-  mkdirSync(repo);
-  git(repo,'init','-q',...(objectFormat ? [`--object-format=${objectFormat}`] : []));
-  git(repo,'config','user.name','Test User');
-  git(repo,'config','user.email','test@example.invalid');
+// The approved plan lives in the run's dedicated worktree (`repo`); `main` is the primary checkout.
+// where = 'primary' reproduces a legacy run committed in the primary checkout.
+function fixture(t, dependencies = [[], []], objectFormat, where = 'run') {
+  const {root,repo:main} = projectRepo(t,{objectFormat});
+  const repo = where === 'run' ? runWorktree(main,'local-work') : main;
+  if (where === 'run') git(main,'worktree','add','-q','-b',integration,repo);
   const directory = join(repo,'docs/sdlc/local-work');
   mkdirSync(directory,{recursive:true});
   const evidence = (name, body) => {
@@ -60,7 +54,7 @@ function fixture(t, dependencies = [[], []], objectFormat) {
   git(repo,'commit','-qm','approved work');
   const run = (command, scopes) => spawnSync(process.execPath,
     [tool,command,statePath,...(scopes ? [scopePath] : [])],{cwd:repo,encoding:'utf8'});
-  return {repo,root,statePath,scopePath,run};
+  return {repo,main,root,statePath,scopePath,run};
 }
 
 function reapprove(context, gate = 'G2') {
@@ -84,8 +78,8 @@ function reapprove(context, gate = 'G2') {
   return previous;
 }
 
-test('one ready ticket uses only an integration branch in the current checkout', t => {
-  const {repo,root,statePath,run} = fixture(t,[[]]);
+test('one ready ticket works directly in its run worktree and leaves the primary checkout alone', t => {
+  const {repo,main,statePath,run} = fixture(t,[[]]);
   const preview = run('plan');
   assert.equal(preview.status,0,preview.stderr);
   assert.equal(JSON.parse(preview.stdout).mode,'branch');
@@ -95,13 +89,15 @@ test('one ready ticket uses only an integration branch in the current checkout',
   assert.equal(git(repo,'branch','--show-current'),'sdlc/local-work/integration');
   assert.equal(state.slices[0].status,'in_progress');
   assert.equal(state.slices[0].workspace.mode,'branch');
-  assert.equal(git(repo,'worktree','list','--porcelain').match(/^worktree /gm).length,1);
-  assert.equal(existsSync(join(root,'repo.sdlc-worktrees')),false);
+  assert.equal(state.slices[0].workspace.path,repo);
+  assert.equal(worktreeCount(main),2);
+  assert.equal(git(main,'branch','--show-current'),'main');
+  assert.deepEqual(runBranches(main),[integration]);
   assert.notEqual(run('start').status,0);
 });
 
-test('disjoint ready tasks start in distinct worktrees at the same base revision', t => {
-  const {repo,statePath,run} = fixture(t);
+test('disjoint ready tasks start in ignored slice worktrees beside the run at the same base revision', t => {
+  const {repo,main,statePath,run} = fixture(t);
   assert.match(run('plan').stderr,/scope/i);
   const preview = run('plan',true);
   assert.equal(preview.status,0,preview.stderr);
@@ -111,8 +107,9 @@ test('disjoint ready tasks start in distinct worktrees at the same base revision
   const state = JSON.parse(readFileSync(statePath));
   const base = git(repo,'rev-parse','HEAD');
   assert.equal(git(repo,'branch','--show-current'),'sdlc/local-work/integration');
-  assert.equal(new Set(state.slices.map(slice => slice.workspace.path)).size,2);
-  assert.equal(git(repo,'worktree','list','--porcelain').match(/^worktree /gm).length,3);
+  assert.deepEqual(state.slices.map(slice => slice.workspace.path),[1,2].map(id => sliceWorktree(main,'local-work',id)));
+  assert.equal(worktreeCount(main),4);
+  assert.equal(git(main,'status','--porcelain','--untracked-files=all'),'');
   for (const slice of state.slices) {
     assert.equal(slice.status,'in_progress');
     assert.equal(slice.workspace.mode,'worktree');
@@ -121,6 +118,34 @@ test('disjoint ready tasks start in distinct worktrees at the same base revision
     assert.equal(git(slice.workspace.path,'branch','--show-current'),slice.workspace.branch);
   }
   assert.notEqual(run('start',true).status,0);
+});
+
+test('slice worktrees are refused before anything is created when .worktrees is not ignored', t => {
+  const {main,statePath,run} = fixture(t);
+  writeFileSync(join(main,'.gitignore'),'.ai-native-sdlc-revisions/\n');
+  const original = readFileSync(statePath,'utf8');
+  const refused = run('start',true);
+  assert.notEqual(refused.status,0);
+  assert.match(refused.stderr,/not ignored.*\/\.worktrees\//s);
+  assert.deepEqual(runBranches(main),[integration]);
+  assert.equal(worktreeCount(main),2);
+  assert.equal(readFileSync(statePath,'utf8'),original);
+});
+
+test('a run committed in the primary checkout is refused with the exact relocation command', t => {
+  const {main,statePath,run} = fixture(t,[[]],undefined,'primary');
+  const original = readFileSync(statePath,'utf8');
+  const refused = run('start');
+  assert.notEqual(refused.status,0);
+  assert.match(refused.stderr,/dedicated worktree on integration branch sdlc\/local-work\/integration/);
+  assert.ok(refused.stderr.includes(`worktree add -b ${integration} ${runWorktree(main,'local-work')}`), refused.stderr);
+  git(main,'switch','-qc',integration);
+  const legacy = run('start');
+  assert.notEqual(legacy.status,0,'an in-place integration branch from an earlier harness is not adopted');
+  assert.match(legacy.stderr,/switch the primary checkout back to its base branch/);
+  assert.deepEqual(runBranches(main),[integration]);
+  assert.equal(worktreeCount(main),1);
+  assert.equal(readFileSync(statePath,'utf8'),original);
 });
 
 test('overlapping edits defer a ticket instead of running it in parallel', t => {
@@ -183,22 +208,23 @@ test('active worktree keeps a new independent ticket on a worktree', t => {
 });
 
 test('dirty base and invalid shared-state scopes never create a branch or workspace', t => {
-  const {repo,scopePath,run} = fixture(t);
+  const {repo,main,scopePath,run} = fixture(t);
   writeFileSync(scopePath,JSON.stringify({'1':['docs'],'2':['src/two.js']}));
   const unsafe = run('start',true);
   assert.notEqual(unsafe.status,0);
   assert.match(unsafe.stderr,/shared|docs\/sdlc/i);
-  assert.equal(git(repo,'branch','--show-current').startsWith('sdlc/'),false);
+  assert.deepEqual(runBranches(main),[integration]);
   writeFileSync(scopePath,JSON.stringify({'1':['src/one.js'],'2':['src/two.js']}));
   writeFileSync(join(repo,'dirty.js'),'uncommitted');
   const dirty = run('start',true);
   assert.notEqual(dirty.status,0);
   assert.match(dirty.stderr,/clean|uncommitted/i);
-  assert.equal(git(repo,'branch','--show-current').startsWith('sdlc/'),false);
+  assert.deepEqual(runBranches(main),[integration]);
+  assert.equal(worktreeCount(main),2);
 });
 
 test('physical symlink aliases cannot masquerade as disjoint scopes', t => {
-  const {repo,scopePath,run} = fixture(t);
+  const {repo,main,scopePath,run} = fixture(t);
   mkdirSync(join(repo,'src/real'),{recursive:true});
   symlinkSync('real',join(repo,'src/link'));
   writeFileSync(scopePath,JSON.stringify({'1':['src/link/one.js'],'2':['src/real/two.js']}));
@@ -207,10 +233,10 @@ test('physical symlink aliases cannot masquerade as disjoint scopes', t => {
   const result = run('start',true);
   assert.notEqual(result.status,0);
   assert.match(result.stderr,/symlink|alias/i);
-  assert.equal(git(repo,'branch','--show-current').startsWith('sdlc/'),false);
+  assert.deepEqual(runBranches(main),[integration]);
 });
 
-test('G3 revalidation reuses its recorded integration branch, not a second branch', t => {
+test('G3 revalidation reuses the run worktree instead of creating another branch', t => {
   const {repo,statePath,run} = fixture(t,[[]]);
   assert.equal(run('start').status,0);
   const state = JSON.parse(readFileSync(statePath));
@@ -291,15 +317,12 @@ test('reconciliation supports SHA-256 Git workspace revisions', testContext => {
 
 test('reconciliation cannot adopt an unrelated branch or bypass renewed approval', testContext => {
   const context = fixture(testContext,[[]]);
-  const {repo,statePath,run} = context;
-  git(repo,'switch','-c','sdlc/local-work/integration');
+  const {statePath,run} = context;
   const original = readFileSync(statePath,'utf8');
   const unrelated = run('reconcile');
   assert.notEqual(unrelated.status,0);
   assert.match(unrelated.stderr,/history|recorded|invalidation/i);
   assert.equal(readFileSync(statePath,'utf8'),original);
-  git(repo,'switch','-c','unrelated');
-  git(repo,'branch','-d','sdlc/local-work/integration');
   assert.equal(run('start').status,0);
   const state = invalidate(JSON.parse(readFileSync(statePath)),'G2','Test fixture: not yet approved');
   writeFileSync(statePath,JSON.stringify(state));
@@ -431,7 +454,6 @@ test('harness upgrade can reconcile and resume through the newly pinned runtime'
   for (const directory of ['skills','agents','hooks','scripts','templates','docs']) {
     cpSync(resolve(directory),join(source,directory),{recursive:true});
   }
-  writeFileSync(join(repo,'.git/info/exclude'),'.ai-native-sdlc-revisions/\n');
   const approved = JSON.parse(readFileSync(statePath));
   bindDiscovery(dirname(statePath), approved);
   const original = pinRun(approved,dirname(statePath),repo,source);

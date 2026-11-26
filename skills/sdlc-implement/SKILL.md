@@ -11,8 +11,9 @@ publication; local runs use the local ID and Jira light uses the parent key.
 Load only relevant technical skills.
 
 Run `state.mjs ready <state>` and audit dependencies, edit paths and shared
-contracts. Use `workspaces.mjs plan|start`: one nonconcurrent slice stays on a
-normal branch; independent, nonoverlapping slices run in separate Git worktrees.
+contracts. Run `workspaces.mjs plan|start` in the run worktree: one nonconcurrent
+slice stays on its integration branch; independent, nonoverlapping slices run in
+sibling Git worktrees.
 `start` records assignments as `in_progress`. Reconcile existing assignments
 on resume, never start them twice. After G0–G2 invalidation or a harness upgrade,
 renew approvals, commit the approved plan, preserve and clean up old sub task workspaces,
@@ -38,12 +39,16 @@ and coordinated ownership, not parallel independent edits to the same shared fil
    expectations to manufacture success. Contract changes return to G2/G1.
 3. Audit the diff. Light requires one independent combined spec/standards review;
    use an independent model session or evidenced human review as policy permits.
-   Strict/legacy retains separate spec and standards reviews. Different-family
-   review is recommended for new policies, required only for explicit
-   `requireDifferentFamily: true` or legacy records without policy. With false,
-   same-model independent sessions are eligible; human review needs policy permission.
+   Strict/legacy retains separate spec and standards reviews. Dispatch reviewers
+   with the configured role model; new policies require a reviewer model different
+   from the author model (`requireDifferentModel`), same family allowed. Different-family
+   review is recommended, required only for explicit `requireDifferentFamily: true`
+   or legacy records without policy; human review needs policy permission.
    Record real provenance, scope, subject revision and blocking findings.
-4. Resolve findings and rerun affected checks on final code. At three failed
+4. Resolve findings and rerun affected checks on final code. Review gets at most
+   2 rounds per slice: round 2 is a delta review of the fix; an implementation-only
+   fix needs fresh GREEN, not a new RED. Blockers left after round 2 become
+   NEEDS_HUMAN (accept with follow-ups, fix once more, descope). At three failed
    attempts invoke bounded diagnosis; unresolved work becomes NEEDS_HUMAN.
 5. Record AC-to-check mapping, mode-specific evidence, final GREEN, reviews and
    revision in `03-impl-log.md`. Mark done only with complete valid evidence.

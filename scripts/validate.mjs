@@ -97,6 +97,7 @@ export function validatePackage(root) {
     if (existsSync(resolve(root,file)) && !(statSync(resolve(root,file)).mode & 0o111)) errors.push(`${file}: executable permission missing`);
   }
   for (const file of ['install-shared.ps1','scripts/install-shared.mjs']) checkPath(file,'shared installer');
+  checkPath('hooks/node-runtime.sh','hook Node runtime');
   checkPath('scripts/harness.mjs','ticket harness revision runtime');
   checkPath('scripts/discovery.mjs','discovery approval validation');
   for (const file of ['README.md','README.en.md','docs/install.md','docs/compatibility.md','docs/operations.md','templates/handoff.md','templates/discovery.md']) {

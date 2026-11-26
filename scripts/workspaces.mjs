@@ -1,9 +1,11 @@
 import { readFileSync, writeFileSync, renameSync, realpathSync, lstatSync, rmSync } from 'node:fs';
-import { dirname, basename, join, relative, resolve, isAbsolute } from 'node:path';
+import { dirname, join, relative, resolve, isAbsolute } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dispatchPinned } from './harness.mjs';
+import { addWorktree, discardWorktree, integrationBranch as runBranchName, listRuns, mainWorktree,
+  requireIgnoredWorkspace, runWorktreePath, sliceWorktreePath, worktrees } from './run-workspace.mjs';
 
 const git = (repo, ...args) => execFileSync('git',['-C',repo,...args],{encoding:'utf8'}).trim();
 const overlaps = (first, second) => first === second || first.startsWith(`${second}/`) || second.startsWith(`${first}/`);
@@ -61,6 +63,27 @@ function branchExists(repo, branch) {
   throw new Error('unable to inspect existing Git branches');
 }
 
+function currentBranch(repo) {
+  const result = spawnSync('git',['-C',repo,'symbolic-ref','--quiet','--short','HEAD'],{encoding:'utf8'});
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+
+// Workspace operations run only in the run's dedicated worktree on its integration branch.
+// Returns the primary checkout, which holds the ignored .worktrees directory.
+function requireRunWorktree(repo, ticket, action) {
+  const main = mainWorktree(repo);
+  const branch = runBranchName(ticket);
+  const current = currentBranch(repo);
+  if (repo !== main && current === branch) return main;
+  const path = runWorktreePath(main,ticket);
+  const holder = worktrees(repo).find(tree => tree.branch === branch && tree.path !== repo);
+  let fix = `git -C ${repo} worktree add -b ${branch} ${path}`;
+  if (repo === main && current === branch) fix = `switch the primary checkout back to its base branch, then git -C ${repo} worktree add ${path} ${branch}`;
+  else if (holder) fix = `run ${action} with the state file inside ${holder.path}`;
+  else if (branchExists(repo,branch)) fix = repo === main ? `git -C ${repo} worktree add ${path} ${branch}` : `git -C ${repo} switch ${branch}`;
+  throw new Error(`${ticket}: ${action} must run in the dedicated worktree on integration branch ${branch}, but ${repo} is on ${current ?? 'a detached HEAD'}. Fix: ${fix}`);
+}
+
 function cleanSource(repo) {
   const changes = execFileSync('git',['-C',repo,'status','--porcelain','-z','--untracked-files=all'],{encoding:'utf8'}).split('\0').filter(Boolean);
   if (changes.some(line => !line.slice(3).startsWith('docs/sdlc/'))) throw new Error('clean source checkout required for workspace operations');
@@ -69,6 +92,11 @@ function cleanSource(repo) {
 const samePlan = (first, second) => Boolean(first && second && first.path === second.path && first.sha256 === second.sha256);
 const lastPlanInvalidation = state => (state.history ?? []).findLastIndex(entry =>
   entry.event === 'invalidate' && ['G0','G1','G2'].includes(entry.gate));
+
+const archivedWorkspaces = (state, integrationBranch) => (state.history ?? [])
+  .filter(entry => entry.event === 'invalidate')
+  .flatMap(entry => entry.previous?.slices ?? []).map(slice => slice.workspace)
+  .filter(workspace => workspace?.integrationBranch === integrationBranch);
 
 function matchingReconciliation(state, integrationBranch, baseHead) {
   const history = state.history ?? [];
@@ -99,13 +127,11 @@ function writeState(statePath, state, original) {
 }
 
 export function reconcileWorkspaces(statePath, state, repo, original) {
-  const integrationBranch = `sdlc/${state.ticket}/integration`;
-  if (git(repo,'symbolic-ref','--short','HEAD') !== integrationBranch) throw new Error('switch to the recorded integration branch before reconciliation');
+  requireRunWorktree(repo,state.ticket,'reconcile');
+  const integrationBranch = runBranchName(state.ticket);
   if (state.slices.some(slice => slice.status !== 'pending' || slice.workspace)) throw new Error('reconciliation requires pending, unassigned slices; do not replace active assignments');
   if (lastPlanInvalidation(state) < 0) throw new Error('reconciliation requires recorded G0–G2 invalidation history');
-  const archived = state.history.filter(entry => entry.event === 'invalidate')
-    .flatMap(entry => entry.previous?.slices ?? []).map(slice => slice.workspace)
-    .filter(workspace => workspace?.integrationBranch === integrationBranch);
+  const archived = archivedWorkspaces(state,integrationBranch);
   if (!archived.length) throw new Error('no recorded workspace history owns this integration branch');
   cleanSource(repo);
   requireCommittedPlan(statePath,state,repo);
@@ -133,41 +159,37 @@ export function reconcileWorkspaces(statePath, state, repo, original) {
 
 export function startWorkspaces(statePath, state, repo, plan, scopes, original) {
   if (!plan.selected.length) throw new Error('no ready nonconflicting ticket to start');
-  const integrationBranch = `sdlc/${state.ticket}/integration`;
-  const previous = state.slices.filter(slice => slice.workspace);
-  const initial = !previous.length;
-  const currentBranch = git(repo,'symbolic-ref','--short','HEAD');
-  const integrationExists = branchExists(repo,integrationBranch);
+  const main = requireRunWorktree(repo,state.ticket,'start');
+  const integrationBranch = runBranchName(state.ticket);
+  const initial = !state.slices.some(slice => slice.workspace);
   const baseHead = git(repo,'rev-parse','HEAD');
   const invalidation = lastPlanInvalidation(state);
   const resuming = state.history?.some((entry,index) => index > invalidation && entry.event === 'invalidate' && entry.gate === 'G3' &&
     samePlan(entry.previous?.taskPlan,state.taskPlan) &&
     entry.previous?.slices?.some(slice => slice.workspace?.integrationBranch === integrationBranch));
   const reconciled = matchingReconciliation(state,integrationBranch,baseHead);
-  if (initial && integrationExists && !((resuming || reconciled) && currentBranch === integrationBranch)) {
-    throw new Error(`integration branch already exists; after reapproval and cleanup run node ${JSON.stringify(fileURLToPath(import.meta.url))} reconcile ${JSON.stringify(statePath)}`);
+  // The run worktree always holds the integration branch; work started under an older plan must be reconciled first.
+  if (initial && archivedWorkspaces(state,integrationBranch).length && !resuming && !reconciled) {
+    throw new Error(`integration branch already holds work from an earlier plan; after reapproval and cleanup run node ${JSON.stringify(fileURLToPath(import.meta.url))} reconcile ${JSON.stringify(statePath)}`);
   }
-  if (!initial && (currentBranch !== integrationBranch || !branchExists(repo,integrationBranch))) throw new Error('switch to the recorded integration branch before resuming');
   for (const slice of state.slices.filter(item => item.status === 'in_progress')) {
     if (slice.workspace.mode === 'worktree' && (!exists(slice.workspace.path) ||
         git(slice.workspace.path,'symbolic-ref','--short','HEAD') !== slice.workspace.branch)) throw new Error(`slice ${slice.id}: reconcile missing worktree`);
   }
   cleanSource(repo);
   requireCommittedPlan(statePath,state,repo);
-  const worktreeRoot = join(dirname(repo),`${basename(repo)}.sdlc-worktrees`,state.ticket);
   const assignments = plan.selected.map(id => ({id, mode:plan.mode,
     branch:plan.mode === 'branch' ? integrationBranch : `sdlc/${state.ticket}/t${id}`,
-    integrationBranch, baseHead, path:plan.mode === 'branch' ? repo : join(worktreeRoot,`t${id}`),
+    integrationBranch, baseHead, path:plan.mode === 'branch' ? repo : sliceWorktreePath(main,state.ticket,id),
     paths:scopes?.get(id) ?? []}));
   for (const item of assignments) {
     if (plan.mode === 'worktree' && (exists(item.path) || branchExists(repo,item.branch))) throw new Error(`slice ${item.id}: branch or worktree already exists; reconcile it`);
+    if (plan.mode === 'worktree') requireIgnoredWorkspace(main,item.path);
   }
-  let createdIntegration = false;
   const created = [];
   try {
-    if (initial && !integrationExists) { git(repo,'switch','-c',integrationBranch); createdIntegration = true; }
     for (const item of assignments) if (item.mode === 'worktree') {
-      git(repo,'worktree','add','-b',item.branch,item.path,baseHead);
+      addWorktree(repo,item.branch,item.path,baseHead);
       created.push(item);
     }
     const updated = structuredClone(state);
@@ -178,14 +200,7 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
     }
     writeState(statePath,updated,original);
   } catch (error) {
-    for (const item of created.reverse()) {
-      git(repo,'worktree','remove','--force',item.path);
-      git(repo,'branch','-D',item.branch);
-    }
-    if (createdIntegration) {
-      git(repo,'switch',currentBranch);
-      git(repo,'branch','-D',integrationBranch);
-    }
+    for (const item of created.reverse()) discardWorktree(repo,item.path,item.branch);
     throw error;
   }
   return assignments;
@@ -193,8 +208,12 @@ export function startWorkspaces(statePath, state, repo, plan, scopes, original) 
 
 function main() {
   const [command,file,scopeFile] = process.argv.slice(2);
+  if (command === 'list' && process.argv.length <= 4) {
+    console.log(JSON.stringify(listRuns(file),null,2));
+    return;
+  }
   if (!['plan','start','reconcile'].includes(command) || !file || process.argv.length > 5 || (command === 'reconcile' && scopeFile)) {
-    throw new Error('Usage: workspaces.mjs plan|start STATE [SCOPES.json] | reconcile STATE');
+    throw new Error('Usage: workspaces.mjs plan|start STATE [SCOPES.json] | reconcile STATE\n       workspaces.mjs list [REPOSITORY_ROOT]');
   }
   if (dispatchPinned('workspaces.mjs',file)) return;
   const statePath = realpathSync(resolve(file));

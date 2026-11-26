@@ -24,8 +24,15 @@ specialists inherit the conductor's state path and resolved root. Do not start a
 separate run/lock for a sub task already assigned by a conductor. See
 [ticket revisions](references/harness-revisions.md) for restore and upgrade.
 
-For bare `sdlc` without a substantive request, list `docs/sdlc/*/state.json`
-phases and blockers without creating work, using the progress summary below.
+Every start creates the run's own Git worktree on `sdlc/<ID>/integration` at
+`<repo>/.worktrees/sdlc/<ID>/integration` and prints the state path inside it.
+Resolve that state and run every later phase there (`cd` or `git -C`); leave the
+primary checkout untouched. Git must ignore `/.worktrees/` there (installers add
+the rule). See [run worktrees](references/protocol.md#run-worktrees).
+
+For bare `sdlc` without a substantive request, run `workspaces.mjs list` to find
+runs in every worktree and report their phases and blockers without creating
+work, using the progress summary below.
 A Jira key starts or resumes a Jira
 run; an existing local ID resumes that run. For a new non-Jira natural-language
 request, preserve the original request and inspect available context before

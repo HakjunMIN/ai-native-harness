@@ -179,6 +179,9 @@ sub task·서브에이전트는 부모 conductor의 lock과 원본 상태 경로
 기존 integration 브랜치가 있으면 재승인된 계획을 commit하고 이전 작업 공간을
 보존·정리한 뒤 `workspaces.mjs reconcile STATE`로 재개합니다.
 상세 조건은 [브랜치·워크트리 운영 절차](docs/operations.md#브랜치와-병렬-워크트리)를 따릅니다.
+새 작업은 시작 시 primary checkout 안의 `.worktrees/sdlc/<ID>/integration` 전용 워크트리
+(브랜치 `sdlc/<ID>/integration`)에서 진행하므로 `STATE`도 그 안의 경로입니다. 설치기는
+`.gitignore`에 `/.worktrees/`를 추가하며, 전체 run은 `workspaces.mjs list`로 조회합니다.
 
 스냅샷 캐시는 `.ai-native-sdlc-revisions/<SHA256>/`에 둡니다. 공유 설치는 실제 하네스
 클론 옆에서 여러 서비스가 공유하고, 복사 설치는 각 서비스 리포 내부에 보관합니다.

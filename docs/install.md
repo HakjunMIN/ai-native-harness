@@ -82,6 +82,10 @@ PowerShell도 동일한 옵션을 사용합니다. 스트리밍/다운로드한 
 - 티켓 lock이 있는 SDLC 작업은 설치된 최신 자산이 아니라 고정된 스냅샷을
   사용합니다. 공유 업데이트는 새 작업과 standalone 스킬, 현재 공통 훅에 반영되며
   기존 티켓을 자동 전환하지 않습니다. [티켓 리비전 관리](../skills/sdlc/references/harness-revisions.md)를 참고하세요.
+- run 전용 워크트리 위치인 `/.worktrees/` 규칙이 `.gitignore`에 없으면 끝에 추가합니다.
+  기존 내용·줄바꿈(CRLF)·권한은 유지하고, `/.worktrees`, `.worktrees/`, `.worktrees` 같은
+  동등 규칙이 있으면 건드리지 않습니다. 관리 manifest 대상은 아니며 설치 실패 시
+  원래 내용으로 되돌립니다. 첫 작업 전에 이 규칙을 commit하세요.
 - 첫 작업 생성 시 `.ai-native-sdlc-revisions/<SHA256>/`에 실행 자산을 보관합니다.
   공유 설치는 실제 하네스 클론 옆에서 여러 서비스가 공유하고, 복사 설치는 각
   서비스 리포 내부에 둡니다. 캐시는 애플리케이션 커밋에서 제외하고 티켓 lock과
@@ -142,7 +146,8 @@ Codex용 `.codex/agents/`와 `.codex/hooks.json`입니다. 설치본에는 스�
 `AGENTS.md`는 하네스 저장소 전용이므로 복사하지 않습니다. 이미 대상에
 `AGENTS.md`가 있으면 수정하지 않고 경고만 출력하므로
 [프로젝트용 템플릿](../templates/project-AGENTS.md)의 관련 지침을 직접
-통합하세요. 관리 대상 설정은 변경되지 않았을 때만 재설치에서 갱신합니다.
+통합하세요. 공유 설치와 같이 `.gitignore`에 `/.worktrees/` 규칙이 없으면 추가합니다.
+관리 대상 설정은 변경되지 않았을 때만 재설치에서 갱신합니다.
 기존 경로와 충돌하거나 이전에 설치한 관리 파일이 수정되어 있으면 덮어쓰지
 않고 중단합니다. 새 공유 설치나 기존 `.ai-native-sdlc` 공유 캐시 심볼릭 링크 설치는 자동
 전환하지 않습니다. 이전 설치를 수동 정리하기 전에 프로젝트별 변경과
@@ -154,6 +159,48 @@ Codex용 `.codex/agents/`와 `.codex/hooks.json`입니다. 설치본에는 스�
 <!-- skill-count -->37개, 에이전트 9개, 훅의 차단 동작을 확인해야 합니다. 훅은 OS 보안 경계가
 아니며 Codex는 에이전트 Markdown의 `tools`를 native 권한으로 해석하지
 않습니다. 자세한 한계는 [호환성](compatibility.md)을 참고하세요.
+
+### 역할별 서브에이전트 모델
+
+대상 루트의 `ai-native-sdlc.config.json`에서 `models.<역할>`을 우선 적용하고, 없으면
+`models.default`를 사용합니다. `reasoningEfforts`(`low`·`medium`·`high`·`xhigh`·`max`)도
+같은 방식입니다. 역할 키는 `agents/sdlc-<역할>.agent.md`의 역할명입니다.
+
+```json
+{
+  "models": { "default": "claude-sonnet-5", "cross-reviewer": "gpt-6-sol", "code-reviewer": "gpt-6-sol" },
+  "reasoningEfforts": { "implementer": "high" },
+  "review": { "requireDifferentModel": true }
+}
+```
+
+- 복사 설치(`install.sh`)는 매핑된 역할만 `.github/agents/sdlc-<역할>.agent.md`를
+  `model:`·`reasoning-effort:`가 들어간 프로젝트별 관리 파일로 생성합니다. 매핑이 없는
+  역할은 상대 링크를 유지해 호스트 기본 모델을 상속합니다. 공유 원본 역할 파일과
+  Codex 설정은 바꾸지 않습니다.
+- 잘못된 JSON, 알 수 없는 역할 키, 빈 모델 값, 허용되지 않은 추론 강도는 설치 파일을
+  교체하기 전에 오류로 중단합니다. 생성 파일을 직접 편집하면 다음 재설치가 충돌로 중단됩니다.
+- 설정을 바꾸면 같은 설치 명령을 다시 실행하고 새 세션에서 확인하세요. 공유 설치
+  (`install-shared`)는 파일을 생성하지 않고, 컨덕터가 디스패치 시 같은 매핑을 적용합니다.
+- 새 정책은 `review.requireDifferentModel`이 기본 `true`이므로 리뷰어 모델 ID가 작성자와
+  같으면 상태 검증이 실패합니다. 같은 계열의 다른 모델은 허용됩니다.
+- 설치기는 계정의 모델 가용성이나 호스트 사용자 설정(`subagents.agents` 등)의 우선순위를
+  검증하지 않습니다. 실제 실행 모델을 확인하고, 실행할 수 없으면 대체하지 말고 `BLOCKED`로
+  보고하세요.
+
+### GUI 세션에서 Node를 찾지 못할 때
+
+Bash 훅(`gate-guard.sh`, `session-start.sh`)과 복사 설치의 모델 설정 처리는 셸 초기화
+파일 없이 `hooks/node-runtime.sh`로 Node를 다음 순서로 찾습니다.
+
+1. `AI_NATIVE_SDLC_NODE` 환경변수
+2. 현재 `PATH`의 `node`
+3. `$NVM_BIN/node`, `/opt/homebrew/bin/node`, `/usr/local/bin/node`
+4. `~/.nvm/versions/node/*/bin/node` 중 처음 찾은 실행 파일(버전 비교 없음)
+
+모두 실패하면 종료 코드 127과 안내를 출력합니다. Copilot은 실패한 `preToolUse` 훅을
+거부로 처리하므로, GUI에서 실행한 호스트가 도구 호출을 모두 거부하면
+`AI_NATIVE_SDLC_NODE`를 지정하세요.
 
 ## 호스트별 설치 (선택)
 

@@ -197,6 +197,9 @@ and locks in `harness-history/` and reset **all gates for revalidation starting 
 changed. If an integration branch already exists, commit the reapproved plan, preserve
 and clean up earlier workspaces, then resume with `workspaces.mjs reconcile STATE`.
 Follow the [Branch and worktree procedure](docs/operations.md#브랜치와-병렬-워크트리).
+Every new run starts in its own worktree at `.worktrees/sdlc/<ID>/integration` inside
+the primary checkout (branch `sdlc/<ID>/integration`), so `STATE` is a path inside it.
+Installers append `/.worktrees/` to `.gitignore`; `workspaces.mjs list` lists all runs.
 
 Snapshots live in `.ai-native-sdlc-revisions/<SHA256>/`. Shared installations keep the
 cache next to the actual harness clone for reuse across services. Copy installations

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
   readlinkSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -114,6 +114,43 @@ test('existing project instructions are preserved and conflicts preflight the en
   assert.equal(readFileSync(join(fixture_.targets[0], 'AGENTS.md'), 'utf8'), 'project-specific policy');
 });
 
+test('shared installation appends the run worktree ignore rule, preserving content, line endings and mode', t => {
+  const fixture_ = fixture(t);
+  const [target, crlf, fresh] = fixture_.targets;
+  git(target, 'init', '--quiet');
+  writeFileSync(join(target, '.gitignore'), 'node_modules/');
+  if (process.platform !== 'win32') chmodSync(join(target, '.gitignore'), 0o640);
+  const originalCrlf = '# project rules\r\nnode_modules/';
+  writeFileSync(join(crlf, '.gitignore'), originalCrlf);
+  const installed = install(fixture_);
+  assert.equal(installed.status, 0, installed.stderr);
+  assert.equal(readFileSync(join(target, '.gitignore'), 'utf8'), 'node_modules/\n/.worktrees/\n');
+  if (process.platform !== 'win32') assert.equal(lstatSync(join(target, '.gitignore')).mode & 0o777, 0o640);
+  const expectedCrlf = `${originalCrlf}\r\n/.worktrees/\r\n`;
+  assert.equal(readFileSync(join(crlf, '.gitignore'), 'utf8'), expectedCrlf);
+  assert.equal(readFileSync(join(fresh, '.gitignore'), 'utf8'), '/.worktrees/\n');
+  const manifest = JSON.parse(readFileSync(join(target, '.ai-native-sdlc.links.json'), 'utf8'));
+  assert.equal(manifest.entries.some(entry => entry.path === '.gitignore'), false);
+  git(target, 'check-ignore', '--quiet', '.worktrees/sdlc/local-work/t2/a.txt');
+  writeFileSync(join(target, '.gitignore'), '# user changes\n');
+  writeFileSync(join(crlf, '.gitignore'), expectedCrlf + '# another user rule\r\n');
+  assert.equal(install(fixture_).status, 0);
+  assert.equal(readFileSync(join(target, '.gitignore'), 'utf8'), '# user changes\n/.worktrees/\n');
+  assert.equal(readFileSync(join(crlf, '.gitignore'), 'utf8'), expectedCrlf + '# another user rule\r\n');
+});
+
+test('shared installation preflights gitignore conflicts across the entire batch', t => {
+  const fixture_ = fixture(t);
+  const [first, second] = fixture_.targets;
+  writeFileSync(join(first, '.gitignore'), '# user rules');
+  mkdirSync(join(second, '.gitignore'));
+  const failed = install(fixture_);
+  assert.notEqual(failed.status, 0);
+  assert.match(failed.stderr, /Conflict.*\.gitignore/);
+  for (const target of fixture_.targets) assert.equal(existsSync(join(target, '.ai-native-sdlc')), false);
+  assert.equal(readFileSync(join(first, '.gitignore'), 'utf8'), '# user rules');
+});
+
 test('modified managed configuration or link blocks reinstall without overwriting', t => {
   const fixture_ = fixture(t);
   assert.equal(install(fixture_).status, 0);
@@ -168,7 +205,7 @@ test('custom sibling clone location and branch are supported', t => {
   assert.match(install(fixture_, fixture_.targets, ['--shared-dir', shared]).stderr, /must be on branch main/);
 });
 
-test('generated hooks execute Node directly, including spaces, Unicode and apostrophes', { skip: process.platform === 'win32' }, t => {
+test('generated hooks run through the Node runtime wrapper, including spaces, Unicode and apostrophes', { skip: process.platform === 'win32' }, t => {
   const fixture_ = fixture(t);
   const target = join(fixture_.parent, "service's API");
   mkdirSync(target);
@@ -181,6 +218,8 @@ test('generated hooks execute Node directly, including spaces, Unicode and apost
     ['copilot', copilot.hooks.sessionStart[0].bash, copilot.hooks.preToolUse[0].bash],
     ['codex', codex.hooks.SessionStart[0].hooks[0].command, codex.hooks.PreToolUse[0].hooks[0].command]
   ]) {
+    assert.match(start, /^bash '.*\/hooks\/session-start\.sh' (copilot|codex)$/);
+    assert.match(guard, /^bash '.*\/hooks\/gate-guard\.sh' (copilot|codex)$/);
     const session = spawnSync('bash', ['-c', start], { cwd: dirname(target), encoding: 'utf8', input: JSON.stringify({ cwd: target }) });
     assert.equal(session.status, 0, session.stderr);
     assert.match(session.stdout, /sdlc-setup/);
@@ -196,6 +235,7 @@ test('a link creation failure rolls back all target writes and restores the old 
   const fixture_ = fixture(t);
   assert.equal(install(fixture_, [fixture_.targets[0]]).status, 0);
   const original = readFileSync(join(fixture_.targets[0], '.ai-native-sdlc.links.json'), 'utf8');
+  writeFileSync(join(fixture_.targets[0], '.gitignore'), '# user rules');
   const injection = `import fs from 'node:fs'; import {syncBuiltinESMExports} from 'node:module';
     const original = fs.symlinkSync; let count = 0;
     fs.symlinkSync = (...args) => { if (++count === 45) throw new Error('Simulated symlink failure'); return original(...args); };
@@ -204,6 +244,7 @@ test('a link creation failure rolls back all target writes and restores the old 
   assert.notEqual(failed.status, 0);
   assert.match(failed.stderr, /Simulated symlink failure/);
   assert.equal(readFileSync(join(fixture_.targets[0], '.ai-native-sdlc.links.json'), 'utf8'), original);
+  assert.equal(readFileSync(join(fixture_.targets[0], '.gitignore'), 'utf8'), '# user rules');
   assert.equal(realpathSync(join(fixture_.targets[0], '.ai-native-sdlc')), fixture_.shared);
   for (const target of fixture_.targets.slice(1)) {
     assert.equal(existsSync(join(target, '.ai-native-sdlc')), false, failed.stderr);

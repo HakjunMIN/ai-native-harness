@@ -1,25 +1,23 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync,
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync,
   rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { withDecision } from './helpers/discovery.mjs';
+import { git as gitIn, projectRepo, runRoot, runState } from './helpers/run-fixture.mjs';
 
 const assets = ['skills', 'agents', 'hooks', 'scripts', 'templates', 'docs'];
+// Runs start in their own worktree under the project's ignored .worktrees directory.
 function fixture(t) {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'sdlc-revision-')));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { root, repo } = projectRepo(t, { name: 'service' });
   const source = join(root, 'harness');
-  const repo = join(root, 'service');
   mkdirSync(source);
-  mkdirSync(repo);
   for (const directory of assets) cpSync(resolve(directory), join(source, directory), { recursive: true });
   const run = (script, ...args) => spawnSync(process.execPath, [join(source, 'scripts', script), ...args],
     { cwd: repo, encoding: 'utf8' });
-  const state = id => join(repo, 'docs/sdlc', id, 'state.json');
+  const state = id => runState(repo, id);
   const start = id => spawnSync(process.execPath,
     [join(source, 'scripts/intake.mjs'), 'start-text', id, repo], { input: 'A bounded documentation request', encoding: 'utf8' });
   return { root, source, repo, run, state, start };
@@ -30,7 +28,7 @@ test('local intake pins a ticket-scoped harness lock without creating a reposito
   const fixture_ = fixture(t);
   const result = fixture_.start('local-first');
   assert.equal(result.status, 0, result.stderr);
-  const lock = join(fixture_.repo, 'docs/sdlc/local-first/harness.lock.json');
+  const lock = join(runRoot(fixture_.repo, 'local-first'), 'harness.lock.json');
   assert.ok(existsSync(lock), 'new local runs must have a ticket-scoped harness lock');
   assert.equal(json(lock).ticket, 'local-first');
   assert.match(json(lock).harness.contentSha256, /^[a-f0-9]{64}$/);
@@ -51,7 +49,7 @@ test('progress uses the pinned snapshot and validates local intake without Jira 
   assert.match(result.stdout, /요구사항 · 현재/);
   assert.doesNotMatch(result.stdout, /티켓 발행|· 완료|WRONG_INSTALLED/);
   assert.equal(readFileSync(path, 'utf8'), before);
-  writeFileSync(join(fixture_.repo, 'docs/sdlc/local-progress/intake.md'), 'changed request');
+  writeFileSync(join(runRoot(fixture_.repo, 'local-progress'), 'intake.md'), 'changed request');
   const stale = fixture_.run('state.mjs', 'progress', path);
   assert.notEqual(stale.status, 0);
   assert.match(stale.stdout, /BLOCKED/);
@@ -86,7 +84,7 @@ test('discovery rendering uses the run snapshot without adopting changed install
   assert.equal(fixture_.start('local-discovery').status, 0);
   const statePath = fixture_.state('local-discovery');
   const before = readFileSync(statePath, 'utf8');
-  writeFileSync(join(fixture_.repo, 'docs/sdlc/local-discovery/01-discovery.md'), withDecision({impact:'high'}));
+  writeFileSync(join(runRoot(fixture_.repo, 'local-discovery'), '01-discovery.md'), withDecision({impact:'high'}));
   const script = join(fixture_.source, 'scripts/discovery.mjs');
   writeFileSync(script, readFileSync(script, 'utf8').replace('개별 확인 ', 'WRONG_INSTALLED '));
   const result = fixture_.run('state.mjs', 'discovery', statePath, '--text');
@@ -119,6 +117,10 @@ test('shared installations reuse snapshots across repos without switching the sh
   const fixture_ = fixture(t);
   const second = join(fixture_.root, 'second service');
   mkdirSync(second);
+  gitIn(second, 'init', '-q');
+  writeFileSync(join(second, '.gitignore'), '/.worktrees/\n');
+  gitIn(second, 'add', '.');
+  gitIn(second, '-c', 'user.name=Test User', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'initial');
   symlinkSync(fixture_.source, join(fixture_.repo, '.ai-native-sdlc'), 'dir');
   symlinkSync(fixture_.source, join(second, '.ai-native-sdlc'), 'dir');
   const guard = readFileSync(join(fixture_.source, 'hooks/guard.mjs'), 'utf8');
@@ -126,7 +128,7 @@ test('shared installations reuse snapshots across repos without switching the sh
   const start = fixture_.run('harness.mjs', 'start', 'ABC-123', second);
   assert.equal(start.status, 0, start.stderr);
   const first = JSON.parse(fixture_.run('harness.mjs', 'resolve', fixture_.state('local-first')).stdout);
-  const other = JSON.parse(fixture_.run('harness.mjs', 'resolve', join(second, 'docs/sdlc/ABC-123/state.json')).stdout);
+  const other = JSON.parse(fixture_.run('harness.mjs', 'resolve', runState(second, 'ABC-123')).stdout);
   assert.equal(first.root, other.root);
   assert.equal(realpathSync(join(second, '.ai-native-sdlc')), fixture_.source);
   assert.equal(readFileSync(join(fixture_.source, 'hooks/guard.mjs'), 'utf8'), guard);
@@ -178,7 +180,7 @@ test('edited snapshots and lock files fail closed instead of using latest assets
   const snapshot = JSON.parse(result.stdout).root;
   writeFileSync(join(snapshot, 'skills/sdlc/SKILL.md'), 'tampered');
   assert.match(fixture_.run('state.mjs', 'next', statePath).stderr, /Modified harness snapshot/);
-  const lock = join(fixture_.repo, 'docs/sdlc/local-first/harness.lock.json');
+  const lock = join(runRoot(fixture_.repo, 'local-first'), 'harness.lock.json');
   writeFileSync(lock, readFileSync(lock, 'utf8') + '\n');
   assert.match(fixture_.run('harness.mjs', 'resolve', statePath).stderr, /hash mismatch/);
   assert.match(fixture_.run('state.mjs', 'invalidate', statePath, 'G0', 'reset').stderr, /hash mismatch/);
@@ -231,7 +233,7 @@ test('explicit upgrades preserve prior state and lock while invalidating approva
   prior.gates.G0 = { status: 'passed', evidence: ['old evidence'] };
   prior.gates.G1 = { status: 'passed', approvedBy: 'person' };
   writeFileSync(statePath, JSON.stringify(prior));
-  const lockPath = join(fixture_.repo, 'docs/sdlc/local-first/harness.lock.json');
+  const lockPath = join(runRoot(fixture_.repo, 'local-first'), 'harness.lock.json');
   const oldLock = json(lockPath);
   writeFileSync(join(fixture_.source, 'skills/sdlc/SKILL.md'), 'new workflow');
   assert.match(fixture_.run('harness.mjs', 'upgrade', statePath).stderr, /--confirm/);
@@ -244,7 +246,7 @@ test('explicit upgrades preserve prior state and lock while invalidating approva
   assert.equal(current.phase, 'discover');
   const event = current.history.at(-1);
   assert.equal(event.event, 'harness-upgrade');
-  const archived = json(join(fixture_.repo, 'docs/sdlc/local-first', event.archive.path));
+  const archived = json(join(runRoot(fixture_.repo, 'local-first'), event.archive.path));
   assert.deepEqual(archived.state, prior);
   assert.deepEqual(archived.lock, oldLock);
   assert.equal(fixture_.run('state.mjs', 'check', statePath).status, 0);
@@ -279,7 +281,7 @@ test('unsafe IDs, linked run/cache paths and forged lock references are rejected
   assert.equal(fixture_.start('local-first').status, 0);
   const statePath = fixture_.state('local-first');
   const state = json(statePath);
-  const lockPath = join(fixture_.repo, 'docs/sdlc/local-first/harness.lock.json');
+  const lockPath = join(runRoot(fixture_.repo, 'local-first'), 'harness.lock.json');
   const lock = json(lockPath);
   lock.harness.contentSha256 = '../../outside';
   const body = JSON.stringify(lock);
@@ -325,7 +327,7 @@ test('revision updates roll back the lock if writing state fails', t => {
   assert.equal(fixture_.start('local-first').status, 0);
   const statePath = fixture_.state('local-first');
   const originalState = readFileSync(statePath, 'utf8');
-  const lockPath = join(fixture_.repo, 'docs/sdlc/local-first/harness.lock.json');
+  const lockPath = join(runRoot(fixture_.repo, 'local-first'), 'harness.lock.json');
   const originalLock = readFileSync(lockPath, 'utf8');
   writeFileSync(join(fixture_.source, 'skills/sdlc/SKILL.md'), 'updated workflow');
   const injection = `import fs from 'node:fs'; import { syncBuiltinESMExports } from 'node:module';
@@ -338,7 +340,7 @@ test('revision updates roll back the lock if writing state fails', t => {
   assert.match(failed.stderr, /Simulated state write failure/);
   assert.equal(readFileSync(statePath, 'utf8'), originalState);
   assert.equal(readFileSync(lockPath, 'utf8'), originalLock);
-  assert.equal(existsSync(join(fixture_.repo, 'docs/sdlc/local-first/.harness-operation-lock')), false);
+  assert.equal(existsSync(join(runRoot(fixture_.repo, 'local-first'), '.harness-operation-lock')), false);
   assert.equal(fixture_.run('state.mjs', 'check', statePath).status, 0);
 });
 
@@ -346,7 +348,7 @@ test('run locks block concurrent revision operations and linked state files cann
   const fixture_ = fixture(t);
   assert.equal(fixture_.start('local-first').status, 0);
   const statePath = fixture_.state('local-first');
-  const lockDirectory = join(fixture_.repo, 'docs/sdlc/local-first/.harness-operation-lock');
+  const lockDirectory = join(runRoot(fixture_.repo, 'local-first'), '.harness-operation-lock');
   mkdirSync(lockDirectory);
   assert.match(fixture_.run('harness.mjs', 'resolve', statePath).stderr, /operation in progress/);
   assert.match(fixture_.run('harness.mjs', 'upgrade', statePath, '--reason', 'change', '--confirm').stderr, /operation in progress/);
@@ -379,9 +381,13 @@ test('PowerShell starts and resumes a locked run with Unicode, spaces and apostr
   const fixture_ = fixture(t);
   const repo = join(fixture_.root, "서비스's repo");
   mkdirSync(repo);
+  gitIn(repo, 'init', '-q');
+  writeFileSync(join(repo, '.gitignore'), '/.worktrees/\n');
+  gitIn(repo, 'add', '.');
+  gitIn(repo, '-c', 'user.name=Test User', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'initial');
   const quote = value => `'${value.replaceAll("'", "''")}'`;
   const harness = quote(join(fixture_.source, 'scripts/harness.mjs'));
-  const state = quote(join(repo, 'docs/sdlc/ABC-123/state.json'));
+  const state = quote(runState(repo, 'ABC-123'));
   const command = `
     & node ${harness} start ABC-123 ${quote(repo)}
     if ($LASTEXITCODE -ne 0) { throw 'Start failed' }

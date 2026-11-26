@@ -4,8 +4,20 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { digest, validateState } from './state.mjs';
 import { pinRun } from './harness.mjs';
+import { withRunWorkspace } from './run-workspace.mjs';
 
 const localId = /^local-[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function checkLocalId(id) {
+  if (!localId.test(id ?? '') || id.length > 72) throw new Error('local ID must be a short lowercase slug, e.g. local-doc-change');
+}
+
+// Every run lives in its own worktree, so the CLI creates the run there, not in the invoking checkout.
+function startInWorktree(id, content, repositoryRoot) {
+  checkLocalId(id);
+  if (!content.trim()) throw new Error('nonempty local request required');
+  return withRunWorkspace(id,repositoryRoot,root => startLocalText(id,content,root));
+}
 
 function safeDirectory(root, name) {
   const directory = join(root,name);
@@ -21,13 +33,13 @@ function pathExists(path) {
 }
 
 export function startLocal(id, requestFile, repositoryRoot = process.cwd()) {
-  if (!localId.test(id ?? '') || id.length > 72) throw new Error('local ID must be a short lowercase slug, e.g. local-doc-change');
+  checkLocalId(id);
   const content = readFileSync(resolve(requestFile),'utf8');
   return startLocalText(id,content,repositoryRoot);
 }
 
 export function startLocalText(id, content, repositoryRoot = process.cwd()) {
-  if (!localId.test(id ?? '') || id.length > 72) throw new Error('local ID must be a short lowercase slug, e.g. local-doc-change');
+  checkLocalId(id);
   if (!content.trim()) throw new Error('nonempty local request required');
   const root = realpathSync(repositoryRoot);
   const directory = safeDirectory(safeDirectory(root,'docs'),'sdlc');
@@ -59,9 +71,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     const [command,id,...args] = process.argv.slice(2);
     if (command === 'start' && id && args.length >= 1 && args.length <= 2 && args[0]) {
-      console.log(startLocal(id,args[0],args[1]));
+      checkLocalId(id);
+      console.log(startInWorktree(id,readFileSync(resolve(args[0]),'utf8'),args[1]));
     } else if (command === 'start-text' && id && args.length <= 1) {
-      console.log(startLocalText(id,readFileSync(0,'utf8'),args[0]));
+      checkLocalId(id);
+      console.log(startInWorktree(id,readFileSync(0,'utf8'),args[0]));
     } else {
       throw new Error('Usage: intake.mjs start LOCAL-ID REQUEST_FILE [REPOSITORY_ROOT]\n       intake.mjs start-text LOCAL-ID [REPOSITORY_ROOT] < request.md');
     }

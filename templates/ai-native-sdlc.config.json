@@ -19,9 +19,10 @@
   "modules": {},
   "commands": {},
   "models": {},
+  "reasoningEfforts": {},
   "capabilities": { "localSubagents": null, "crossFamilyRouting": null, "browser": null, "hooks": null },
   "workflow": { "boundedProfile": "light" },
-  "review": { "requireDifferentFamily": false, "allowHumanReview": true },
+  "review": { "requireDifferentFamily": false, "requireDifferentModel": true, "allowHumanReview": true },
   "release": {
     "environments": ["dev", "staging", "prod"],
     "production": "human-only",

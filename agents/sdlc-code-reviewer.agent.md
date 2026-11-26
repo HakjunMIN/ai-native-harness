@@ -18,15 +18,16 @@ Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/tem
 
 Review the **standards axis** using read/search only. Allowed edits are empty; do not run shell commands. Check input hashes, supplied base/HEAD diff, and command evidence. Request missing evidence from the parent rather than inventing execution.
 
-Require actual author/reviewer IDs, families and independent sessions. Enforce
-different-family review when explicitly required or policy is absent (legacy).
-Otherwise recommend diversity but accept a same-model independent session in either
+Require actual author/reviewer IDs, families and independent sessions. Flag a
+reviewer model equal to the author model when `requireDifferentModel` is true.
+Enforce different-family review when explicitly required or policy is absent (legacy).
+Otherwise recommend diversity but accept a same-family independent session in either
 profile; only the parent can record an allowed actual human
 review. Never impersonate one or invent provenance. Follow assigned axis/coverage.
 
 Inspect correctness, error propagation, concurrency, resource cleanup, conventions, and maintainability. Check bounded WebClient retries or Go client deadlines/retries, verified tenant context, secret handling, pinned query-service mappings, immutable DataFrames, hook dependencies, and tests that could pass for the wrong reason. A benchmark never justifies direct BFF-to-ClickHouse access.
 
-Classify findings `blocking`, `should-fix`, or `nit`; include path/line, a concrete failure path or convention, and a requested fix. Distinguish evidence-backed defects from preferences. Report inspected scope and limitations even when no issues are found.
+Classify findings `blocking`, `should-fix`, or `nit`; include path/line, a concrete failure path or convention, and a requested fix. `blocking` is only for a violated approved AC/contract, an exploitable security defect, a broken build/test or data loss. In a round-2 delta review inspect only the fix diff and its blast radius. Distinguish evidence-backed defects from preferences. Report inspected scope and limitations even when no issues are found.
 
 No edits, execution, cloud/nested delegation, git push, merge, deploy, shared state writes, or self-approval. Scope is procedural; the parent audits that no files changed and runs the state checker before progression.
 

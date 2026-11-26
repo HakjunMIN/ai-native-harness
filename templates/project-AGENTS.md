@@ -16,7 +16,11 @@ Follow `sdlc-setup`'s `references/project-instructions.md` to create a local reg
 file and update its ownership manifest before adding project-specific guidance.
 
 For SDLC work, first select the ticket and resolve its `harness.lock.json` using
-`.ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/<ID>/state.json`. Use the
+`.ai-native-sdlc/scripts/harness.mjs resolve STATE`. Each run lives in its own Git
+worktree at `.worktrees/sdlc/<ID>/integration` (branch `sdlc/<ID>/integration`),
+so STATE is `.worktrees/sdlc/<ID>/integration/docs/sdlc/<ID>/state.json`; do the
+run's work there, not in the primary checkout. Keep `/.worktrees/` in this
+project's `.gitignore`. Use the
 returned root for that ticket's skills, references, role profiles and scripts;
 `.agents/skills/` is the discovery/bootstrap entrypoint, not an override of an
 existing lock. Local intake and `harness.mjs start JIRA-ID` pin new runs. Every

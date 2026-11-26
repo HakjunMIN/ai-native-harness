@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
   readlinkSync, realpathSync, renameSync, rmSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
@@ -54,6 +54,21 @@ function fingerprint(path, kind) {
   fail(`Modified managed entry: ${path}`);
 }
 
+// Run worktrees live in <target>/.worktrees, so Git must ignore it before a run starts.
+// Only a missing rule is appended; the rest of .gitignore, its line endings and mode are kept.
+function planGitignore(target) {
+  const path = join(target, '.gitignore');
+  const metadata = present(path) ? lstatSync(path) : null;
+  if (metadata && (!metadata.isFile() || metadata.isSymbolicLink())) fail(`Conflict at existing path: ${path}`);
+  const current = metadata ? readFileSync(path) : Buffer.alloc(0);
+  const lines = current.toString('utf8').split(/\r?\n/);
+  if (['/.worktrees/', '/.worktrees', '.worktrees/', '.worktrees'].some(rule => lines.includes(rule))) return null;
+  const newline = current.includes('\r\n') ? '\r\n' : '\n';
+  const separator = current.length && current.at(-1) !== 10 ? newline : '';
+  return { path, value: Buffer.concat([current, Buffer.from(`${separator}/.worktrees/${newline}`)]),
+    mode: metadata ? metadata.mode & 0o777 : 0o644 };
+}
+
 function plan(target, shared) {
   const entries = [];
   const link = (path, source, directory = false) => entries.push({
@@ -77,14 +92,20 @@ function plan(target, shared) {
     file(`.codex/agents/${name.replace(/\.agent\.md$/, '.toml')}`,
       `name = ${JSON.stringify(title)}\ndescription = ${JSON.stringify(description)}\ndeveloper_instructions = ${JSON.stringify(instructions)}\n`);
   }
+  const wrappers = { 'guard.mjs': 'gate-guard.sh', 'session.mjs': 'session-start.sh' };
   const command = (module, host, shell = 'posix') => {
     const path = join(target, '.ai-native-sdlc/hooks', module).replaceAll('\\', '/');
     if (shell === 'powershell') return `node '${path.replaceAll("'", "''")}' ${host}`;
-    if (shell === 'native' && process.platform === 'win32') {
-      if (/["%$`\r\n]/.test(path)) fail(`Unsupported Windows command path: ${target}`);
-      return `node "${path}" ${host}`;
+    if (process.platform === 'win32') {
+      if (shell === 'native') {
+        if (/["%$`\r\n]/.test(path)) fail(`Unsupported Windows command path: ${target}`);
+        return `node "${path}" ${host}`;
+      }
+      return `node '${path.replaceAll("'", "'\\''")}' ${host}`;
     }
-    return `node '${path.replaceAll("'", "'\\''")}' ${host}`;
+    // GUI-launched hosts may lack the login PATH; the wrapper locates Node.js.
+    const wrapper = join(target, '.ai-native-sdlc/hooks', wrappers[module]);
+    return `bash '${wrapper.replaceAll("'", "'\\''")}' ${host}`;
   };
   const copilotHook = module => ({ type: 'command', bash: command(module, 'copilot'),
     powershell: command(module, 'copilot', 'powershell'), timeoutSec: 10 });
@@ -127,7 +148,7 @@ function plan(target, shared) {
     safeParents(target, path);
     if (present(path) && !previous.some(old => old.path === entry.path)) fail(`Conflict at existing path: ${path}; copy installations are not migrated automatically`);
   }
-  return { target, entries, previous, manifestPath };
+  return { target, entries, previous, manifestPath, gitignore: planGitignore(target) };
 }
 
 function ensureParents(target, path) {
@@ -140,14 +161,22 @@ function ensureParents(target, path) {
 }
 
 function apply(plan_) {
-  const { target, entries, previous, manifestPath } = plan_;
+  const { target, entries, previous, manifestPath, gitignore } = plan_;
   const stage = mkdtempSync(join(target, '.ai-native-sdlc.stage.'));
   temporary.push(stage);
-  for (const path of [...previous.map(entry => join(target, entry.path)), manifestPath]) {
+  for (const path of [...previous.map(entry => join(target, entry.path)), manifestPath,
+    ...(gitignore ? [gitignore.path] : [])]) {
     if (!present(path)) continue;
     const backup = join(stage, String(backups.length));
     renameSync(path, backup);
     backups.push({ path, backup });
+  }
+  if (gitignore) {
+    const staged = join(stage, 'gitignore');
+    writeFileSync(staged, gitignore.value, { mode: 0o600, flag: 'wx' });
+    chmodSync(staged, gitignore.mode);
+    renameSync(staged, gitignore.path);
+    installed.push(gitignore.path);
   }
   for (const entry of entries) {
     const path = join(target, entry.path);
@@ -210,7 +239,8 @@ try {
   }
   const shared = realpathSync(sharedPath);
   for (const path of ['skills/sdlc/SKILL.md', 'agents/sdlc-architect.agent.md', 'hooks/session.mjs',
-    'hooks/guard.mjs', 'scripts/state.mjs', 'scripts/harness.mjs', 'templates/project-AGENTS.md',
+    'hooks/guard.mjs', 'hooks/gate-guard.sh', 'hooks/session-start.sh', 'scripts/state.mjs',
+    'scripts/harness.mjs', 'templates/project-AGENTS.md',
     'docs/compatibility.md', 'docs/operations.md']) {
     if (!existsSync(join(shared, path)) || !lstatSync(join(shared, path)).isFile()) fail(`Missing harness asset: ${path}`);
   }

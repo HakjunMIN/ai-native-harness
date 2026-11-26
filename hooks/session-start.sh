@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec node "$(cd "$(dirname "$0")" && pwd)/session.mjs" "${1:-copilot}"
+hook_dir=$(cd "$(dirname "$0")" && pwd)
+source "$hook_dir/node-runtime.sh"
+exec "$NODE_BIN" "$hook_dir/session.mjs" "${1:-copilot}"

@@ -1,6 +1,22 @@
 export const changeKinds = ['behavior','documentation','config','refactor'];
+export const agentRoles = ['architect','code-reviewer','cross-reviewer','implementer','release-engineer',
+  'spec-reviewer','test-writer','ux-designer','verifier'];
+export const reasoningEffortLevels = ['low','medium','high','xhigh','max'];
 const text = value => typeof value === 'string' && value.trim().length > 0;
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+
+function validateRoleMap(name, map, valid, expected) {
+  if (map === undefined) return;
+  if (!object(map)) throw new Error(`${name} must map agent roles or default to values`);
+  for (const [role, value] of Object.entries(map)) {
+    if (role !== 'default' && !agentRoles.includes(role)) throw new Error(`${name}.${role}: unknown agent role; use ${agentRoles.join(', ')} or default`);
+    if (!valid(value)) throw new Error(`${name}.${role}: ${expected}`);
+  }
+}
+
+export const validateModels = models => validateRoleMap('models', models, text, 'nonempty model ID required');
+export const validateReasoningEfforts = efforts => validateRoleMap('reasoningEfforts', efforts,
+  value => reasoningEffortLevels.includes(value), `use ${reasoningEffortLevels.join(', ')}`);
 
 export function policyErrors(policy, classification) {
   if (!policy || typeof policy !== 'object' || Array.isArray(policy)) return ['policy must be an object'];
@@ -8,7 +24,8 @@ export function policyErrors(policy, classification) {
   if (policy.version !== 1 || !['light','strict'].includes(policy.profile)) errors.push('invalid policy version/profile');
   if (!changeKinds.includes(policy.changeKind)) errors.push('invalid policy changeKind');
   if (!Array.isArray(policy.risks) || !policy.risks.every(text)) errors.push('policy risks must be a string array');
-  if (typeof policy.requireDifferentFamily !== 'boolean' || typeof policy.allowHumanReview !== 'boolean') errors.push('policy review flags must be boolean');
+  if (typeof policy.requireDifferentFamily !== 'boolean' || typeof policy.allowHumanReview !== 'boolean' ||
+      (policy.requireDifferentModel !== undefined && typeof policy.requireDifferentModel !== 'boolean')) errors.push('policy review flags must be boolean');
   if (policy.profile === 'light' && classification !== 'bounded') errors.push('light policy requires bounded classification');
   if (policy.profile === 'light' && policy.risks?.length) errors.push('light policy cannot include high-risk changes');
   if (policy.requireDifferentFamily && policy.allowHumanReview) errors.push('different-family policy cannot substitute human review');
@@ -21,9 +38,11 @@ export function createPolicy(config, classification, draft) {
   if (config.workflow !== undefined && (!object(config.workflow) ||
       (config.workflow.boundedProfile !== undefined && !['light','strict'].includes(config.workflow.boundedProfile)))) throw new Error('workflow.boundedProfile must be light or strict');
   if (config.review !== undefined && !object(config.review)) throw new Error('review must be an object');
-  for (const flag of ['requireDifferentFamily','allowHumanReview']) {
+  for (const flag of ['requireDifferentFamily','requireDifferentModel','allowHumanReview']) {
     if (config.review?.[flag] !== undefined && typeof config.review[flag] !== 'boolean') throw new Error(`review.${flag} must be boolean`);
   }
+  validateModels(config.models);
+  validateReasoningEfforts(config.reasoningEfforts);
   const profile = classification === 'bounded' && Array.isArray(draft.risks) && draft.risks.length === 0 &&
     Array.isArray(draft.tasks) && draft.tasks.length === 1
     ? config.workflow?.boundedProfile ?? 'strict' : 'strict';
@@ -31,6 +50,7 @@ export function createPolicy(config, classification, draft) {
   const policy = {
     version:1,profile,changeKind:draft.changeKind,risks:draft.risks,
     requireDifferentFamily,
+    requireDifferentModel:config.review?.requireDifferentModel ?? true,
     allowHumanReview:requireDifferentFamily ? false : config.review?.allowHumanReview ?? false,
     ...(draft.changeKind !== 'behavior' ? {verificationReason:draft.verificationReason} : {})
   };

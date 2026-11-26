@@ -2,9 +2,10 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
   realpathSync, renameSync, rmSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { snapshotCache, withRunWorkspace, worktrees } from './run-workspace.mjs';
 
 const assetDirectories = ['agents', 'hooks', 'scripts', 'skills', 'templates'];
 const assetDocuments = ['docs/compatibility.md', 'docs/operations.md'];
@@ -51,13 +52,49 @@ function inventory(root) {
   return { files, contentSha256: sha256(JSON.stringify(files)) };
 }
 
-function cacheRoot(repositoryRoot, create = false) {
-  const installed = join(repositoryRoot, '.ai-native-sdlc');
+function cacheAt(root, create = false) {
+  const installed = join(root, '.ai-native-sdlc');
   const parent = present(installed) && lstatSync(installed).isSymbolicLink()
-    ? dirname(realpathSync(installed)) : repositoryRoot;
-  const cache = join(parent, '.ai-native-sdlc-revisions');
+    ? dirname(realpathSync(installed)) : root;
+  const cache = join(parent, snapshotCache);
   if (create || present(cache)) directory(cache, create);
   return cache;
+}
+
+const within = (parent, child) => {
+  const inside = relative(parent, child);
+  return inside !== '..' && !inside.startsWith(`..${sep}`) && !isAbsolute(inside);
+};
+
+// Run worktrees are disposable, snapshots are not: a run inside a linked worktree, or inside one of its
+// subdirectories, uses the same location in the primary checkout. Concurrent runs then share one cache
+// and archived runs resolve after the worktree is removed.
+function projectRoot(repositoryRoot) {
+  try {
+    const [primary, ...linked] = worktrees(repositoryRoot);
+    if (primary.bare || primary.prunable || !present(primary.path)) return repositoryRoot;
+    const owner = linked.filter(entry => within(entry.path, repositoryRoot))
+      .sort((first, second) => second.path.length - first.path.length)[0];
+    return owner ? join(primary.path, relative(owner.path, repositoryRoot)) : repositoryRoot;
+  } catch { return repositoryRoot; }
+}
+
+function cacheRoot(repositoryRoot, create = false) {
+  const root = projectRoot(repositoryRoot);
+  // The primary checkout may be on a branch that lacks the subdirectory the run started in.
+  if (create) mkdirSync(root, { recursive: true });
+  return cacheAt(root, create);
+}
+
+function snapshotPath(repositoryRoot, contentSha256) {
+  const shared = join(cacheRoot(repositoryRoot), contentSha256);
+  if (present(shared)) return shared;
+  try {
+    // Runs started before dedicated worktrees kept their snapshot beside their own checkout.
+    const own = join(cacheAt(repositoryRoot), contentSha256);
+    if (present(own)) return own;
+  } catch { /* an install link that dangles inside a worktree is not a cache */ }
+  return shared;
 }
 
 function sourceCommit(source) {
@@ -157,7 +194,7 @@ function runContext(statePath) {
 export function resolveRun(statePath) {
   const context = runContext(statePath);
   const lock = readRunLock(context.state, context.runRoot);
-  const root = join(cacheRoot(context.repositoryRoot), lock.harness.contentSha256);
+  const root = snapshotPath(context.repositoryRoot, lock.harness.contentSha256);
   if (!present(root)) throw new Error('Locked harness snapshot is missing; use harness.mjs restore STATE --source PATH. Never fall back to the latest revision');
   directory(root);
   if (inventory(root).contentSha256 !== lock.harness.contentSha256) throw new Error(`Modified harness snapshot: ${root}`);
@@ -177,8 +214,12 @@ export function dispatchPinned(script, statePath, args = process.argv.slice(2)) 
   return true;
 }
 
-export function startJira(id, repositoryRoot = process.cwd()) {
+function checkJiraId(id) {
   if (!/^[A-Z][A-Z0-9_]*-[1-9][0-9]*$/.test(id ?? '')) throw new Error('Expected a Jira ticket key');
+}
+
+export function startJira(id, repositoryRoot = process.cwd()) {
+  checkJiraId(id);
   const root = realpathSync(repositoryRoot);
   const parent = directory(join(directory(join(root, 'docs'), true), 'sdlc'), true);
   const target = join(parent, id);
@@ -282,8 +323,10 @@ async function main() {
     source: { type: 'string' }, reason: { type: 'string' }, confirm: { type: 'boolean', default: false }
   } });
   const [command, target, extra] = positionals;
-  if (command === 'start' && target && positionals.length <= 3) console.log(startJira(target, extra));
-  else if (command === 'resolve' && target && !extra) console.log(serialize(resolveRun(target)).trim());
+  if (command === 'start' && target && positionals.length <= 3) {
+    checkJiraId(target);
+    console.log(withRunWorkspace(target, extra, root => startJira(target, root)));
+  } else if (command === 'resolve' && target && !extra) console.log(serialize(resolveRun(target)).trim());
   else if (command === 'restore' && target && !extra && values.source) console.log(serialize(restoreRun(target, values.source)).trim());
   else if (['adopt', 'upgrade'].includes(command) && target && !extra) {
     console.log(serialize(await changeRevision(command, target, values.source ?? runtimeRoot, values.reason, values.confirm)).trim());

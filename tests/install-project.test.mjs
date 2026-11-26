@@ -135,6 +135,173 @@ test('pre-existing project AGENTS.md is preserved with integration guidance', t 
   assert.ok(existsSync(join(target,'.agents/skills/sdlc/SKILL.md')));
 });
 
+test('copy installation appends the run worktree ignore rule and keeps it out of the manifest', t => {
+  const target = fixture(t);
+  const git = (...args) => spawnSync('git',['-C',target,...args],{encoding:'utf8'});
+  assert.equal(git('init','--quiet').status,0);
+  writeFileSync(join(target,'.gitignore'),'node_modules/');
+  chmodSync(join(target,'.gitignore'),0o640);
+  const installed = install(target);
+  assert.equal(installed.status,0,installed.stderr);
+  assert.equal(readFileSync(join(target,'.gitignore'),'utf8'),'node_modules/\n/.worktrees/\n');
+  assert.equal(lstatSync(join(target,'.gitignore')).mode & 0o777,0o640);
+  assert.doesNotMatch(readFileSync(join(target,'.ai-native-sdlc/.install-manifest'),'utf8'),/\t\.gitignore$/m);
+  assert.equal(git('check-ignore','--quiet','.worktrees/sdlc/local-work/integration/a.txt').status,0);
+  for (const path of ['docs/sdlc/local-work/state.json','apps/api/.worktrees/notes.md']) {
+    assert.equal(git('check-ignore','--quiet',path).status,1,path);
+  }
+  writeFileSync(join(target,'.gitignore'),'# user changes\n');
+  assert.equal(install(target).status,0);
+  assert.equal(readFileSync(join(target,'.gitignore'),'utf8'),'# user changes\n/.worktrees/\n');
+  assert.equal(install(target).status,0);
+  assert.equal(readFileSync(join(target,'.gitignore'),'utf8'),'# user changes\n/.worktrees/\n');
+
+  const fresh = fixture(t);
+  assert.equal(install(fresh).status,0);
+  assert.equal(readFileSync(join(fresh,'.gitignore'),'utf8'),'/.worktrees/\n');
+  for (const rule of ['.worktrees','.worktrees/','/.worktrees']) {
+    const equivalent = fixture(t);
+    writeFileSync(join(equivalent,'.gitignore'),`${rule}\n`);
+    assert.equal(install(equivalent).status,0);
+    assert.equal(readFileSync(join(equivalent,'.gitignore'),'utf8'),`${rule}\n`);
+  }
+});
+
+test('copy installation preserves CRLF gitignore content without duplicating the rule', t => {
+  const target = fixture(t);
+  const initial = '# project rules\r\nnode_modules/';
+  writeFileSync(join(target,'.gitignore'),initial);
+  assert.equal(install(target).status,0);
+  const expected = `${initial}\r\n/.worktrees/\r\n`;
+  assert.equal(readFileSync(join(target,'.gitignore'),'utf8'),expected);
+  writeFileSync(join(target,'.gitignore'),expected+'# another user rule\r\n');
+  assert.equal(install(target).status,0);
+  assert.equal(readFileSync(join(target,'.gitignore'),'utf8'),expected+'# another user rule\r\n');
+});
+
+test('copy installation refuses nonregular gitignore destinations and rolls back ignore changes', t => {
+  for (const kind of ['directory','symlink']) {
+    const target = fixture(t);
+    const outside = join(fixture(t),'user-ignore');
+    writeFileSync(outside,'user rules');
+    if (kind === 'directory') mkdirSync(join(target,'.gitignore'));
+    else symlinkSync(outside,join(target,'.gitignore'));
+    const failed = install(target);
+    assert.notEqual(failed.status,0);
+    assert.match(failed.stderr,/Conflict.*\.gitignore/);
+    assert.equal(existsSync(join(target,'.ai-native-sdlc')),false);
+    assert.equal(readFileSync(outside,'utf8'),'user rules');
+  }
+  const tools = fixture(t);
+  writeFileSync(join(tools,'cp'),`#!/bin/sh
+case "$*" in *"/.codex/hooks.json"*) exit 43 ;; esac
+exec /bin/cp "$@"
+`,{mode:0o755});
+  for (const original of [null,'# user rules without a newline']) {
+    const target = fixture(t);
+    if (original !== null) writeFileSync(join(target,'.gitignore'),original);
+    const failed = shellInstall(target,{PATH:`${tools}:${process.env.PATH}`});
+    assert.notEqual(failed.status,0);
+    if (original === null) assert.equal(existsSync(join(target,'.gitignore')),false);
+    else assert.equal(readFileSync(join(target,'.gitignore'),'utf8'),original);
+    assert.equal(existsSync(join(target,'.ai-native-sdlc')),false);
+  }
+});
+
+test('role models bind Copilot agent profiles, prefer role over default and refresh on reinstall', t => {
+  const target = fixture(t);
+  assert.equal(install(target).status,0);
+  const agentDir = join(target,'.github/agents');
+  const names = readdirSync(agentDir);
+  const codex = readFileSync(join(target,'.codex/agents/sdlc-cross-reviewer.toml'),'utf8');
+  const configPath = join(target,'ai-native-sdlc.config.json');
+  const config = JSON.stringify({models:{default:'model-author','cross-reviewer':'model-reviewer'},
+    reasoningEfforts:{implementer:'high'}});
+  writeFileSync(configPath,config);
+  const installed = install(target);
+  assert.equal(installed.status,0,installed.stderr);
+  assert.equal(readFileSync(configPath,'utf8'),config);
+  for (const name of names) {
+    const file = join(agentDir,name);
+    assert.ok(lstatSync(file).isFile(),`${name} must be a generated profile`);
+    const model = name === 'sdlc-cross-reviewer.agent.md' ? 'model-reviewer' : 'model-author';
+    const content = readFileSync(file,'utf8');
+    assert.equal(content.match(/^model: (.+)$/m)?.[1],JSON.stringify(model));
+    assert.equal(content.match(/^reasoning-effort: (.+)$/m)?.[1],
+      name === 'sdlc-implementer.agent.md' ? '"high"' : undefined);
+    assert.equal(content.replace(/^(?:model|reasoning-effort): .+\n/gm,''),readFileSync(join(source,'agents',name),'utf8'));
+    assert.equal(readFileSync(join(target,'.ai-native-sdlc/agents',name),'utf8'),
+      readFileSync(join(source,'agents',name),'utf8'),'shared profiles stay model-neutral');
+  }
+  assert.equal(readFileSync(join(target,'.codex/agents/sdlc-cross-reviewer.toml'),'utf8'),codex);
+  const manifest = readFileSync(join(target,'.ai-native-sdlc/.install-manifest'),'utf8');
+  assert.match(manifest,/^F\t[^\n]+\t\.github\/agents\/sdlc-cross-reviewer\.agent\.md$/m);
+  assert.equal(install(target).status,0);
+  assert.equal(readFileSync(join(target,'.ai-native-sdlc/.install-manifest'),'utf8'),manifest);
+
+  writeFileSync(configPath,JSON.stringify({models:{'cross-reviewer':'model-other'}}));
+  const refreshed = install(target);
+  assert.equal(refreshed.status,0,refreshed.stderr);
+  assert.match(readFileSync(join(agentDir,'sdlc-cross-reviewer.agent.md'),'utf8'),/^model: "model-other"$/m);
+  assert.ok(lstatSync(join(agentDir,'sdlc-architect.agent.md')).isSymbolicLink());
+  const profile = join(agentDir,'sdlc-cross-reviewer.agent.md');
+  const original = readFileSync(profile,'utf8');
+  writeFileSync(profile,`${original}\nUser edit\n`);
+  const rejected = install(target);
+  assert.notEqual(rejected.status,0);
+  assert.match(rejected.stderr,/Modified managed file: .*sdlc-cross-reviewer\.agent\.md/);
+  assert.equal(readFileSync(profile,'utf8'),`${original}\nUser edit\n`);
+  writeFileSync(profile,original);
+  rmSync(configPath);
+  assert.equal(install(target).status,0);
+  assert.ok(lstatSync(profile).isSymbolicLink(),'removing config restores default inheritance');
+});
+
+test('invalid role model configuration fails before replacing installed files', t => {
+  const target = fixture(t);
+  assert.equal(install(target).status,0);
+  const manifestPath = join(target,'.ai-native-sdlc/.install-manifest');
+  const before = readFileSync(manifestPath,'utf8');
+  for (const [config,error] of [
+    ['{',/JSON/],
+    ['null',/config must be an object/],
+    ['{"models":[]}',/models must map/],
+    ['{"models":{"typo":"some-model"}}',/models.typo/],
+    ['{"models":{"default":""}}',/models.default/],
+    ['{"models":{"architect":42}}',/models.architect/],
+    ['{"reasoningEfforts":{"default":"extreme"}}',/reasoningEfforts.default/]
+  ]) {
+    writeFileSync(join(target,'ai-native-sdlc.config.json'),config);
+    const rejected = install(target);
+    assert.notEqual(rejected.status,0,config);
+    assert.match(rejected.stderr,error);
+    assert.equal(readFileSync(manifestPath,'utf8'),before);
+    assert.ok(lstatSync(join(target,'.github/agents/sdlc-architect.agent.md')).isSymbolicLink());
+    assert.equal(readdirSync(target).filter(name => name.startsWith('.ai-native-sdlc.stage.')).length,0);
+  }
+});
+
+test('failed role model migration restores the previous managed links', t => {
+  const target = fixture(t);
+  assert.equal(install(target).status,0);
+  const manifest = readFileSync(join(target,'.ai-native-sdlc/.install-manifest'),'utf8');
+  const config = '{"models":{"default":"model-author"}}';
+  writeFileSync(join(target,'ai-native-sdlc.config.json'),config);
+  const tools = fixture(t);
+  writeFileSync(join(tools,'cp'),`#!/bin/sh
+case "$2" in */.github/agents/sdlc-cross-reviewer.agent.md) exit 43 ;; esac
+exec /bin/cp "$@"
+`,{mode:0o755});
+  const failed = spawnSync('bash',[shellInstaller,target,source],
+    {encoding:'utf8',env:{...process.env,PATH:`${tools}:${process.env.PATH}`}});
+  assert.notEqual(failed.status,0);
+  assert.equal(readFileSync(join(target,'.ai-native-sdlc/.install-manifest'),'utf8'),manifest);
+  for (const name of readdirSync(join(target,'.github/agents'))) {
+    assert.ok(lstatSync(join(target,'.github/agents',name)).isSymbolicLink());
+  }
+  assert.equal(readFileSync(join(target,'ai-native-sdlc.config.json'),'utf8'),config);
+});
+
 test('invalid AGENTS.md destination blocks installation', t => {
   const target = fixture(t);
   mkdirSync(join(target,'AGENTS.md'));

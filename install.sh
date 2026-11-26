@@ -71,8 +71,8 @@ fi
 for dir in skills agents hooks scripts templates; do
   [[ -d "$source_dir/$dir" ]] || fail "Missing harness directory: $dir"
 done
-for path in hooks/guard.mjs hooks/session.mjs hooks/gate-guard.sh hooks/session-start.sh \
-  scripts/state.mjs scripts/harness.mjs templates/state.json templates/project-AGENTS.md \
+for path in hooks/guard.mjs hooks/session.mjs hooks/gate-guard.sh hooks/session-start.sh hooks/node-runtime.sh \
+  scripts/state.mjs scripts/harness.mjs scripts/install-agent-models.mjs templates/state.json templates/project-AGENTS.md \
   docs/compatibility.md docs/operations.md; do
   [[ -f "$source_dir/$path" ]] || fail "Missing harness asset: $path"
 done
@@ -143,6 +143,42 @@ add_file() {
 }
 
 add_file "$root" "$stage/new"
+# Run worktrees live in <target>/.worktrees, so Git must ignore it before a run starts.
+ignore_path="$target/.gitignore"
+ignore_update=0
+if [[ -e "$ignore_path" || -L "$ignore_path" ]]; then
+  [[ -f "$ignore_path" && ! -L "$ignore_path" ]] ||
+    fail "Conflict at existing path: $ignore_path"
+fi
+ignore_has() {
+  local pattern
+  [[ -f "$ignore_path" ]] || return 1
+  for pattern in "$@"; do
+    grep -Fxq "$pattern" "$ignore_path" && return 0
+    grep -Fxq "$pattern"$'\r' "$ignore_path" && return 0
+  done
+  return 1
+}
+if ! ignore_has '/.worktrees/' '/.worktrees' '.worktrees/' '.worktrees'; then
+  ignore_update=1
+  newline=$'\n'
+  : > "$stage/config/gitignore"
+  if [[ -f "$ignore_path" ]]; then
+    cat "$ignore_path" > "$stage/config/gitignore"
+    if grep -q $'\r$' "$ignore_path"; then newline=$'\r\n'; fi
+    if [[ -s "$ignore_path" && -n $(tail -c 1 "$ignore_path") ]]; then
+      printf '%s' "$newline" >> "$stage/config/gitignore"
+    fi
+  fi
+  printf '%s%s' '/.worktrees/' "$newline" >> "$stage/config/gitignore"
+  if [[ -f "$ignore_path" ]]; then
+    ignore_mode=$(stat -c %a "$ignore_path" 2>/dev/null) || ignore_mode=$(stat -f %Lp "$ignore_path")
+    chmod "$ignore_mode" "$stage/config/gitignore"
+  else
+    chmod 644 "$stage/config/gitignore"
+  fi
+  add_file "$ignore_path" "$stage/config/gitignore"
+fi
 existing_agents=0
 if [[ -e "$target/AGENTS.md" || -L "$target/AGENTS.md" ]]; then
   [[ -f "$target/AGENTS.md" ]] || fail "Conflict at existing path: $target/AGENTS.md"
@@ -162,12 +198,25 @@ done
 ((skill_count > 0)) || fail 'Harness has no skills'
 
 agent_count=0
+project_config="$target/ai-native-sdlc.config.json"
+if [[ -e "$project_config" || -L "$project_config" ]]; then
+  [[ -f "$project_config" && ! -L "$project_config" ]] ||
+    fail "Conflict at project config: $project_config"
+  source "$stage/new/hooks/node-runtime.sh"
+  "$NODE_BIN" "$stage/new/scripts/install-agent-models.mjs" \
+    "$project_config" "$stage/new/agents" "$stage/config/copilot-agents" ||
+    fail 'Could not generate agent models from project config'
+fi
 for agent in "$source_dir"/agents/*.agent.md; do
   [[ -f "$agent" ]] || continue
   name=${agent##*/}
   [[ "$name" =~ ^[a-zA-Z0-9._-]+\.agent\.md$ ]] ||
     fail "Invalid agent name: $name"
-  add_link "$target/.github/agents/$name" "../../.ai-native-sdlc/agents/$name"
+  if [[ -f "$stage/config/copilot-agents/$name" ]]; then
+    add_file "$target/.github/agents/$name" "$stage/config/copilot-agents/$name"
+  else
+    add_link "$target/.github/agents/$name" "../../.ai-native-sdlc/agents/$name"
+  fi
   title=$(sed -n 's/^name: *//p' "$agent" | head -n 1)
   description=$(sed -n 's/^description: *//p' "$agent" | head -n 1)
   [[ -n "$title" && -n "$description" ]] || fail "Invalid agent profile: $name"
@@ -288,7 +337,7 @@ while IFS= read -r dir; do
 done < <(find "$stage/new" -mindepth 1 -type d | LC_ALL=C sort)
 for ((i=1; i<${#paths[@]}; i++)); do
   path=${paths[i]}
-  [[ "$path" != "$target/AGENTS.md" ]] || continue
+  [[ "$path" != "$target/AGENTS.md" && "$path" != "$ignore_path" ]] || continue
   if [[ ${kinds[i]} == link ]]; then
     hash_link "${values[i]}"
     kind=L
@@ -379,6 +428,7 @@ for ((i=0; i<${#paths[@]}; i++)); do
   [[ ! -e "$path" && ! -L "$path" ]] && continue
   [[ "$path" == "$root" && -f "$root/.install-manifest" ]] && continue
   [[ "$path" == "$target/AGENTS.md" && "$existing_agents" -eq 1 ]] && continue
+  [[ "$path" == "$ignore_path" && -f "$path" && ! -L "$path" ]] && continue
   found=0
   for old in "${old_paths[@]-}"; do
     [[ "$path" != "$old" ]] || found=1
@@ -386,7 +436,9 @@ for ((i=0; i<${#paths[@]}; i++)); do
   [[ "$found" -eq 1 ]] || fail "Conflict at existing path: $path"
 done
 
-for path in "$root" "${old_paths[@]-}"; do
+backup_paths=("$root" "${old_paths[@]-}")
+if [[ "$ignore_update" -eq 1 ]]; then backup_paths+=("$ignore_path"); fi
+for path in "${backup_paths[@]}"; do
   [[ -e "$path" || -L "$path" ]] || continue
   index=${#backed[@]}
   mv "$path" "$stage/backup/$index"
@@ -413,6 +465,8 @@ for ((i=0; i<${#paths[@]}; i++)); do
     written+=("$path")
     if [[ "$path" == "$root" ]]; then
       mv "${values[i]}" "$path"
+    elif [[ "$path" == "$ignore_path" ]]; then
+      cp -p "${values[i]}" "$path"
     else
       cp "${values[i]}" "$path"
     fi

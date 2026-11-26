@@ -77,6 +77,39 @@ test('light work accepts one independent combined review and still rejects self-
   assert.match(validateState(state,root).join('\n'),/independent/);
 });
 
+test('a model review needs a different reviewer model when the policy requires it', t => {
+  const {state,root,plan,bind,evidence,approval,review} = fixture(t,{...lightPolicy,requireDifferentModel:true});
+  state.slices[0] = {id:1,status:'done',attempts:1,red:evidence,green:evidence,subjectHead:head,reviews:[review]};
+  assert.deepEqual(validateState(state,root),[]);
+  review.reviewerModel = ' AUTHOR ';
+  assert.match(validateState(state,root).join('\n'),/reviewer model must differ from author model/);
+  state.slices[0].reviews = [{axis:'combined',reviewerType:'human',human:approval,
+    subjectHead:head,coverage:['spec','standards'],blocking:0,evidence}];
+  assert.deepEqual(validateState(state,root),[]);
+  delete state.policy.requireDifferentModel;
+  plan.policy = structuredClone(state.policy);
+  bind();
+  state.slices[0].reviews = [review];
+  assert.deepEqual(validateState(state,root),[]);
+});
+
+test('residual blocking findings pass only with a recorded human acceptance and follow-ups', t => {
+  const {state,root,evidence,approval,review} = fixture(t);
+  state.slices[0] = {id:1,status:'done',attempts:2,red:evidence,green:evidence,subjectHead:head,reviews:[review]};
+  review.blocking = 1;
+  assert.match(validateState(state,root).join('\n'),/blocking review findings remain/);
+  review.acceptance = {...approval,followUps:['Tighten error message wording']};
+  assert.deepEqual(validateState(state,root),[]);
+  for (const invalid of [{...review.acceptance,actor:'model'},{...review.acceptance,followUps:[]},
+    {...review.acceptance,followUps:['']},{...review.acceptance,reference:''},{...review.acceptance,at:'not a date'}]) {
+    review.acceptance = invalid;
+    assert.match(validateState(state,root).join('\n'),/acceptance requires a human record and follow-ups/);
+  }
+  review.acceptance = {...approval,followUps:['Follow up']};
+  review.blocking = 0;
+  assert.match(validateState(state,root).join('\n'),/acceptance requires a human record and follow-ups/);
+});
+
 test('approved light policy accepts evidenced human review without inventing model identity', t => {
   const {state,root,evidence,approval,review} = fixture(t);
   const humanReview = {...review,reviewerType:'human',human:approval};

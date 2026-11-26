@@ -1,12 +1,30 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, basename } from 'node:path';
+
+// A linked worktree holds only committed files, so an untracked project config
+// lives in the primary checkout that the worktree's .git file points back to.
+function primaryCheckout(root) {
+  try {
+    const pointer = readFileSync(resolve(root, '.git'), 'utf8').match(/^gitdir:\s*(.+)$/m)?.[1];
+    if (!pointer) return null;
+    const gitDirectory = resolve(root, pointer.trim());
+    const common = resolve(gitDirectory, readFileSync(resolve(gitDirectory, 'commondir'), 'utf8').trim());
+    return basename(common) === '.git' ? dirname(common) : null;
+  } catch { return null; }
+}
+
+function inheritedConfig(root) {
+  const primary = primaryCheckout(root);
+  const file = primary && resolve(primary, 'ai-native-sdlc.config.json');
+  return file && existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+}
 
 function configAt(cwd) {
   let dir = resolve(cwd);
   while (true) {
     const file = resolve(dir, 'ai-native-sdlc.config.json');
     if (existsSync(file)) return JSON.parse(readFileSync(file, 'utf8'));
-    if (existsSync(resolve(dir, '.git')) || dirname(dir) === dir) return {};
+    if (existsSync(resolve(dir, '.git')) || dirname(dir) === dir) return inheritedConfig(dir);
     dir = dirname(dir);
   }
 }
@@ -30,6 +48,61 @@ function isReadOnlyDeploymentCommand(command) {
   };
   return args.slice(verb.split(' ').length).every(argument =>
     !argument.startsWith('-') || flags[executable].includes(argument.split('=')[0]));
+}
+
+// The legacy pattern stays as the conservative fallback and for code embedded in quoted strings.
+const remotePublication = /\bgit\b[^;\n]*\bpush\b|\bgh\b[^;\n]*\bpr\s+merge\b/i;
+const gitValueOptions = new Set(['-C','-c','--git-dir','--work-tree','--namespace','--config-env','--super-prefix']);
+const messageOptions = new Set(['-m','--message','--grep']);
+const commandName = word => word.split(/[\\/]/).at(-1).toLowerCase().replace(/\.exe$/,'');
+
+function shellSegments(command) {
+  const segments = [[]];
+  let word = null, quote = null;
+  const end = () => { if (word !== null) segments.at(-1).push(word); word = null; };
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i];
+    if (quote === "'") { if (c === "'") quote = null; else word += c; continue; }
+    if (c === '\\') {
+      if (command[i + 1] !== '\n') word = (word ?? '') + (command[i + 1] ?? '');
+      i++;
+      continue;
+    }
+    if (quote === '"') { if (c === '"') quote = null; else word += c; continue; }
+    if (c === "'" || c === '"') { quote = c; word ??= ''; continue; }
+    if (/[;&|()\n]/.test(c)) { end(); segments.push([]); continue; }
+    if (/[\s<>]/.test(c)) { end(); continue; }
+    word = (word ?? '') + c;
+  }
+  if (quote) return null;
+  end();
+  return segments.filter(words => words.length);
+}
+
+function gitSubcommand(words, start) {
+  for (let i = start; i < words.length; i++) {
+    if (!words[i].startsWith('-')) return words[i];
+    if (gitValueOptions.has(words[i])) i++;
+  }
+  return null;
+}
+
+function remotePublicationCommand(command) {
+  const segments = /[$`]|[<>]\(|\beval\b|\bxargs\b|\balias\./i.test(command) ? null : shellSegments(command);
+  // Expansions, aliases and indirect execution cannot be resolved statically: fail closed.
+  if (!segments) return remotePublication.test(command) ||
+    (/\bgit\b/i.test(command) && /\bpush\b/i.test(command)) || (/\bgh\b/i.test(command) && /\bmerge\b/i.test(command));
+  return segments.some(words => words.some((word, i) => {
+    const name = commandName(word);
+    if (name === 'git' && gitSubcommand(words, i + 1) === 'push') return true;
+    if (name === 'gh') {
+      const pr = words.indexOf('pr', i + 1);
+      if (pr > i && words.indexOf('merge', pr + 1) > pr) return true;
+    }
+    if (!remotePublication.test(word)) return false;
+    const message = messageOptions.has(words[i - 1]) || /^(?:-m|--message=|--grep=)/.test(word);
+    return !(message && words.slice(0, i).some(other => commandName(other) === 'git'));
+  }));
 }
 
 function decide(payload) {
@@ -66,7 +139,7 @@ function decide(payload) {
   };
   const reasons = [];
   const readOnlyDeployment = isReadOnlyDeploymentCommand(command);
-  if (/\bgit\b[^;\n]*\bpush\b|\bgh\b[^;\n]*\bpr\s+merge\b/i.test(command)) reasons.push('Remote push/merge requires the human operator in v1');
+  if (remotePublicationCommand(command)) reasons.push('Remote push/merge requires the human operator in v1');
   if (!readOnlyDeployment && /\b(?:argocd|kubectl|helm)\b[^;\n]*\b(?:sync|apply|create|delete|patch|edit|upgrade|install|rollback|set|scale|rollout|exec)\b/i.test(command)) reasons.push('Direct deployment mutation is not allowed; prepare GitOps proposals');
   if (targets.some(protectedPath) ||
       (!readOnlyDeployment && (/(?:\/|\s)(?:prod|production)(?:\/|\s)|values[-.]prod(?:uction)?\.ya?ml/i.test(command) ||

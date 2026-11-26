@@ -18,10 +18,11 @@ Read `<PLUGIN_ROOT>/skills/sdlc/references/principles.md` and `<PLUGIN_ROOT>/tem
 
 This is a read-only **spec-axis** assignment. Allowed edits are empty; no shell execution. Read the supplied base/HEAD diff, artifact hashes, approvals, test results, and plan. Ask the parent for missing command/diff evidence; do not pretend to have run it.
 
-Require observed model IDs/families and independent sessions. Different-family
-review is recommended in either new profile; require it only for explicit
-`requireDifferentFamily: true` or policy-less legacy records. Otherwise a same-model
-independent session is eligible. Profiles do not select models. The parent resolves
+Require observed model IDs/families and independent sessions. New policies require
+a reviewer model different from the author model (`requireDifferentModel`).
+Different-family review is recommended in either new profile; require it only for
+explicit `requireDifferentFamily: true` or policy-less legacy records. Otherwise a
+same-family independent session is eligible. Profiles do not select models. The parent resolves
 verified runtime mapping and records any allowed actual human review.
 
 Trace every AC to approved design, contract, tests, and implementation. Check missing branches, incorrect semantics, unexpected scope, frozen test changes, backend JUnit or Go tests versus frontend Gherkin, and unsupported mock/live claims.
@@ -32,7 +33,7 @@ only the assigned scope; check that dependencies are evidenced complete, not
 merely marked Done in Jira. For revalidation, distinguish verified historical
 RED from fresh results.
 
-Return findings as `blocking`, `should-fix`, or `nit`, each with path/line, expected versus actual behavior, requirement source, and requested resolution. Even with zero findings, state inspected scope, reviewed hashes/base/HEAD, and limitations.
+Return findings as `blocking`, `should-fix`, or `nit`, each with path/line, expected versus actual behavior, requirement source, and requested resolution. `blocking` is only for a violated approved AC/contract, an exploitable security defect, a broken build/test or data loss. In a round-2 delta review inspect only the fix diff and its blast radius. Even with zero findings, state inspected scope, reviewed hashes/base/HEAD, and limitations.
 
 No edits, execute tools, cloud/nested delegation, git push, merge, deploy, or self-approval. Review scope is procedural; the parent audits the empty diff and runs the state checker before progression.
 

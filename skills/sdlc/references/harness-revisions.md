@@ -46,7 +46,9 @@ blindly renormalize historical evidence or rewrite its hashes to hide a mismatch
 
 The runtime stores snapshots at `.ai-native-sdlc-revisions/<contentSha256>/`:
 
-- Copy/direct installations: under the target service repository.
+- Copy/direct installations: under the target service repository's primary
+  checkout; every run worktree of that repository shares the same cache, so
+  removing a run worktree never removes its locked revision.
 - Shared installations: beside the real shared harness checkout; linked services
   reuse the same snapshot for identical content.
 
@@ -64,8 +66,13 @@ It is the bootstrap resolver and remains distinct from ticket `PLUGIN_ROOT`.
 
 ```bash
 node "$INSTALLED_HARNESS_ROOT/scripts/harness.mjs" start ABC-123
-node "$INSTALLED_HARNESS_ROOT/scripts/harness.mjs" resolve docs/sdlc/ABC-123/state.json
+node "$INSTALLED_HARNESS_ROOT/scripts/harness.mjs" resolve .worktrees/sdlc/ABC-123/integration/docs/sdlc/ABC-123/state.json
 ```
+
+Every start first creates the run's own worktree (see
+[run worktrees](protocol.md#run-worktrees)) and prints the absolute state path
+inside it; use that path for the commands below. Call the installed harness by
+absolute path from the worktree, because an uncommitted install is absent there.
 
 Local `intake.mjs start` and `start-text` pin automatically; do not create a second
 lock. Jira start creates pending state only, not a Jira snapshot or approval.

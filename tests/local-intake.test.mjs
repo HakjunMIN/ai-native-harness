@@ -1,27 +1,30 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync, symlinkSync, existsSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, symlinkSync, existsSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { digest, validateState, nextPhase } from '../scripts/state.mjs';
 import { bindDiscovery, discovery } from './helpers/discovery.mjs';
+import { git, projectRepo, runBranches, runRoot, runState, worktreeCount } from './helpers/run-fixture.mjs';
 
+// Every run is created in its own worktree under the project repository's ignored .worktrees directory.
 function fixture(t) {
-  const repo = mkdtempSync(join(tmpdir(),'sdlc-local-'));
-  t.after(() => rmSync(repo,{recursive:true,force:true}));
+  const {repo} = projectRepo(t);
   const request = join(repo,'request.md');
   writeFileSync(request,'# Local request\n\nUpdate the documentation without Jira.\n');
+  git(repo,'add','request.md');
+  git(repo,'commit','-qm','request');
   const start = (id = 'local-doc-change') => spawnSync(process.execPath,
     ['scripts/intake.mjs','start',id,request,repo],{encoding:'utf8'});
-  const statePath = join(repo,'docs/sdlc/local-doc-change/state.json');
-  return {repo,request,start,statePath};
+  return {repo,request,start,root:runRoot(repo,'local-doc-change'),statePath:runState(repo,'local-doc-change')};
 }
 
 test('starts a resumable local SDLC without Jira or gate approval', t => {
-  const {repo,start,statePath,request} = fixture(t);
+  const {root,start,statePath,request} = fixture(t);
   const result = start();
   assert.equal(result.status,0,result.stderr);
+  assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(state.ticket,'local-doc-change');
   assert.equal(state.intake.kind,'local');
@@ -29,8 +32,8 @@ test('starts a resumable local SDLC without Jira or gate approval', t => {
   assert.equal(state.jira,undefined);
   assert.deepEqual(state.publications,[]);
   assert.equal(state.gates.G0.status,'pending');
-  assert.equal(readFileSync(join(repo,'docs/sdlc/local-doc-change/intake.md'),'utf8'),readFileSync(request,'utf8'));
-  assert.deepEqual(validateState(state,join(repo,'docs/sdlc/local-doc-change')),[]);
+  assert.equal(readFileSync(join(root,'intake.md'),'utf8'),readFileSync(request,'utf8'));
+  assert.deepEqual(validateState(state,root),[]);
   const check = spawnSync(process.execPath,['scripts/state.mjs','check',statePath],{encoding:'utf8'});
   assert.equal(check.status,0,check.stderr);
   assert.match(check.stdout,/discover/);
@@ -49,7 +52,7 @@ test('starts from the target repository working directory without a root argumen
 });
 
 test('starts a pending Jira-free run from interviewed Markdown on stdin', t => {
-  const {repo,statePath} = fixture(t);
+  const {repo,root,statePath} = fixture(t);
   const markdown = '# Original request\n\nImprove documentation\n\n## Interview\n\n- Scope: README\n';
   const run = () => spawnSync(process.execPath,
     [resolve('scripts/intake.mjs'),'start-text','local-doc-change',repo],
@@ -57,7 +60,6 @@ test('starts a pending Jira-free run from interviewed Markdown on stdin', t => {
   const result = run();
   assert.equal(result.status,0,result.stderr);
   assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
-  const root = join(repo,'docs/sdlc/local-doc-change');
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(readFileSync(join(root,'intake.md'),'utf8'),markdown);
   assert.deepEqual(state.intake,{kind:'local',request:{path:'intake.md',sha256:digest(markdown)}});
@@ -88,6 +90,7 @@ test('stdin intake defaults to the working repository and requires a valid comma
     assert.match(result.stderr,/Usage:/);
   }
   assert.equal(existsSync(statePath),false);
+  assert.equal(worktreeCount(repo),1);
   const result = spawnSync(process.execPath,[cli,'start-text','local-doc-change'],
     {cwd:repo,input:'Request\n',encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
@@ -106,16 +109,17 @@ test('stdin intake rejects missing input, invalid IDs and symlink output', t => 
     assert.match(result.stderr,/local ID/);
   }
   assert.equal(existsSync(statePath),false);
+  assert.equal(worktreeCount(repo),1);
   mkdirSync(join(repo,'docs/sdlc'),{recursive:true});
   symlinkSync(join(repo,'missing'),join(repo,'docs/sdlc/local-doc-change'));
   assert.match(start('local-doc-change').stderr,/already exists/);
   assert.equal(existsSync(statePath),false);
+  assert.equal(worktreeCount(repo),1);
 });
 
 test('local intake is immutable evidence and G0 must bind it before planning', t => {
-  const {repo,start,statePath} = fixture(t);
+  const {repo,root,start,statePath} = fixture(t);
   assert.equal(start().status,0);
-  const root = join(repo,'docs/sdlc/local-doc-change');
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   writeFileSync(join(root,'other.md'),'Synthetic discovery evidence.\n');
   const other = {path:'other.md',sha256:digest(readFileSync(join(root,'other.md')))};
@@ -138,9 +142,8 @@ test('local intake is immutable evidence and G0 must bind it before planning', t
 });
 
 test('local light work uses the same ID without requiring model plan review or Jira', t => {
-  const {repo,start,statePath} = fixture(t);
+  const {repo,root,start,statePath} = fixture(t);
   assert.equal(start().status,0);
-  const root = join(repo,'docs/sdlc/local-doc-change');
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   const approval = {actor:'human',reference:'synthetic:approval',at:'2026-09-29T00:00:00Z'};
   state.classification = 'bounded';
@@ -171,9 +174,8 @@ test('local light work uses the same ID without requiring model plan review or J
 });
 
 test('local strict plan proceeds without child Jira publication while preserving G2 review', t => {
-  const {repo,start,statePath} = fixture(t);
+  const {repo,root,start,statePath} = fixture(t);
   assert.equal(start().status,0);
-  const root = join(repo,'docs/sdlc/local-doc-change');
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   const approval = {actor:'human',reference:'synthetic:approval',at:'2026-09-29T00:00:00Z'};
   state.gates.G0 = {status:'passed',evidence:[state.intake.request]};
@@ -223,8 +225,12 @@ test('refuses unsafe IDs, empty requests, symlink output and existing local runs
   writeFileSync(request,'Safe input\n');
   mkdirSync(join(repo,'docs'));
   symlinkSync(tmpdir(),join(repo,'docs/sdlc'));
+  git(repo,'add','.');
+  git(repo,'commit','-qm','link docs/sdlc outside the repository');
   assert.match(start().stderr,/symlink/);
   assert.equal(existsSync(statePath),false);
+  assert.equal(worktreeCount(repo),1);
+  assert.deepEqual(runBranches(repo),[]);
 });
 
 test('refuses to replace an existing broken symlink at the chosen local ID', t => {
@@ -235,12 +241,12 @@ test('refuses to replace an existing broken symlink at the chosen local ID', t =
   assert.notEqual(result.status,0);
   assert.match(result.stderr,/already exists/);
   assert.equal(existsSync(statePath),false);
+  assert.equal(worktreeCount(repo),1);
 });
 
 test('local intake rejects a missing request while preserving pending human gates', t => {
-  const {repo,start,statePath} = fixture(t);
+  const {repo,root,start,statePath} = fixture(t);
   assert.equal(start().status,0);
-  const root = join(repo,'docs/sdlc/local-doc-change');
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(state.gates.G1.status,'pending');
   assert.equal(state.gates.G2.status,'pending');

@@ -12,6 +12,7 @@ export const gates = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5a', 'G5b'];
 const phases = ['discover', 'discover', 'plan', 'implement', 'verify', 'release', 'release'];
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = v => typeof v === 'string' && v.trim().length > 0;
+const humanRecord = v => object(v) && v.actor === 'human' && text(v.reference) && text(v.at) && !Number.isNaN(Date.parse(v.at));
 const sha = v => typeof v === 'string' && /^[a-f0-9]{40,64}$/.test(v);
 export const digest = data => createHash('sha256').update(data).digest('hex');
 const ticketKey = v => typeof v === 'string' && /^[A-Z][A-Z0-9_]*-[1-9][0-9]*$/.test(v);
@@ -184,6 +185,8 @@ function reviewErrors(reviews, axes, root, label, policy, subjectHead) {
     } else {
       if (!text(r.authorModel) || !text(r.reviewerModel) || !text(r.authorFamily) || !text(r.reviewerFamily) ||
           ((!policy || policy.requireDifferentFamily) && r.authorFamily.toLowerCase() === r.reviewerFamily.toLowerCase())) errors.push(`${label}: distinct verified model family required`);
+      if (policy?.requireDifferentModel && text(r.authorModel) && text(r.reviewerModel) &&
+          r.authorModel.trim().toLowerCase() === r.reviewerModel.trim().toLowerCase()) errors.push(`${label}: reviewer model must differ from author model`);
       if (policy && (r.reviewerType !== 'model' || !text(r.authorSession) || !text(r.reviewerSession) ||
           r.authorSession === r.reviewerSession)) errors.push(`${label}: independent review session required`);
     }
@@ -192,7 +195,11 @@ function reviewErrors(reviews, axes, root, label, policy, subjectHead) {
       const coverage = label === 'G4' ? ['spec','standards','security'] : ['spec','standards'];
       for (const area of coverage) if (!Array.isArray(r.coverage) || !r.coverage.includes(area)) errors.push(`${label}: review coverage missing ${area}`);
     }
-    if (r.blocking !== 0) errors.push(`${label}: blocking review findings remain`);
+    if (r.acceptance !== undefined) {
+      const a = r.acceptance;
+      if (!Number.isInteger(r.blocking) || r.blocking < 1 || !humanRecord(a) || !Array.isArray(a.followUps) ||
+          !a.followUps.length || !a.followUps.every(text)) errors.push(`${label}: residual finding acceptance requires a human record and follow-ups`);
+    } else if (r.blocking !== 0) errors.push(`${label}: blocking review findings remain`);
     errors.push(...evidenceErrors(r.evidence, root, `${label}/${key}`));
   }
   return errors;

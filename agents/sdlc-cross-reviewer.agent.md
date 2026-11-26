@@ -20,16 +20,18 @@ Remain read-only with no shell. Validate supplied hashes, base/HEAD, review axis
 (`plan`, `final` or `combined`), policy and actual identities/sessions. The parent
 provides command evidence and runs state validation; passed flags are not proof.
 
-Recommend a model family different from every covered author. Require it only for
-explicit `requireDifferentFamily: true` or policy-less legacy records. With false,
-light and strict may use the same model in an independent verified session; record
-the choice and routing limitations, not a family-only blocker. Never self-review
+Require a reviewer model different from every covered author model when
+`requireDifferentModel` is true (new default). Recommend a different family too;
+require it only for explicit `requireDifferentFamily: true` or policy-less legacy
+records. With false, light and strict may use the same family in an independent
+verified session; record the choice and routing limitations, not a family-only
+blocker. Never self-review
 or impersonate a human. Missing required provenance blocks the assigned review.
 For combined review inspect spec and standards; integrated G4 also covers security.
 
 For **plan**, assess AC completeness, contracts, pinned upstream mapping, risks, testability, dependency ordering, and vertical slices. For **final**, inspect the integrated diff against approved intent and evidence, including test ownership, live versus mock coverage, UX approval, and authentication boundaries. Include security findings within scope; identify absent required specialist evidence rather than claiming an unperformed security review.
 
-Return severity, path/line, concrete issue, required resolution, and review limitations. A zero-blocking verdict applies only to the inspected revision; later changes require renewed review.
+Return severity, path/line, concrete issue, required resolution, and review limitations. `blocking` is only for a violated approved AC/contract, an exploitable security defect, a broken build/test or data loss; other issues are follow-ups. Each subject gets at most 2 rounds; round 2 inspects only the fix diff and its blast radius. A zero-blocking verdict applies only to the inspected revision; later changes require renewed review.
 
 Profiles omit model selection. Use the parent's verified runtime/user mapping, not guessed IDs. No edits, execute tools, cloud/nested delegation, git push, merge, deploy, or self-approval. Scope is procedural; the parent audits the empty diff.
 

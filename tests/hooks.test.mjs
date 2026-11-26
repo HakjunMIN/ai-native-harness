@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { git, projectRepo, runState, runWorktree } from './helpers/run-fixture.mjs';
 
 const script = resolve('hooks/guard.mjs');
 function hook(payload, adapter = 'copilot') {
@@ -38,6 +39,39 @@ test('Codex denies prohibited commands and patches without granting neutral call
   }
   assert.equal(hook(codex('Bash',{command:'git status'}),'codex').hookSpecificOutput?.permissionDecision,undefined);
   assert.equal(hook({},'codex').hookSpecificOutput.permissionDecision,'deny');
+});
+test('hook wrappers locate Node.js without an interactive shell PATH', {skip:process.platform === 'win32'}, t => {
+  const dir = mkdtempSync(join(tmpdir(),'sdlc-node-'));
+  t.after(() => rmSync(dir,{recursive:true,force:true}));
+  const fake = join(dir,'node');
+  writeFileSync(fake,'#!/bin/sh\necho "fake-node $*"\n',{mode:0o755});
+  for (const wrapper of ['gate-guard.sh','session-start.sh']) {
+    const run = env => spawnSync('/bin/bash',[resolve('hooks',wrapper),'copilot'],
+      {input:'{}',encoding:'utf8',env:{PATH:'/usr/bin:/bin',HOME:dir,...env}});
+    const found = run({AI_NATIVE_SDLC_NODE:fake});
+    assert.equal(found.status,0,found.stderr);
+    assert.match(found.stdout,new RegExp(`fake-node .*hooks/${wrapper === 'gate-guard.sh' ? 'guard' : 'session'}\\.mjs copilot`));
+    const missing = run({AI_NATIVE_SDLC_NODE:join(dir,'missing-node')});
+    assert.equal(missing.status,127);
+    assert.match(missing.stderr,/Node\.js is not executable/);
+  }
+});
+test('push detection targets the git subcommand, not words or other subcommands', () => {
+  for (const command of ['git push', 'git -C repo push origin HEAD', 'git -c user.name=x push',
+    'git --git-dir=.git --no-pager push', 'cd repo && git push', 'FOO=1 git push', 'env FOO=1 git push',
+    'git status; git push', 'echo ok | git push', '/usr/bin/git push', 'git -C "my repo" push',
+    'gh pr merge 1', 'gh -R o/r pr merge 1', 'bash -c "git push"', "sh -c 'git push'", 'eval "git push"',
+    'git $(echo push)', 'git `echo push`', 'echo push | xargs git', 'git -c alias.p=push p', 'command git push',
+    'sudo git push', 'git\tpush', 'git push>/dev/null', 'g"i"t pu\'sh\'', 'git \\\npush',
+    'python3 -c "import os; os.system(\'git push\')"', 'git rebase --exec "git push" main', 'sudo -u git git push',
+    'git commit -m "x" && git push', '(git push)', 'git push origin "$BRANCH"']) {
+    assert.equal(hook(shell(command)).permissionDecision, 'deny', command);
+  }
+  for (const command of ['git stash push -m wip', 'git commit -m "push docs"', "git commit -m 'git push later'",
+    'git log --grep push', 'echo push', 'git status --short', 'git -C repo stash push', 'npm run push-docs',
+    'git checkout -b feature/push-guard']) {
+    assert.equal(hook(shell(command)).permissionDecision, undefined, command);
+  }
 });
 test('Codex session start provides additional context', () => {
   const result = spawnSync(process.execPath,[resolve('hooks/session.mjs'),'codex'],
@@ -120,6 +154,29 @@ test('uses configured production paths and denies broken configuration', t => {
   assert.equal(hook({toolName:'edit',toolArgs:{path:'ops/live/values.yaml'},cwd}).permissionDecision,'deny');
   writeFileSync(join(cwd, 'ai-native-sdlc.config.json'), '{');
   assert.equal(hook({...shell('git status'),cwd}).permissionDecision,'deny');
+});
+test('run worktrees inherit production paths from the primary checkout untracked config', t => {
+  const {repo} = projectRepo(t);
+  writeFileSync(join(repo,'ai-native-sdlc.config.json'),JSON.stringify({release:{productionPaths:['ops/live']}}));
+  const cwd = runWorktree(repo,'local-work');
+  git(repo,'worktree','add','-q','-b','sdlc/local-work/integration',cwd);
+  assert.equal(hook({toolName:'edit',toolArgs:{path:'ops/live/values.yaml'},cwd}).permissionDecision,'deny');
+  assert.equal(hook({toolName:'edit',toolArgs:{path:'src/app.js'},cwd}).permissionDecision,undefined);
+});
+test('session start lists runs from every run worktree with their location', t => {
+  const {repo} = projectRepo(t);
+  const intake = spawnSync(process.execPath,[resolve('scripts/intake.mjs'),'start-text','local-work',repo],
+    {input:'Request\n',encoding:'utf8'});
+  assert.equal(intake.status,0,intake.stderr);
+  for (const cwd of [repo, runWorktree(repo,'local-work')]) {
+    const result = spawnSync(process.execPath,[resolve('hooks/session.mjs'),'copilot'],
+      {input:JSON.stringify({cwd}),encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);
+    const context = JSON.parse(result.stdout).additionalContext;
+    assert.match(context,/own git worktree on sdlc\/<ID>\/integration/);
+    assert.ok(context.includes(`local-work: recorded phase discover`),context);
+    assert.ok(context.includes(`worktree ${runWorktree(repo,'local-work')}; state ${runState(repo,'local-work')}`),context);
+  }
 });
 test('malformed input is a structured denial, not an empty success', () => {
   assert.equal(hook('{').permissionDecision, 'deny');

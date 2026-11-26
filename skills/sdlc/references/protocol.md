@@ -89,11 +89,14 @@ Record auth/tenant boundaries, public compatibility, destructive/schema/data
 changes and deployment/security effects as risks; size alone does not establish
 low risk. Unknown material risk prevents light selection. `boundedProfile` defaults
 to strict when absent; multiple outcomes automatically select strict. For both profiles,
-`review.requireDifferentFamily` and `review.allowHumanReview` control review
-eligibility. New policies default `requireDifferentFamily` to false: different-family
-review is recommended, not a gate. With false, the same model/family in a verified
-independent session is eligible; record that choice and any routing limitation.
-Explicit true requires different-family model review and disallows human substitution.
+`review.requireDifferentFamily`, `review.requireDifferentModel` and
+`review.allowHumanReview` control review eligibility. New policies default
+`requireDifferentModel` to true: a model review needs a reviewer model ID different
+from the author model ID (same family allowed). `requireDifferentFamily` defaults
+to false: different-family review is recommended, not a gate. With false, the same
+family in a verified independent session is eligible; record that choice and any
+routing limitation. Policies without `requireDifferentModel` keep their approved rule.
+Explicit `requireDifferentFamily: true` requires different-family model review and disallows human substitution.
 Human review otherwise requires `allowHumanReview: true`; omission defaults to false.
 Legacy records without policy retain different-family requirements. Never weaken
 an approved snapshot from new defaults or a config edit. If policy or scope changes,
@@ -135,10 +138,11 @@ G5b additionally requires `deployment: {digest, sync: "Synced", health: "Healthy
 Environment details and smoke evidence live in the release report; JSON shape
 validation cannot prove that a running deployment matches the intended artifact.
 
-New-policy review records include `axis`, `blocking: 0`, hashed `evidence` and:
+New-policy review records include `axis`, `blocking` (0 unless accepted), hashed `evidence` and:
 
 - Model: `reviewerType: "model"`, actual `authorModel`, `authorFamily`,
   `reviewerModel`, `reviewerFamily`, distinct `authorSession`/`reviewerSession`.
+  With `requireDifferentModel`, the reviewer model ID must differ from the author's.
   Different aliases in one family do not satisfy an explicit or legacy different-family
   requirement. Optional family diversity does not waive identity or session evidence.
 - Human, only when allowed: `reviewerType: "human"`,
@@ -149,6 +153,17 @@ New-policy review records include `axis`, `blocking: 0`, hashed `evidence` and:
   G4 may reuse light combined evidence only for identical revision, covered scope
   and current findings. A particular host security agent is optional; actual
   security inspection is not. Missing necessary expertise remains a blocker.
+
+A finding is `blocking` only for a violated approved AC/contract, a security defect
+with an exploit path, a broken build/test or data loss; everything else is
+`should-fix`/`nit` and becomes a follow-up. Each review subject (G2 plan, each slice,
+G4 final) gets at most 2 rounds. Round 2 is a delta review of the fix diff and its
+blast radius only; an implementation-only fix needs fresh GREEN, not a new RED.
+If blockers remain after round 2, return `NEEDS_HUMAN` with three options: accept
+with follow-ups, fix once more, or descope. An accepted residual finding keeps its
+`blocking` count and adds `acceptance: {actor: "human", reference, at, followUps}`
+with nonempty follow-ups; acceptance is a human risk decision, not a human review,
+so it does not need `allowHumanReview`.
 
 Strict axes are `plan` at G2, `spec` and `standards` per slice, `final` at G4.
 Light uses `combined` per slice and at G4. Split author scopes must be unique and
@@ -167,9 +182,11 @@ refactoring/configuration. G3/G4 always verify the final integrated candidate.
 
 After G2, commit the approved plan with the required user authorization before
 forking source work. The conductor runs `workspaces.mjs plan STATE [SCOPES.json]`,
-then `start` with the same arguments. One ready, nonconcurrent slice uses only
-`sdlc/<ID>/integration` in the current checkout. Concurrent independent slices
-use separate `sdlc/<ID>/t<N>` branches and Git worktrees; exact repo-relative
+then `start` with the same arguments, both in the run worktree (see
+[run worktrees](#run-worktrees)). One ready, nonconcurrent slice uses only
+`sdlc/<ID>/integration` in the run worktree. Concurrent independent slices
+use separate `sdlc/<ID>/t<N>` branches and sibling Git worktrees at
+`<repo>/.worktrees/sdlc/<ID>/t<N>`; exact repo-relative
 edit scopes must be disjoint and exclude shared `docs/sdlc/` state. Path separation
 alone does not prove contract/behavior independence; defer coupled work.
 
@@ -181,6 +198,32 @@ before unblocking dependents; workers do not merge.
 G3 checks each completed slice SHA is an ancestor of the final integrated SHA;
 rerun combined checks/reviews after merges or conflict fixes. See
 [operations](../../../docs/operations.md) for commands and cleanup.
+
+## Run worktrees
+
+Every run owns one Git worktree. `harness.mjs start` and `intake.mjs start|start-text`
+create branch `sdlc/<ID>/integration` at `<repo>/.worktrees/sdlc/<ID>/integration`
+inside the primary checkout, forked from the invoking checkout's committed HEAD,
+and print only the state path inside that worktree. The primary checkout's files
+and branch stay untouched; only the snapshot cache `.ai-native-sdlc-revisions/`
+is kept there and shared by every run.
+
+* Git must ignore `/.worktrees/` in the primary checkout. Installers append the
+  rule to `.gitignore`; commit it before the first run. Starts refuse otherwise.
+* Run `resolve`, `state.mjs`, `tasks.mjs`, `workspaces.mjs` and every phase in the
+  run worktree (`cd` or `git -C`), and give workers that path. Call installed
+  harness scripts by absolute path, because an uncommitted install is absent there.
+* Start from the primary checkout or a branch that belongs to no run. Starting
+  inside a worktree already on the run's integration branch adopts it.
+* An ID that already has a run is refused with the worktree to resume in.
+  `workspaces.mjs list [REPO_ROOT]` lists every run across all worktrees.
+* Uncommitted changes in the invoking checkout are not copied; commit what the
+  run needs first. If the host cannot use the worktree, report `NEEDS_HUMAN`
+  rather than working in the primary checkout.
+* A run started in place before this layout keeps its state and stays
+  resolvable. `workspaces.mjs start|reconcile` refuse it with the exact
+  `git worktree add` (or `switch`) command for its dedicated worktree; commit
+  the run's state first so the new worktree carries it.
 
 ## Invalidation and resumption
 
@@ -224,6 +267,12 @@ roles; no cloud/nested delegation. Parallel work requires disjoint edit scope.
 The conductor alone writes shared state and audits returned diffs against assigned
 paths. Do not revert unrelated work. Runtime model mappings must be verified, not
 inferred from profile names. Missing routing blocks only reviews that require it.
+Dispatch each role with project config `models.<role>`, falling back to
+`models.default`, and `reasoningEfforts` the same way; roles without a mapping use
+the host default. Copy installs also bind these into project `.github/agents` profiles.
+If a mapped model cannot be routed, report `BLOCKED`; never substitute silently.
+Record the model the host actually reports, not the requested ID. Prefer a reviewer
+model different from the author's even when not required.
 
 Only Jira-originated runs use `jira-sync`: durable intent, stable markers, readback
 and honest pending/unknown status. Offline outbox is not remote success. Jira Done

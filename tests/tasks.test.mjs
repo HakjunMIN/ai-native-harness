@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { digest, validateState } from '../scripts/state.mjs';
-import { createPolicy } from '../scripts/workflow.mjs';
+import { agentRoles, createPolicy, policyErrors, validateModels, validateReasoningEfforts } from '../scripts/workflow.mjs';
 
 const config = {workflow:{boundedProfile:'light'},review:{requireDifferentFamily:false,allowHumanReview:true}};
 const draft = {changeKind:'behavior',risks:[],tasks:[{
@@ -46,6 +46,34 @@ test('policy resolution keeps risk and decomposition strict without forcing a di
   }
   assert.throws(() => createPolicy({...config,review:{requireDifferentFamily:'no'}},'bounded',draft),/boolean/);
   assert.throws(() => createPolicy({...config,workflow:{boundedProfile:'unknown'}},'architectural',draft),/boundedProfile/);
+});
+
+test('new policies require a reviewer model different from the author unless config opts out', () => {
+  assert.equal(createPolicy(config,'bounded',draft).requireDifferentModel,true);
+  assert.equal(createPolicy({},'architectural',draft).requireDifferentModel,true);
+  assert.equal(createPolicy({...config,review:{requireDifferentModel:false}},'bounded',draft).requireDifferentModel,false);
+  assert.throws(() => createPolicy({...config,review:{requireDifferentModel:'yes'}},'bounded',draft),/requireDifferentModel must be boolean/);
+  const legacy = createPolicy(config,'bounded',draft);
+  delete legacy.requireDifferentModel;
+  assert.deepEqual(policyErrors(legacy,'bounded'),[]);
+  assert.match(policyErrors({...legacy,requireDifferentModel:'no'},'bounded').join('\n'),/review flags must be boolean/);
+});
+
+test('role model and reasoning effort maps accept shipped agent roles only', () => {
+  const shipped = readdirSync('agents').filter(name => name.endsWith('.agent.md'))
+    .map(name => name.slice('sdlc-'.length,-'.agent.md'.length)).sort();
+  assert.deepEqual([...agentRoles].sort(),shipped);
+  validateModels(undefined);
+  validateModels({default:'model-a','code-reviewer':'model-b'});
+  validateReasoningEfforts({default:'medium',implementer:'xhigh'});
+  for (const invalid of [[],{reviewer:'model-a'},{implementer:''},{implementer:'  '},{implementer:7}]) {
+    assert.throws(() => validateModels(invalid),/models/);
+  }
+  for (const invalid of [{implementer:'extreme'},{unknown:'low'},'high']) {
+    assert.throws(() => validateReasoningEfforts(invalid),/reasoningEfforts/);
+  }
+  assert.throws(() => createPolicy({...config,models:{reviewer:'x'}},'bounded',draft),/models/);
+  assert.throws(() => createPolicy({...config,reasoningEfforts:{default:'huge'}},'bounded',draft),/reasoningEfforts/);
 });
 
 test('strict review defaults to optional family diversity and preserves explicit opt-in', () => {

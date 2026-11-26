@@ -47,10 +47,12 @@ is not a vertical outcome. Resolve precise file allowlists and commands at
 implementation handoff from current code, keeping long-lived sub tasks behavior/contract focused.
 Reuse Gradle/Go/JS tooling. Do not schedule backend Gherkin or direct ClickHouse.
 
-Strict/legacy plans require independent `code-review`. For new strict policy,
-different-family review is recommended; a same-model independent session is valid
-when `requireDifferentFamily` is false. Enforce explicit true and legacy requirements;
-human review needs policy permission. Resolve blocking findings and attach provenance. Light plans do not
+Strict/legacy plans require independent `code-review` with a reviewer model
+different from the planner's when `requireDifferentModel` is true (new default;
+same family allowed). Different-family review is recommended; enforce explicit
+`requireDifferentFamily: true` and legacy requirements; human review needs policy
+permission. Plan review gets at most 2 rounds; remaining blockers go to the human
+at G2 (accept with follow-ups, fix once more, descope). Attach provenance. Light plans do not
 require a separate model review; the human still approves policy and scope at G2.
 
 Present plan, detailed sub task set, dependency graph and review to the human for G2.

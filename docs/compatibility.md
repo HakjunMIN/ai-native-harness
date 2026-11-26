@@ -12,7 +12,7 @@ description: "로컬 호스트별 스킬, 에이전트, 훅과 discovery 요약 
 | 역할별 도구 선언 | 공식 호환 alias | native 도구 이름 | Markdown `tools` 미적용 |
 | 훅 | 프로젝트 `.github/hooks` 또는 플러그인 | hooks/hooks.json | 프로젝트 `.codex/hooks.json`, 신뢰 승인 필요 |
 | 모델 선택 | 런타임 지원 + 사용자 설정 확인 | 지원 모델 범위 확인 | 지원 모델 범위 확인 |
-| 정책 기반 독립 리뷰 | 실제 독립 세션/도구 확인 | 동일 모델 독립 세션 가능 | 동일 모델 독립 세션 가능 |
+| 정책 기반 독립 리뷰 | 실제 독립 세션/도구 확인 | 다른 모델 ID의 독립 세션 | 다른 모델 ID의 독립 세션 |
 | 외부 CLI 호출 | 사용 안 함 | 사용 안 함 | 사용 안 함 |
 
 Discovery 요약의 `state.mjs discovery STATE`와 `--text`는 Node.js 기반의
@@ -32,11 +32,17 @@ GitHub 인증이 필요하지 않습니다. 필요한 소스 파일을 대상 �
 
 Copilot의 모델 선택 기능과 별도 Codex/Claude Code CLI 하네스 실행은 다릅니다.
 이 패키지는 **로컬 역할별 모델 라우팅**을 사용하며 다른 CLI나 클라우드
-coding agent를 호출하지 않습니다. 모델 ID를 고정하지 않습니다.
+coding agent를 호출하지 않습니다. 패키지 원본 프로필은 모델 ID를 고정하지 않으며,
+대상의 `models`·`reasoningEfforts` 설정이 있을 때만 복사 설치가 해당 역할의
+`.github/agents` 프로필에 `model:`·`reasoning-effort:`를 기록합니다
+([역할별 서브에이전트 모델](install.md#역할별-서브에이전트-모델)). 호스트가 이 값을
+실제로 따르는지는 세션에서 확인해야 합니다.
 
-신규 light/strict 모두 교차 계열 리뷰는 권고이며 기본
-`requireDifferentFamily: false`에서는 같은 모델의 독립 세션을 허용합니다.
-실제 세션·모델·리뷰 증거는 여전히 필요합니다. 인간 검토는 승인 정책의
+신규 light/strict 모두 교차 계열 리뷰는 권고이며 기본값은
+`requireDifferentFamily: false`입니다. 다만 새 정책은 `requireDifferentModel: true`가
+기본이므로 리뷰어 모델 ID가 작성자와 달라야 합니다(같은 계열의 다른 모델은 허용).
+`requireDifferentModel`이 없는 기존 정책은 기록된 규칙대로 같은 모델의 독립 세션을
+허용합니다. 실제 세션·모델·리뷰 증거는 여전히 필요합니다. 인간 검토는 승인 정책의
 `allowHumanReview: true`일 때만 허용합니다.
 명시적 `requireDifferentFamily: true` 또는 policy 없는 legacy 기록은 교차 계열
 라우팅 미지원 시 해당 리뷰가 BLOCKED입니다. 새 기본값이 기존 승인을 바꾸지는 않습니다.
@@ -52,7 +58,7 @@ repo config를 썼다고 런타임 설정이 자동 변경되지 않습니다. �
 
 9개 프로필은 읽기 전용 3개(spec/code/cross reviewer)와 편집·실행 가능한
 6개(architect/ux-designer/test-writer/implementer/verifier/release-engineer)로 나뉩니다.
-모두 아래 6가지 이름만 선언하며 모델을 고정하지 않습니다.
+모두 아래 6가지 이름만 선언하며 원본 프로필은 모델을 고정하지 않습니다.
 
 | 현재 선언 | Claude Code | Copilot 공식 alias | Codex의 이 패키지 적용 |
 |---|---|---|---|
@@ -121,6 +127,12 @@ Codex 프로젝트 설치는 native 훅 설정과 에이전트 TOML을 생성하
   `doctor`는 구성 로딩에 성공했지만 인증 실패를 보고했습니다. 따라서 native
   에이전트 9개의 실행과 Codex 훅 신뢰 승인/실제 차단은 아직 검증되지 않았습니다.
   생성된 JSON 및 훅 명령 테스트가 이 실환경 검증을 대신하지 않습니다.
+
+run 전용 워크트리(`git worktree`, Git 공용 디렉터리의 잠금 디렉터리)는 macOS에서
+테스트했습니다. Windows의 경로·잠금 동작은 CI의 Windows 작업에서만 검사하며 로컬에서
+확인하지 않았습니다. 호스트는 세션을 연 checkout의 훅·스킬 설정을 읽으므로, 설치
+산출물을 커밋하지 않은 상태에서 run 워크트리에서 세션을 열면 훅이 적용되지 않을 수
+있습니다. 이 동작은 호스트별로 실행 확인하지 않았습니다.
 
 Copilot legacy manifest는 선택적 플러그인 설치용으로 유지합니다. Agent Plugins
 1.0의 고정 component 경로와 섞지 않습니다. Claude는 기본 `agents/`, `skills/`,

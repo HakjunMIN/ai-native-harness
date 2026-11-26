@@ -128,9 +128,10 @@ ArgoCD `Synced`/`Healthy` 등의 증거를 기대한다. 비컨테이너·비Arg
 | 릴리스 | 환경별 설정, production 경로, artifact digest, GitOps 앱, rollback | 소스·이미지·배포 revision 연결 |
 | 운영/비용 | SLO, smoke, 알림·당번, CLI/모델 사용량, 테스트 인프라 비용 | 기준선, 예산 한도, 운영 책임 |
 
-기본 worktree 도구는 저장소 옆 `<repo>.sdlc-worktrees/`를 사용한다.
-고객 정책이 저장소 밖 쓰기를 금지하면 이 동작을 사전 승인받거나, 범위가 허용되는
-단일 checkout 순차 작업을 택한다. 경로만 다르다고 공유 계약 변경을 병렬화하지 않는다.
+모든 run은 primary checkout 안의 `<repo>/.worktrees/sdlc/<ID>/integration` 워크트리에서
+진행하고, 병렬 슬라이스는 같은 위치의 `t<N>` 워크트리를 쓴다. `.gitignore`에
+`/.worktrees/` 규칙이 있어야 하며(설치기가 추가), 고객 정책상 저장소 내부 ignore 경로
+사용이나 `.gitignore` 변경이 허용되는지 사전에 확인한다. 경로만 다르다고 공유 계약 변경을 병렬화하지 않는다.
 
 ## 5. 도구 목록과 사용 조건
 

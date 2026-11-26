@@ -119,12 +119,55 @@ G3 이후는 필요한 사용자 허가를 받아 코드 commit을 확정하고 
 
 ## 브랜치와 병렬 워크트리
 
+### run 전용 워크트리
+
+모든 run은 시작할 때 전용 Git 워크트리를 만들고 그 안에서 진행합니다
+(`harness.mjs start`, `intake.mjs start|start-text`).
+
+* 브랜치는 `sdlc/<ID>/integration`, 경로는 primary checkout 안의
+  `<repo>/.worktrees/sdlc/<ID>/integration`입니다. 어느 워크트리나 하위 디렉터리에서
+  시작해도 기준 위치는 primary checkout입니다.
+* primary checkout의 Git이 `/.worktrees/`를 무시하지 않으면 워크트리를 만들지 않고
+  오류를 냅니다. 설치기가 `.gitignore`에 규칙을 추가하므로 그 규칙을 commit하세요.
+  Docker 빌드 컨텍스트, 파일 감시기, 테스트 탐색 도구가 checkout 전체를 훑는다면
+  각 도구에서도 `.worktrees/`를 제외하세요.
+* 기준은 시작을 호출한 checkout의 commit된 HEAD입니다. 커밋하지 않은 변경은
+  옮겨지지 않고 경고만 출력합니다. 다른 run의 브랜치에서 시작하면 거부합니다.
+* primary checkout의 파일과 브랜치는 바꾸지 않습니다. 스냅샷 캐시
+  `.ai-native-sdlc-revisions/`만 primary checkout에 남아 모든 run 워크트리가 공유하므로,
+  워크트리를 지워도 잠긴 revision은 유지됩니다.
+* 출력되는 state 경로는 워크트리 안의 절대 경로입니다. `resolve`, `state.mjs`,
+  `tasks.mjs`, `workspaces.mjs`와 이후 모든 단계를 그 워크트리에서 실행하세요.
+  설치된 하네스 스크립트는 절대 경로로 호출합니다(커밋하지 않은 설치본은 워크트리에
+  없음). 커밋하지 않은 `ai-native-sdlc.config.json`은 가드 훅이 primary checkout에서
+  읽지만, 다른 스크립트를 위해 설정 파일도 커밋하는 것을 권장합니다.
+* 이미 run이 있는 ID는 재개할 워크트리 경로와 함께 거부합니다. 해당 run 브랜치에
+  있는 워크트리에서 다시 시작하면 그 워크트리를 그대로 사용합니다.
+
+모든 워크트리의 run은 다음 명령으로 조회합니다. primary checkout이나 어떤 워크트리에서
+실행해도 결과가 같습니다. 출력은 `id`, `state`, `worktree`, `branch`, `dedicated`,
+`phase` 등의 JSON 배열입니다.
+
+```bash
+node .ai-native-sdlc/scripts/workspaces.mjs list
+```
+
+동시에 시작해도 저장소별 잠금(Git 공용 디렉터리의 `ai-native-sdlc-worktrees.lock/`)으로
+직렬화됩니다. 이 구조 이전에 primary checkout에서 시작한 run은 그대로 조회·`resolve`할
+수 있지만, `workspaces.mjs start|reconcile`은 전용 워크트리를 만드는 정확한
+`git -C <repo> worktree add -b sdlc/<ID>/integration <경로>`(브랜치가 이미 있으면
+`git worktree add <경로> sdlc/<ID>/integration`) 명령을 안내하며 거부합니다.
+run 상태를 먼저 commit한 뒤 안내된 명령을 실행하세요.
+
+### 구현 슬라이스
+
 G2 승인 계획과 manifest를 사용자 허가를 받아 **먼저 commit**하고, 구현 직전에
 `ready` 결과와 실제 코드·테스트·공유 계약의 영향 범위를 검토합니다. 단일 작업
-또는 겹쳐서 순차 실행해야 할 작업에는 현재 checkout의
+또는 겹쳐서 순차 실행해야 할 작업에는 run 워크트리의
 `sdlc/<ID>/integration` 브랜치만 사용합니다. 독립적인 여러 작업에는 같은
 integration HEAD에서 `sdlc/<ID>/t<N>` 브랜치와 별도 워크트리를 만듭니다.
 경로가 달라도 공통 API/스키마/설정/동작에 영향을 주면 병렬 처리하지 않습니다.
+아래 명령은 run 워크트리에서 실행합니다.
 
 ```bash
 # 한 개의 준비된 작업: 별도 워크트리 없음
@@ -141,8 +184,8 @@ node "$PLUGIN_ROOT/scripts/workspaces.mjs" start docs/sdlc/ABC-123/state.json do
 `plan`은 선택/보류 ID와 `branch`/`worktree`/`waiting`을 출력합니다.
 `start`는 깨끗한 소스 checkout과 commit된 G2 계획을 확인하고, 브랜치/워크트리를
 만든 뒤 상태를 `in_progress`로 기록합니다. commit·merge·push·작업자 dispatch는
-하지 않습니다. 워크트리는 레포 옆 `<repo>.sdlc-worktrees/<ID>/t<N>`에 생성됩니다.
-공유 state/증거는 기존 checkout의 컨덕터만 수정합니다. 각 작업자는 할당된
+하지 않습니다. 슬라이스 워크트리는 primary checkout의
+`.worktrees/sdlc/<ID>/t<N>`에 생성됩니다. 공유 state/증거는 run 워크트리의 컨덕터만 수정합니다. 각 작업자는 할당된
 워크트리와 허용 경로만 변경하고 SHA/검증 증거를 반환합니다. 재개 시 기록된
 branch/path와 진행 중인 작업을 확인하고 `start`를 다시 호출해 중복 생성하지 않습니다.
 

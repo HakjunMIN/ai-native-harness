@@ -13,10 +13,11 @@ supplied approved policy and handoff, not mutable config or guessed model routin
    Remain read-only; ask the caller for missing command output rather than pretend
    to execute from a read/search-only role.
 2. Require independence from the author. Light may combine spec and standards in
-   one review; strict/legacy keeps distinct spec/standards axes. New policies in
-   either profile recommend different-family review, but allow the same model in
-   a distinct verified session when `requireDifferentFamily` is false. Explicit
-   true or legacy records without policy still require a different family.
+   one review; strict/legacy keeps distinct spec/standards axes. New policies
+   require a reviewer model different from the author model unless
+   `requireDifferentModel` is false; the same family is allowed. Different-family
+   review is recommended, required only when `requireDifferentFamily` is true or
+   for legacy records without policy.
    Human review requires policy permission, not just human gate approval.
    Record a same-family choice and routing limitations without blocking solely
    on an unmet recommendation. Never fabricate model IDs, families or session identity.
@@ -35,10 +36,15 @@ supplied approved policy and handoff, not mutable config or guessed model routin
    a passing state check is not that evidence. Standalone reviews use applicable
    current project rules without inventing an SDLC baseline or gate requirements.
 4. Return blocking/should-fix/nit findings with path/line, concrete failure or
-   violated requirement, resolution and limitations. Zero findings must describe
-   inspected scope, not assert universal safety.
-5. Bind findings to the actual revision. New code requires renewed review. Light
-   G4 can reuse combined evidence only at the same revision with complete integrated
+   violated requirement, resolution and limitations. Mark `blocking` only for a
+   violated approved AC/contract, a security defect with an exploit path, a broken
+   build/test or data loss; other issues are should-fix/nit follow-ups. Zero
+   findings must describe inspected scope, not assert universal safety.
+5. Bind findings to the actual revision. New code requires renewed review. A subject
+   gets at most 2 rounds: round 2 reviews only the fix diff and its blast radius and
+   must not raise new should-fix/nit items outside it. Blockers left after round 2
+   go to the human as `NEEDS_HUMAN` (accept with follow-ups, fix once more, descope).
+   Light G4 can reuse combined evidence only at the same revision with complete integrated
    spec/standards/security coverage and no unresolved blockers.
 
 Return the axis/coverage, subject revision, provenance (or human review reference),

@@ -30,11 +30,14 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
    later Jira publication, not local intake, public-doc research or local drafts.
    Local work requires no Jira project, MCP credentials or child-issue mapping.
 5. Ask for allowed local role models; inspect runtime availability. Set `models`
-   entries only for confirmed IDs with family, and verify actual dispatch support.
+   (and optional `reasoningEfforts`) per role or `default` only for confirmed IDs,
+   and verify actual dispatch support. Copy installs bind them into project
+   `.github/agents` profiles only after rerunning the installer.
    Preserve host defaults otherwise. Record review capabilities, not a global
-   setup failure: new light and strict policies recommend different-family review
-   but default `requireDifferentFamily` to false. A same-model independent session
-   or evidenced human review is eligible as policy permits. Missing cross-family
+   setup failure: new policies default `requireDifferentModel` to true, so map
+   reviewer roles to a model different from author roles (same family allowed).
+   Different-family review is recommended but `requireDifferentFamily` defaults to
+   false. Evidenced human review is eligible as policy permits. Missing cross-family
    routing blocks only explicit true or legacy requirements, not a recommendation.
    A named security agent is not mandatory. Explain `workflow.boundedProfile`
    and review flags; preserve existing config and approved snapshots.
@@ -48,6 +51,10 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
    Read-only reviewers must not execute shell commands to obtain missing evidence.
 7. Configure production paths/application identities from GitOps files; keep
    `production: human-only`. Confirm branch protections and prod RBAC with operator.
+   Every run starts in its own worktree under `<repo>/.worktrees/sdlc/<ID>/`;
+   installers append `/.worktrees/` to `.gitignore` and starts refuse an unignored
+   `.worktrees/`. Propose committing that rule (and `ai-native-sdlc.config.json`)
+   before the first run, since worktrees contain only committed files.
 8. Follow [project governance](../sdlc/references/project-governance.md): discover
    existing architecture, standards (including `CODING_STANDARDS.md` or
    `CONTRIBUTING.md`) and ADR locations and their owners. Preserve
