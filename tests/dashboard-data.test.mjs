@@ -215,10 +215,10 @@ test('association saves and removals never lose a concurrent change, even from a
     }, 400);`, `${configPath}.lock`, configPath], { stdio: ['ignore', 'pipe', 'inherit'] });
   let output = '';
   holder.stdout.on('data', chunk => { output += chunk; });
-  const exited = new Promise(resolve => holder.once('exit', resolve));
+  const closed = new Promise(resolve => holder.once('close', resolve));
   await new Promise(resolve => holder.stdout.once('data', resolve));
   await save('five');
-  await exited;
+  await closed;
   assert.match(output, /waited/);
   assert.deepEqual(await ids(), ['five', 'four', 'three', 'two']);
 });
