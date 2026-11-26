@@ -30,3 +30,12 @@ jobs:
         shell: pwsh
       - run: node --test tests/harness-revision.test.mjs tests/local-intake.test.mjs
         shell: pwsh
+  dashboard-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/dashboard-adapters.test.mjs tests/dashboard-data.test.mjs tests/dashboard-server.test.mjs tests/dashboard-ui.test.mjs
+        shell: pwsh

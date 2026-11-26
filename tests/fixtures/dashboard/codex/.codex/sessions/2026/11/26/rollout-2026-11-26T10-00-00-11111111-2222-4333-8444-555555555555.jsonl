@@ -1,0 +1,18 @@
+{"timestamp":"2026-11-26T10:00:00.000Z","ordinal":0,"type":"session_meta","payload":{"session_id":"11111111-2222-4333-8444-555555555555","id":"11111111-2222-4333-8444-555555555555","timestamp":"2026-11-26T10:00:00.000Z","cwd":"/tmp/dashboard-fixture/codex","originator":"codex_cli_rs","cli_version":"0.157.0","source":"cli"}}
+{"timestamp":"2026-11-26T10:00:01.000Z","ordinal":1,"type":"turn_context","payload":{"cwd":"/tmp/dashboard-fixture/codex"}}
+{"timestamp":"2026-11-26T10:00:02.000Z","ordinal":2,"type":"response_item","payload":{"type":"message","id":"developer-1","role":"developer","content":[{"type":"input_text","text":"Should the agent follow these developer instructions?"}]}}
+{"timestamp":"2026-11-26T10:00:03.000Z","ordinal":3,"type":"response_item","payload":{"type":"message","id":"context-1","role":"user","content":[{"type":"input_text","text":"<environment_context>Is this injected context?</environment_context>"}]}}
+{"timestamp":"2026-11-26T10:01:00.000Z","ordinal":4,"type":"response_item","payload":{"type":"message","id":"user-1","role":"user","content":[{"type":"input_text","text":"Can you run TDD, cross-review, API tests, and E2E tests?"}]}}
+{"timestamp":"2026-11-26T10:01:30.000Z","ordinal":5,"type":"response_item","payload":{"type":"reasoning","id":"reasoning-1","summary":[]}}
+{"timestamp":"2026-11-26T10:02:00.000Z","ordinal":6,"type":"response_item","payload":{"type":"message","id":"assistant-1","role":"assistant","content":[{"type":"output_text","text":"I will run the requested verification steps."}]}}
+{"timestamp":"2026-11-26T10:03:00.000Z","ordinal":7,"type":"response_item","payload":{"type":"function_call","id":"fc-1","name":"exec_command","arguments":"{\"cmd\":\"sed -n '1,200p' /home/fixture/.agents/skills/test-driven-development/SKILL.md\"}","call_id":"call-1"}}
+{"timestamp":"2026-11-26T10:03:01.000Z","ordinal":8,"type":"response_item","payload":{"type":"function_call_output","id":"fco-1","call_id":"call-1","output":"Process exited with code 0\nOutput:\nfixture skill"}}
+{"timestamp":"2026-11-26T10:04:00.000Z","ordinal":9,"type":"response_item","payload":{"type":"function_call","id":"fc-2","name":"exec_command","arguments":"{\"cmd\": \"git status --short; cat .agents/skills/cross-review/SKILL.md; rg -n review skills/code-review/SKILL.md\"}","call_id":"call-2"}}
+{"timestamp":"2026-11-26T10:05:00.000Z","ordinal":10,"type":"response_item","payload":{"type":"function_call","id":"fc-3","name":"exec_command","arguments":"{\"cmd\":\"npm run test:api\",\"workdir\":\"/tmp/dashboard-fixture/codex/.worktrees/sdlc/local-alpha/integration\"}","call_id":"call-3"}}
+{"timestamp":"2026-11-26T10:05:01.000Z","ordinal":11,"type":"response_item","payload":{"type":"function_call_output","id":"fco-3","call_id":"call-3","output":"Process exited with code 0\nOutput:\n3 passing"}}
+{"timestamp":"2026-11-26T10:05:02.000Z","ordinal":12,"type":"token_usage_record","payload":{"input_tokens":1}}
+{"timestamp":"2026-11-26T10:05:03.000Z","ordinal":13,"type":"event_msg","payload":{"type":"token_count","info":null}}
+{"timestamp":"2026-11-26T10:06:00.000Z","ordinal":14,"type":"response_item","payload":{"type":"function_call","id":"fc-4","name":"exec_command","arguments":"{\"cmd\":\"npm run test:e2e\"}","call_id":"call-4"}}
+{"timestamp":"2026-11-26T10:06:01.000Z","ordinal":15,"type":"response_item","payload":{"type":"function_call_output","id":"fco-4","call_id":"call-4","output":"Process exited with code 1\nOutput:\n1 failing"}}
+{"timestamp":"2026-11-26T10:06:02.000Z","ordinal":16,"type":"world_state","payload":{}}
+{"timestamp":"2026-11-26T10:06:03.000Z","ordinal":17,"type":"event_msg","payload":{"type":"item_completed","item":{}}}

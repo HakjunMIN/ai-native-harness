@@ -23,10 +23,30 @@ Targets `0.2.0`.
   serialized by a repository lock and refused unless `/.worktrees/` is ignored.
   `workspaces.mjs list` lists runs across all worktrees. The snapshot cache stays
   in the primary checkout and is shared by every run worktree.
+  Run starts, `workspaces.mjs list` and resumes (`harness.mjs resolve`,
+  `state.mjs`, `workspaces.mjs`) canonicalize paths with the native realpath, so
+  a directory given through a Windows 8.3 short name (`RUNNER~1`) or different
+  letter case resolves to the run worktree and its pinned snapshot; a worktree
+  that cannot be created also leaves no branch behind on Node 22.
 - Copy and shared installers append `/.worktrees/` to `.gitignore` when no
   equivalent rule exists, preserving content, CRLF and mode; failures restore it.
 - The guard reads an untracked `ai-native-sdlc.config.json` from the primary
   checkout when running in a linked worktree.
+- Add `npm run dashboard`, a read-only local web dashboard that groups GitHub
+  Copilot CLI, Claude Code and Codex sessions by Git workspace, links them to
+  runs from harness tool activity, and shows SDLC gates, reviews, unit/API/E2E
+  verification and highlighted approval waits and questions in a session grid
+  with a detail drawer. The page auto-refreshes every 60 seconds by default,
+  with 10s/30s/1 min/5 min/manual choices and a refresh-now button. It runs on macOS, Linux and Windows (PowerShell); a
+  `dashboard-windows` CI job runs its tests on Windows.
+  Only the next human gate still pending counts as an approval wait; each
+  check shows its newest run's outcome and compound shell commands (`;`, `||`,
+  `|`, `&`) leave it unknown, as do failed `&&` chains (including setup steps);
+  reviews are grouped by stage and show passed only
+  once state validation checked them; late tool results stay with their run;
+  API errors and snapshot warnings stay visible without opening a session, and
+  the drawer shows session warnings. Manual link saves are serialized by a lock
+  beside the config file.
 
 Compatibility and consumer actions:
 
@@ -37,6 +57,11 @@ Compatibility and consumer actions:
   with the exact `git worktree add` command for its dedicated worktree.
 - Rollback: reinstall `0.1.0`; remove `.worktrees/` only after integrating or
   preserving its run branches.
+- The dashboard runs from the harness source checkout. It only reads session
+  stores and run evidence and changes no run state, hook or installer behavior.
+  Copy installs carry `scripts/dashboard*` with the rest of `scripts/` but not
+  the `dashboard/` UI assets. To reset manual session links, delete the
+  per-user `ai-native-harness/dashboard.json` config file.
 
 ## Current manifest baseline
 

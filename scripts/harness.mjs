@@ -71,11 +71,13 @@ const within = (parent, child) => {
 // and archived runs resolve after the worktree is removed.
 function projectRoot(repositoryRoot) {
   try {
-    const [primary, ...linked] = worktrees(repositoryRoot);
+    // Worktree paths are native-canonical; a short-name or differently cased root must match them.
+    const root = realpathSync.native(repositoryRoot);
+    const [primary, ...linked] = worktrees(root);
     if (primary.bare || primary.prunable || !present(primary.path)) return repositoryRoot;
-    const owner = linked.filter(entry => within(entry.path, repositoryRoot))
+    const owner = linked.filter(entry => within(entry.path, root))
       .sort((first, second) => second.path.length - first.path.length)[0];
-    return owner ? join(primary.path, relative(owner.path, repositoryRoot)) : repositoryRoot;
+    return owner ? join(primary.path, relative(owner.path, root)) : repositoryRoot;
   } catch { return repositoryRoot; }
 }
 

@@ -450,6 +450,35 @@ These commands validate the package without external services. They do not repla
 target-service tests or actual Jira/ArgoCD connectivity checks. When changing skills,
 also run the [Pressure scenarios](tests/scenarios/pressure.md).
 
+### Local SDLC run dashboard
+
+![Local SDLC run dashboard demo: approval filter, workspace selection, session detail drawer, and verification detail](docs/assets/session-sdlc-dashboard-demo.gif)
+
+_Recorded with synthetic demo data. The flow shows the approval-waiting filter → workspace
+selection → a session's "details" drawer → run progress, gates, and skill/review/verification
+summary → unit-test detail → next session → group by run._
+
+Run `npm run dashboard` and open the `127.0.0.1` URL printed in the terminal. The
+dashboard reads supported local GitHub Copilot CLI, Claude Code, and Codex session
+files and SDLC run evidence from their workspaces. Session content is not uploaded;
+unsupported local formats may be omitted or shown as warnings. Sessions link to a
+run automatically from harness tool activity (a command or file path that touches
+`docs/sdlc/<ID>/state.json` or other run files); a session that moves between runs
+links to the latest one. You can associate unlinked sessions manually or override an
+automatic link. The skill, review, and verification summary shows only per-skill call
+counts, review blocking totals, and the latest unit/API/E2E check outcomes. The
+dashboard displays approval status but cannot approve gates or change run state.
+
+The page refreshes automatically every 60 seconds by default. The interval selector in
+the header offers auto 10s, 30s, 1 min, 5 min, or manual, and the browser remembers your
+choice. The ↻ (refresh now) button reloads immediately in any mode.
+
+The same command works in a macOS terminal and in Windows PowerShell; stop it with
+`Ctrl+C`. Sessions are read from `.copilot`, `.claude`, and `.codex` in your home
+directory (`%USERPROFILE%\.copilot` and so on, on Windows). Manual links are saved to
+`~/Library/Application Support/ai-native-harness/dashboard.json` on macOS and
+`%APPDATA%\ai-native-harness\dashboard.json` on Windows.
+
 ### Maintaining the harness: `harness-dev`
 
 Use [`harness-dev`](.agents/skills/harness-dev/SKILL.md) in this source repository to improve the harness itself. It is not installed as a skill in consuming projects. For example, if a retrospective proposes changing an approval rule, ask: “Read `harness-dev` and check how this change would affect tickets already in progress.”

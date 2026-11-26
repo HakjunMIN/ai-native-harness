@@ -134,6 +134,16 @@ run 전용 워크트리(`git worktree`, Git 공용 디렉터리의 잠금 디렉
 산출물을 커밋하지 않은 상태에서 run 워크트리에서 세션을 열면 훅이 적용되지 않을 수
 있습니다. 이 동작은 호스트별로 실행 확인하지 않았습니다.
 
+로컬 SDLC run 대시보드(`npm run dashboard`)는 macOS에서 실제 세션 저장소로 실행해
+확인했습니다. CI는 Ubuntu·macOS의 `npm test`와 Windows `dashboard-windows` 작업
+(PowerShell, Node 22)에서 대시보드 테스트를 실행합니다. Windows에서는 POSIX git shim을
+쓰는 캐시 테스트 1개를 건너뜁니다. Windows 사용자 PC의 실제 세션 저장소로 실행하는
+확인은 하지 않았습니다. Codex가 Windows에서 기록하는 명령 형식(PowerShell
+`Get-Content`, `pwsh -Command` 등)은 실제 로그가 아니라 추정한 형식으로 테스트합니다.
+Windows의 `child.kill`은 강제 종료이므로 CI는 프로세스 종료 여부만 확인하고 `Ctrl+C`
+정상 종료는 확인하지 않습니다. `COPILOT_HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`으로
+옮긴 세션 저장소는 운영체제와 관계없이 읽지 않습니다.
+
 Copilot legacy manifest는 선택적 플러그인 설치용으로 유지합니다. Agent Plugins
 1.0의 고정 component 경로와 섞지 않습니다. Claude는 기본 `agents/`, `skills/`,
 `hooks/hooks.json` 검색을 사용하고 프로젝트 설치의 Copilot은 `.github/agents`,
