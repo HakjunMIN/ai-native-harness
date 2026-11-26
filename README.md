@@ -391,6 +391,23 @@ npm run validate
 외부 서비스 없이 패키지를 검증하며, 대상 서비스의 테스트나 실제 Jira/ArgoCD 연결을
 대신하지 않습니다. 스킬 변경 시 [압박 시나리오](tests/scenarios/pressure.md)도 실행합니다.
 
+### 로컬 SDLC run 대시보드
+
+`npm run dashboard`를 실행한 뒤 터미널에 표시되는 `127.0.0.1` 주소를 브라우저에서 엽니다.
+대시보드는 지원되는 GitHub Copilot CLI, Claude Code, Codex의 로컬 세션 파일과 해당
+워크스페이스의 SDLC run 증거를 읽기 전용으로 표시합니다. 세션 내용은 외부로 업로드되지
+않으며, 지원되지 않는 로컬 형식은 누락되거나 경고로 표시될 수 있습니다. 세션은 하네스
+도구 실행 기록(예: `docs/sdlc/<ID>/state.json`을 다루는 명령이나 파일 경로)으로 run에 자동
+연결되며, 여러 run을 오간 세션은 가장 최근 run에 연결됩니다. 연결되지 않은 세션은 직접 연결할
+수 있고, 자동 연결도 수동으로 변경할 수 있습니다. 스킬 · 리뷰 · 검증 요약은 스킬별 호출 횟수,
+리뷰 차단 건수, 단위/API/E2E 검증의 최근 결과만 압축해 보여 줍니다. 대시보드는 승인 상태를
+표시하지만 승인하거나 run 상태를 변경하지 않습니다.
+
+macOS 터미널과 Windows PowerShell에서 같은 명령으로 실행하고 `Ctrl+C`로 종료합니다. 세션은
+사용자 홈 디렉터리의 `.copilot`, `.claude`, `.codex`(Windows는 `%USERPROFILE%\.copilot` 등)에서
+읽습니다. 수동 연결 설정은 macOS에서는 `~/Library/Application Support/ai-native-harness/dashboard.json`,
+Windows에서는 `%APPDATA%\ai-native-harness\dashboard.json`에 저장됩니다.
+
 ### 하네스 유지보수: `harness-dev`
 
 [`harness-dev`](.agents/skills/harness-dev/SKILL.md)는 이 원본 저장소에서 하네스 자체를 개선할 때 쓰는 스킬입니다. 소비 프로젝트에 설치되는 스킬은 아닙니다. 예를 들어 회고에서 승인 절차 개선안이 나왔다면, 이 저장소에서 “`harness-dev`를 읽고 이 변경이 진행 중인 티켓에 미칠 영향을 검토해 줘”라고 요청합니다.

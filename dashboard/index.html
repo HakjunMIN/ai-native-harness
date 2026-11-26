@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>AI Native Harness · Run Dashboard</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script type="module" src="/assets/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="AI Native Harness dashboard">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span>AI Native Harness</span>
+        <span class="brand-divider" aria-hidden="true">/</span>
+        <span class="brand-subtitle">Run dashboard</span>
+      </a>
+      <div class="topbar-status">
+        <span class="live-indicator" aria-hidden="true"></span>
+        <span id="refresh-status" aria-live="polite">로컬 데이터 연결 중</span>
+        <button id="refresh-button" class="icon-button" type="button" aria-label="지금 새로고침" title="지금 새로고침">
+          <span aria-hidden="true">↻</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="dashboard-grid" class="dashboard-grid">
+      <section class="pane workspace-pane" aria-labelledby="workspace-heading">
+        <div class="pane-heading">
+          <div>
+            <p class="eyebrow">LOCAL PROJECTS</p>
+            <h1 id="workspace-heading">워크스페이스</h1>
+          </div>
+          <span id="workspace-count" class="count-pill">0</span>
+        </div>
+        <p class="pane-hint">하네스 run이 있는 로컬 Git 디렉터리</p>
+        <div data-region="workspace-list" class="workspace-list" aria-label="워크스페이스 목록"></div>
+        <div id="workspace-empty" class="empty-state compact" hidden>
+          <span class="empty-icon" aria-hidden="true">◇</span>
+          <p>표시할 워크스페이스가 없습니다.</p>
+          <span>로컬 세션과 SDLC run을 찾지 못했습니다.</span>
+        </div>
+      </section>
+
+      <section class="pane session-pane" aria-labelledby="session-heading">
+        <div class="pane-heading">
+          <div>
+            <p class="eyebrow">SESSION OVERVIEW</p>
+            <h2 id="session-heading">세션</h2>
+          </div>
+          <span id="session-count" class="count-pill">0</span>
+        </div>
+        <div id="workspace-caption" class="selected-workspace-caption">모든 워크스페이스</div>
+        <div id="attention-filters" class="attention-filters" aria-label="세션 주의 필터"></div>
+        <div class="session-toolbar">
+          <div id="host-filters" class="host-filters" role="group" aria-label="호스트 필터"></div>
+          <label class="sr-only" for="grid-sort">세션 정렬</label>
+          <select id="grid-sort" class="grid-sort" aria-label="세션 정렬">
+            <option value="attention">주의 우선</option>
+            <option value="recent">최근 활동</option>
+          </select>
+          <button id="group-mode" class="button button-quiet" type="button" aria-pressed="false">run별 묶기</button>
+        </div>
+        <div id="grid-summary" class="grid-summary"></div>
+        <div data-region="session-grid" class="session-grid" aria-label="세션 그리드" tabindex="-1"></div>
+        <div class="load-more-row">
+          <button id="load-more" class="button button-quiet" type="button" hidden>더 보기</button>
+        </div>
+        <div id="session-empty" class="empty-state compact" hidden>
+          <span class="empty-icon" aria-hidden="true">◌</span>
+          <p>세션이 없습니다.</p>
+          <span>지원되는 Copilot, Claude Code, Codex 로컬 세션을 표시합니다.</span>
+        </div>
+      </section>
+
+      <aside id="session-drawer" class="pane detail-pane session-drawer" data-region="session-drawer" aria-label="세션 상세" tabindex="-1" hidden>
+        <div class="drawer-toolbar">
+          <span id="drawer-position" class="drawer-position"></span>
+          <div class="drawer-navigation">
+            <button id="drawer-previous" class="icon-button" type="button" aria-label="이전 세션" title="이전 세션">‹</button>
+            <button id="drawer-next" class="icon-button" type="button" aria-label="다음 세션" title="다음 세션">›</button>
+            <button id="drawer-close" class="button button-quiet" type="button">닫기 <kbd>Esc</kbd></button>
+          </div>
+        </div>
+        <div class="detail-topline">
+          <div class="detail-title">
+            <p class="eyebrow">SDLC RUN INSPECTOR</p>
+            <h2 id="detail-heading" tabindex="-1">SDLC 실행</h2>
+            <p id="run-subtitle" class="detail-subtitle">세션을 선택하면 연결된 run의 진행 상태를 표시합니다.</p>
+          </div>
+          <div id="phase-chip" class="phase-chip" hidden></div>
+        </div>
+
+        <div id="dashboard-error" class="error-banner" role="alert" hidden></div>
+        <div id="snapshot-warnings" class="warning-list" aria-live="polite"></div>
+
+        <div class="attention-stack">
+          <div id="approval-banner" class="attention-banner approval-banner" role="status" hidden>
+            <span class="attention-icon" aria-hidden="true">!</span>
+            <div class="attention-copy">
+              <strong>사람 승인 대기</strong>
+              <span id="approval-copy"></span>
+            </div>
+            <span class="attention-tag">APPROVAL</span>
+          </div>
+          <div id="question-banner" class="attention-banner question-banner" role="status" hidden>
+            <span class="attention-icon" aria-hidden="true">?</span>
+            <div class="attention-copy">
+              <strong>대화 질문</strong>
+              <span id="question-copy"></span>
+            </div>
+            <span class="attention-tag">SESSION</span>
+          </div>
+        </div>
+
+        <div id="association-panel" class="association-panel" hidden>
+          <div>
+            <strong id="association-title"></strong>
+            <span id="association-copy"></span>
+          </div>
+          <label class="sr-only" for="run-select">연결할 SDLC run</label>
+          <select id="run-select" aria-label="연결할 SDLC run"></select>
+          <button id="link-run-button" class="button button-primary" type="button">연결</button>
+          <button id="unlink-run-button" class="button button-quiet" type="button" hidden>저장된 연결 제거</button>
+        </div>
+
+        <div id="run-content" hidden>
+          <div class="run-overview">
+            <div class="overview-heading">
+              <div>
+                <p class="eyebrow">RUN PROGRESS</p>
+                <h3 id="run-title"></h3>
+              </div>
+              <span id="run-validity" class="validity-chip"></span>
+            </div>
+            <div id="phase-track" class="phase-track" aria-label="SDLC 단계"></div>
+            <div id="gate-list" class="gate-list" aria-label="승인 및 검증 게이트"></div>
+          </div>
+
+          <div class="activity-heading">
+            <div>
+              <p class="eyebrow">OBSERVED WORK</p>
+              <h3>스킬 · 리뷰 · 검증 요약</h3>
+            </div>
+            <p id="activity-headline" class="activity-headline"></p>
+          </div>
+
+          <div class="activity-layout">
+            <div id="activity-graph" data-region="sdlc-detail" class="activity-graph" role="group" aria-label="스킬, 리뷰, 검증 요약"></div>
+            <aside id="event-detail" data-region="event-detail" class="event-inspector" aria-labelledby="inspector-heading">
+              <div class="inspector-heading">
+                <div>
+                  <p class="eyebrow">SELECTED EVIDENCE</p>
+                  <h3 id="inspector-heading">상세 정보</h3>
+                </div>
+                <span id="inspector-source" class="source-chip">—</span>
+              </div>
+              <div id="inspector-empty" class="inspector-empty">요약 항목을 선택하면 최근 기록과 근거를 확인할 수 있습니다.</div>
+              <div id="inspector-content" hidden>
+                <h4 id="inspector-title"></h4>
+                <div id="inspector-meta" class="inspector-meta"></div>
+                <p id="inspector-excerpt" class="inspector-excerpt"></p>
+                <div id="inspector-extra" class="inspector-extra"></div>
+              </div>
+            </aside>
+          </div>
+
+          <div id="run-warnings" class="warning-list run-warnings"></div>
+        </div>
+
+        <div id="detail-empty" class="empty-state detail-empty">
+          <span class="empty-icon" aria-hidden="true">⌁</span>
+          <p>세션을 선택해 SDLC 실행을 확인하세요.</p>
+          <span>각 run의 승인 게이트, 크로스리뷰, TDD 및 테스트 근거를 한곳에 모읍니다.</span>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer-note">
+      <span>로컬 전용 · 읽기 전용</span>
+      <span>대시보드는 승인하거나 run 상태를 변경하지 않습니다.</span>
+    </footer>
+  </body>
+</html>

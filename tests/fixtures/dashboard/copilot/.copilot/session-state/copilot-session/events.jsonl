@@ -1,0 +1,10 @@
+{"type":"session.start","id":"start-1","timestamp":"2026-11-26T10:00:00.000Z","data":{"sessionId":"copilot-session","startTime":"2026-11-26T10:00:00.000Z","context":{"cwd":"/tmp/dashboard-fixture/copilot"}}}
+{"type":"user.message","id":"user-1","timestamp":"2026-11-26T10:01:00.000Z","data":{"content":"Can you run TDD, cross-review, API tests, and E2E tests?"}}
+{"type":"assistant.message","id":"assistant-1","timestamp":"2026-11-26T10:02:00.000Z","data":{"content":"I will run the requested verification steps."}}
+{"type":"tool.execution_start","id":"skill-1","timestamp":"2026-11-26T10:03:00.000Z","data":{"toolCallId":"call-skill-1","toolName":"skill","arguments":{"name":"test-driven-development"}}}
+{"type":"tool.execution_start","id":"skill-2","timestamp":"2026-11-26T10:04:00.000Z","data":{"toolCallId":"call-skill-2","toolName":"skill","arguments":{"name":"cross-review"}}}
+{"type":"tool.execution_start","id":"tool-1","timestamp":"2026-11-26T10:05:00.000Z","data":{"toolCallId":"call-1","toolName":"shell","arguments":{"command":"npm run test:api"}}}
+{"type":"tool.execution_complete","id":"tool-2","timestamp":"2026-11-26T10:05:01.000Z","data":{"toolCallId":"call-1","success":true,"result":{"content":"API tests passed"}}}
+{"type":"tool.execution_start","id":"tool-3","timestamp":"2026-11-26T10:06:00.000Z","data":{"toolCallId":"call-2","toolName":"shell","arguments":{"command":"npm run test:e2e"}}}
+{"type":"tool.execution_complete","id":"tool-4","timestamp":"2026-11-26T10:06:01.000Z","data":{"toolCallId":"call-2","success":true,"result":{"content":"E2E tests passed"}}}
+{"type":"permission.requested","id":"approval-1","timestamp":"2026-11-26T10:07:00.000Z","data":{"toolName":"shell","summary":"Allow a test command to run?"}}
