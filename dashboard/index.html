@@ -30,6 +30,11 @@
       </div>
     </header>
 
+    <section id="global-status" class="global-status" aria-label="대시보드 상태" hidden>
+      <div id="dashboard-error" class="error-banner" role="alert" hidden></div>
+      <div id="snapshot-warnings" class="warning-list" aria-live="polite"></div>
+    </section>
+
     <main id="dashboard-grid" class="dashboard-grid">
       <section class="pane workspace-pane" aria-labelledby="workspace-heading">
         <div class="pane-heading">
@@ -97,8 +102,7 @@
           <div id="phase-chip" class="phase-chip" hidden></div>
         </div>
 
-        <div id="dashboard-error" class="error-banner" role="alert" hidden></div>
-        <div id="snapshot-warnings" class="warning-list" aria-live="polite"></div>
+        <div id="session-warnings" class="warning-list" aria-live="polite" hidden></div>
 
         <div class="attention-stack">
           <div id="approval-banner" class="attention-banner approval-banner" role="status" hidden>

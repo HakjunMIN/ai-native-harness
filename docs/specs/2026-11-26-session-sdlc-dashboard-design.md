@@ -159,3 +159,20 @@ Run the same dashboard with the same command and data sources on macOS and on Wi
 - Dashboard tests canonicalize fixture repositories with `realpathSync.native`. `scripts/run-workspace.mjs` now does the same for run starts and listing, which fixes the short-name mismatch in `openRunWorkspace` that failed the `harness-revision` and `local-intake` tests on Windows CI. Resumes canonicalize too: `projectRoot` in `scripts/harness.mjs` and the state and repository paths in `scripts/workspaces.mjs` use `realpathSync.native`, so a short-name or differently cased state path still finds the snapshot cache in the primary checkout instead of failing with "Locked harness snapshot is missing".
 - The dashboard CLI installs its `SIGINT`/`SIGTERM` handlers before printing its URL, so a signal sent as soon as the URL appears closes the server cleanly instead of killing the process.
 - Deferred: unwrapping shell wrappers also counts SKILL.md writes such as `bash -lc "cat > …/SKILL.md"` or `sed -i` as reads.
+
+## Revision — PR review fixes
+
+### Design
+
+- **Approval wait:** a run is waiting for approval only when its first gate that has not passed is a human gate (G1, G2, G5b) with status `pending`, and the run is not `done` (a completed spike waits for nobody). The session filter, attention ranking, workspace count, and drawer banner all use this one rule; later human gates are future work, not waits.
+- **Results stay with their run:** a tool or skill result that answers an earlier event (`relatedTo`) belongs to that event's run and never moves the session's current run. A session links to the run it touched last, so returning to an earlier run makes it current again.
+- **Cross-session identity:** run activity scopes event ids and `relatedTo` references as `<host>/<session>/<id>`, so sessions whose hosts reuse record ids keep their own results inside a shared run. Session timelines keep the host's ids.
+- **Verification outcome:** each check shows the outcome of its newest run; an older result never stands in for a newer run without one. A command's exit status proves a check only through an `&&` chain: success means every step passed, and failure is pinned to a check only when every other step is setup (`cd`, `pushd`, `export`). Commands using `;`, `||`, `|`, a background `&`, or several lines leave their checks unknown; redirections such as `2>&1` do not.
+- **Reviews:** each review keeps its stage (`plan`, `slice` with its slice id, `final`) separately from its axis (`plan`, `spec`, `standards`, `combined`, `final`), and the review lane groups by stage. A clean review shows as passed only when the run is valid and `validateState` checked it — its gate passed (G2, G4) or its slice is `done`. Open blocking findings show as failed even before that check; anything else stays unknown. Blocking findings a human accepted as residual findings (`acceptance` with follow-ups) show as passed once that check has run, labeled `(사람 수용)`.
+- **Diagnostics:** the API error and snapshot warnings sit in an always-visible status area under the top bar, so they explain an empty grid with no session to open. The drawer lists the selected session's own warnings (truncated or unsupported transcripts, read failures, stale links), including when it has no linked run.
+- **Manual links:** saving or removing a link reads, changes, and atomically rewrites the config under a lock directory beside it (`dashboard.json.lock`, holder pid inside; abandoned locks are reclaimed), so concurrent saves from one or several dashboards never drop each other's changes. A client that disconnects while sending a link request does not stop the server.
+
+### Decisions and known limits
+
+- Treating `cd`/`pushd`/`export` as unable to fail is a heuristic: if a `cd` fails, the check after it is shown as failed.
+- An unchecked review with blocking findings shows as failed, because hiding open blockers would overstate progress; its provenance and evidence are not yet validated at that point.

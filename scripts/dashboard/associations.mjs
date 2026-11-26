@@ -2,6 +2,7 @@ import { chmodSync, lstatSync, mkdirSync, readFileSync, renameSync, unlinkSync, 
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { withDirectoryLock } from '../run-workspace.mjs';
 
 const hosts = new Set(['copilot', 'claude', 'codex']);
 const runIdPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,71}$/;
@@ -54,8 +55,9 @@ function parseConfig(text) {
   return associations;
 }
 
-export async function loadAssociations(options = {}) {
-  const path = configPath(options);
+const lockWaitMs = 10_000;
+
+function readAssociations(path) {
   let metadata;
   try { metadata = lstatSync(path); } catch (error) {
     if (error.code === 'ENOENT') return [];
@@ -63,6 +65,22 @@ export async function loadAssociations(options = {}) {
   }
   if (metadata.isSymbolicLink() || !metadata.isFile()) throw new Error('Dashboard association config must be a regular file');
   return parseConfig(readFileSync(path, 'utf8'));
+}
+
+export async function loadAssociations(options = {}) {
+  return readAssociations(configPath(options));
+}
+
+// Saves and removals are read-modify-write; one lock beside the config serializes them across
+// calls and dashboard processes, and the whole transaction runs synchronously while it is held.
+function updateAssociations(options, change) {
+  const path = configPath(options);
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  withDirectoryLock(`${path}.lock`, () => {
+    const current = readAssociations(path);
+    const next = change(current);
+    if (next) atomicWrite(path, next);
+  }, lockWaitMs, `Timed out waiting for another dashboard to update ${path}`);
 }
 
 function atomicWrite(path, associations) {
@@ -85,19 +103,20 @@ function atomicWrite(path, associations) {
 
 export async function saveAssociation({ homeDir = homedir(), env = process.env, host, sessionId, workspaceRoot, runId }) {
   const association = validateAssociation({ host, sessionId, workspaceRoot, runId });
-  const associations = await loadAssociations({ homeDir, env });
-  const index = associations.findIndex(item => item.host === host && item.sessionId === sessionId);
-  if (index < 0) associations.push(association);
-  else associations[index] = association;
-  atomicWrite(configPath({ homeDir, env }), associations);
+  updateAssociations({ homeDir, env }, associations => {
+    const index = associations.findIndex(item => item.host === host && item.sessionId === sessionId);
+    if (index < 0) associations.push(association);
+    else associations[index] = association;
+    return associations;
+  });
 }
 
 export async function removeAssociation({ homeDir = homedir(), env = process.env, host, sessionId }) {
   if (!hosts.has(host) || typeof sessionId !== 'string' || !sessionId.trim()) {
     throw new Error('Invalid dashboard association identity');
   }
-  const associations = await loadAssociations({ homeDir, env });
-  const filtered = associations.filter(item => item.host !== host || item.sessionId !== sessionId);
-  if (filtered.length === associations.length) return;
-  atomicWrite(configPath({ homeDir, env }), filtered);
+  updateAssociations({ homeDir, env }, associations => {
+    const filtered = associations.filter(item => item.host !== host || item.sessionId !== sessionId);
+    return filtered.length === associations.length ? null : filtered;
+  });
 }

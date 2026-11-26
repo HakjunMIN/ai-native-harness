@@ -156,7 +156,14 @@ export function createDashboardHandler({
           send(response, 415, 'JSON content type required');
           return;
         }
-        const parsed = await readJson(request);
+        let parsed;
+        try {
+          parsed = await readJson(request);
+        } catch {
+          // The client aborted the body; its socket is gone, so there is nobody to answer.
+          if (!response.destroyed) send(response, 400, 'Incomplete request body');
+          return;
+        }
         if (parsed.status) {
           send(response, parsed.status, parsed.status === 413 ? 'Request body too large' : 'Invalid JSON body');
           return;

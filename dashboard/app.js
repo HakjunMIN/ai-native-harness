@@ -101,8 +101,16 @@ function sessionRun(workspace, session) {
   return session?.runId ? workspace.runs.find(run => run.id === session.runId) ?? null : null;
 }
 
+// Gates pass in order, so only the first unpassed gate can be waiting; later human gates are
+// merely future work, and a finished run (including a completed spike) waits for nobody.
+export function getAwaitingApprovalGate(run) {
+  if (!run || run.phase === 'done') return null;
+  const next = (run.gates ?? []).find(gate => gate.status !== 'passed');
+  return next?.owner === 'human' && next.status === 'pending' ? next : null;
+}
+
 function isApprovalWaiting(run) {
-  return (run?.gates ?? []).some(gate => gate.owner === 'human' && gate.status === 'pending');
+  return getAwaitingApprovalGate(run) !== null;
 }
 
 function isSessionFailed(session, run) {
@@ -229,8 +237,7 @@ function statusLabel(status) {
 }
 
 function gateCounts(workspace) {
-  const approvals = workspace.runs.flatMap(run => run.gates ?? [])
-    .filter(gate => gate.owner === 'human' && gate.status === 'pending').length;
+  const approvals = workspace.runs.filter(isApprovalWaiting).length;
   const questions = workspace.sessions.reduce((count, session) => count + (session.pendingQuestions?.length ?? 0), 0);
   return { approvals, questions };
 }
@@ -614,16 +621,26 @@ function handleDrawerKeydown(event) {
   }
 }
 
-function renderSnapshotWarnings() {
-  const list = $('snapshot-warnings');
+function renderWarnings(id, warnings) {
+  const list = $(id);
   list.replaceChildren();
-  for (const warning of (state.snapshot?.warnings ?? []).slice(0, 4)) {
-    list.append(node('div', 'warning-item', warning));
-  }
+  for (const warning of warnings.slice(0, 4)) list.append(node('div', 'warning-item', warning));
+  return list;
+}
+
+// Global diagnostics sit outside the drawer: they explain an empty grid with no session to open.
+function syncGlobalStatus() {
+  setHidden('global-status', $('dashboard-error').hidden && !$('snapshot-warnings').childElementCount);
+}
+
+function renderSnapshotWarnings() {
+  renderWarnings('snapshot-warnings', state.snapshot?.warnings ?? []);
+  syncGlobalStatus();
 }
 
 function renderAttention(workspace, session, run) {
-  const pendingGates = (run?.gates ?? []).filter(gate => gate.owner === 'human' && gate.status === 'pending');
+  const awaiting = getAwaitingApprovalGate(run);
+  const pendingGates = awaiting ? [awaiting] : [];
   const question = [...(session?.pendingQuestions ?? [])].sort((a, b) => Date.parse(b.at ?? '') - Date.parse(a.at ?? ''))[0];
   setHidden('approval-banner', pendingGates.length === 0);
   if (pendingGates.length) {
@@ -728,12 +745,18 @@ function eventTime(value) {
   return Number.isFinite(time) ? time : 0;
 }
 
+// Equal timestamps keep record order, so the later record counts as the more recent one.
 function latestFirst(items) {
-  return [...items].sort((a, b) => eventTime(b.at) - eventTime(a.at));
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => eventTime(b.item.at) - eventTime(a.item.at) || b.index - a.index)
+    .map(({ item }) => item);
 }
 
+// The newest run decides; an older result never stands in for a run that has none yet.
 function definitiveOutcome(occurrences) {
-  return latestFirst(occurrences).find(item => item.outcome === 'passed' || item.outcome === 'failed')?.outcome ?? 'unknown';
+  const outcome = latestFirst(occurrences)[0]?.outcome;
+  return outcome === 'passed' || outcome === 'failed' ? outcome : 'unknown';
 }
 
 function combinedOutcome(outcomes) {
@@ -741,25 +764,43 @@ function combinedOutcome(outcomes) {
   return outcomes.length && outcomes.every(outcome => outcome === 'passed') ? 'passed' : 'unknown';
 }
 
+const SETUP_COMMAND = /^(?:cd|pushd|export)\b/;
+// `;`, `||`, `|`, a background `&` and newlines let the shell's exit status come from another
+// command; redirections such as `2>&1`, `>&2` and `&>` do not.
+const OPAQUE_STATUS = /;|\|\||\||\n|(?<![&>])&(?![&>])/;
+
+const unquoted = command => command.replace(/'[^']*(?:'|$)|"[^"]*(?:"|$)/g, ' ');
+
 function commandSegments(command) {
-  return command
-    .replace(/'[^']*(?:'|$)|"[^"]*(?:"|$)/g, ' ')
-    .split(/;|&&|\|\||\||\n/)
+  return unquoted(command)
+    .split(/;|&&|\|\||\||\n|(?<![&>])&(?![&>])/)
     .map(segment => segment.replace(/^[\s(]+/, '').replace(/^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/, '').trim())
-    .filter(segment => segment && !INSPECTION_COMMAND.test(segment));
+    .filter(Boolean);
+}
+
+function segmentCheck(segment) {
+  if (INSPECTION_COMMAND.test(segment)) return null;
+  if (TEST_RUNNER.test(segment)) return /e2e|playwright|cypress/i.test(segment) ? 'e2e' : /api|newman|hurl/i.test(segment) ? 'api' : 'unit';
+  return BUILD_CHECK.test(segment) ? 'build' : null;
 }
 
 function classifyCommand(command) {
   if (typeof command !== 'string') return [];
-  const categories = new Set();
-  for (const segment of commandSegments(command)) {
-    if (TEST_RUNNER.test(segment)) {
-      categories.add(/e2e|playwright|cypress/i.test(segment) ? 'e2e' : /api|newman|hurl/i.test(segment) ? 'api' : 'unit');
-    } else if (BUILD_CHECK.test(segment)) {
-      categories.add('build');
-    }
+  return [...new Set(commandSegments(command).map(segmentCheck).filter(Boolean))];
+}
+
+// A command's exit status speaks for a check only through an `&&` chain: success means every
+// step succeeded, and failure is pinned to a check only when every other step is setup.
+function checkOutcomes(command, outcome) {
+  const checks = classifyCommand(command);
+  const proven = new Map(checks.map(check => [check, 'unknown']));
+  if (!checks.length || OPAQUE_STATUS.test(unquoted(command))) return proven;
+  if (outcome === 'passed') for (const check of checks) proven.set(check, 'passed');
+  if (outcome === 'failed') {
+    const steps = commandSegments(command).filter(segment => !SETUP_COMMAND.test(segment));
+    if (steps.length === 1 && checks.length === 1) proven.set(checks[0], 'failed');
   }
-  return [...categories];
+  return proven;
 }
 
 function makeNode(lane, id, title, occurrences, extra = {}) {
@@ -791,11 +832,18 @@ function skillNodes(events) {
     .map(([name, occurrences]) => makeNode('skill', name, name, occurrences, { outcome: 'none', detail: `${occurrences.length}회 호출` }));
 }
 
+// Snapshots without a stage predate it; their axis named the stage, or `slice-<id>` for slices.
+function reviewStage(review) {
+  if (typeof review.stage === 'string') return review.stage;
+  const axis = String(review.axis ?? 'review');
+  if (axis.startsWith('slice-') || axis === 'spec' || axis === 'standards') return 'slice';
+  return axis;
+}
+
 function reviewNodes(reviews) {
   const groups = new Map();
   for (const review of reviews) {
-    const axis = String(review.axis ?? 'review');
-    const group = axis.startsWith('slice-') ? 'slice' : axis;
+    const group = reviewStage(review);
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(review);
   }
@@ -807,7 +855,12 @@ function reviewNodes(reviews) {
       return makeNode('review', group, reviewTitles[group] ?? `${group} 리뷰`, entries.map(review => ({
         at: null,
         outcome: review.status ?? 'unknown',
-        label: `${review.axis} · ${review.reviewerType ?? 'unknown'}${Number.isInteger(review.blocking) ? ` · 차단 ${review.blocking}` : ''}`
+        label: [
+          review.sliceId !== null && review.sliceId !== undefined ? `Slice ${review.sliceId}` : null,
+          review.axis,
+          review.reviewerType ?? 'unknown',
+          Number.isInteger(review.blocking) ? `차단 ${review.blocking}${review.accepted ? ' (사람 수용)' : ''}` : null
+        ].filter(Boolean).join(' · ')
       })), {
         outcome: combinedOutcome(entries.map(review => review.status ?? 'unknown')),
         blocking,
@@ -842,10 +895,11 @@ function verificationNodes(events, verification) {
   for (const event of events) {
     if (event.kind !== 'tool' || getRelatedIds(event).length) continue;
     const result = results.get(event.id);
-    for (const check of classifyCommand(event.command)) {
+    const outcome = result?.outcome && result.outcome !== 'unknown' ? result.outcome : event.outcome ?? 'unknown';
+    for (const [check, checkOutcome] of checkOutcomes(event.command, outcome)) {
       groups.get(check).push({
         at: event.at ?? null,
-        outcome: result?.outcome && result.outcome !== 'unknown' ? result.outcome : event.outcome ?? 'unknown',
+        outcome: checkOutcome,
         label: event.command,
         source: event.source
       });
@@ -991,6 +1045,8 @@ function renderActivity(run) {
 function renderRun(workspace, session, run) {
   const hasSession = Boolean(session);
   setHidden('session-drawer', !hasSession);
+  const sessionWarnings = hasSession ? session.warnings ?? [] : [];
+  renderWarnings('session-warnings', sessionWarnings).hidden = sessionWarnings.length === 0;
   setHidden('detail-empty', Boolean(run));
   setHidden('run-content', !run);
   setHidden('phase-chip', !run);
@@ -1034,6 +1090,7 @@ function renderError(message) {
   const banner = $('dashboard-error');
   setText(banner, message ?? '');
   banner.hidden = !message;
+  syncGlobalStatus();
   if (message) setText($('refresh-status'), '데이터를 불러오지 못했습니다');
 }
 

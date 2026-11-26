@@ -1527,6 +1527,26 @@ h2 {
   color: #ffb7b1;
 }
 
+.global-status {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px 0;
+}
+
+.global-status .warning-list,
+.global-status .error-banner {
+  margin: 0;
+}
+
+.global-status .warning-item,
+.global-status .error-banner {
+  font-size: 11px;
+}
+
+.global-status .warning-list:empty {
+  display: none;
+}
+
 .run-warnings {
   margin-top: 10px;
 }

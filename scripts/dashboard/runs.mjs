@@ -17,27 +17,39 @@ function evidencePaths(value) {
   });
 }
 
+// validateState checks a review only once the gate or slice holding it has passed, so a clean
+// review is reported as passed only then; open blocking findings are shown whether checked or not.
+// Blocking findings a human accepted (residual-finding acceptance) count as passed once checked.
 function reviewSummaries(state, valid) {
   const reviews = [];
-  const addReviews = (entries, source) => {
+  const addReviews = (entries, { stage, sliceId = null, validated }) => {
     if (!Array.isArray(entries)) return;
     for (const review of entries) {
       if (!object(review)) continue;
+      const blocking = Number.isInteger(review.blocking) ? review.blocking : null;
+      const accepted = Boolean(valid && validated && blocking > 0 && object(review.acceptance));
+      let status = 'unknown';
+      if (valid && blocking !== null) {
+        if (accepted) status = 'passed';
+        else if (blocking > 0) status = 'failed';
+        else if (validated) status = 'passed';
+      }
       reviews.push({
-        axis: typeof review.axis === 'string' ? review.axis : source,
+        stage,
+        sliceId,
+        axis: typeof review.axis === 'string' ? review.axis : stage,
         reviewerType: typeof review.reviewerType === 'string' ? review.reviewerType : 'unknown',
-        status: !valid || !Number.isInteger(review.blocking)
-          ? 'unknown'
-          : review.blocking === 0 ? 'passed' : 'failed',
-        blocking: Number.isInteger(review.blocking) ? review.blocking : null,
+        status,
+        blocking,
+        accepted,
         evidencePaths: evidencePaths(review.evidence ? [review.evidence] : [])
       });
     }
   };
-  addReviews(state.gates?.G2?.reviews, 'plan');
-  addReviews(state.gates?.G4?.reviews, 'final');
+  addReviews(state.gates?.G2?.reviews, { stage: 'plan', validated: state.gates?.G2?.status === 'passed' });
+  addReviews(state.gates?.G4?.reviews, { stage: 'final', validated: state.gates?.G4?.status === 'passed' });
   for (const slice of Array.isArray(state.slices) ? state.slices : []) {
-    if (object(slice)) addReviews(slice.reviews, `slice-${slice.id}`);
+    if (object(slice)) addReviews(slice.reviews, { stage: 'slice', sliceId: slice.id ?? null, validated: slice.status === 'done' });
   }
   return reviews;
 }

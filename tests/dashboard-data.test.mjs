@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { delimiter, join, resolve } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { startLocalText } from '../scripts/intake.mjs';
 import {
@@ -12,6 +13,7 @@ import {
 } from '../scripts/dashboard/associations.mjs';
 import { loadDashboardSnapshot } from '../scripts/dashboard/snapshot.mjs';
 import { loadRuns } from '../scripts/dashboard/runs.mjs';
+import { bindDiscovery } from './helpers/discovery.mjs';
 import { projectRepo } from './helpers/run-fixture.mjs';
 
 // Windows temp paths can carry 8.3 short names (RUNNER~1) that Git reports in long form.
@@ -58,6 +60,9 @@ const toolCall = (id, at, toolName, args) => ({
   data: { toolCallId: `${id}-call`, toolName, arguments: args }
 });
 const toolStart = (id, at, command) => toolCall(id, at, 'shell', { command });
+const toolDone = (id, at, success) => ({
+  type: 'tool.execution_complete', id: `${id}-done`, timestamp: at, data: { toolCallId: `${id}-call`, success }
+});
 
 test('loadRuns validates evidence and derives phase from gate state instead of the saved phase', async t => {
   const { repo, firstState } = runWorkspace(t);
@@ -72,6 +77,49 @@ test('loadRuns validates evidence and derives phase from gate state instead of t
   assert.equal(run.phase, 'discover');
   assert.equal(run.title, 'local-alpha');
   assert.equal(run.gates.find(gate => gate.id === 'G0').status, 'pending');
+});
+
+test('reviews keep their stage and axis and pass only once the record that validates them is done', async t => {
+  const { repo, firstState } = runWorkspace(t);
+  const root = dirname(firstState);
+  const state = JSON.parse(readFileSync(firstState, 'utf8'));
+  writeFileSync(join(root, 'observed.txt'), 'observed\n');
+  const evidence = { path: 'observed.txt', sha256: createHash('sha256').update('observed\n').digest('hex') };
+  const review = (axis, blocking) => ({
+    axis, authorFamily: 'openai', reviewerFamily: 'anthropic', authorModel: 'writer', reviewerModel: 'reader',
+    reviewerType: 'subagent', blocking, evidence
+  });
+  const approval = { actor: 'human', reference: 'session:approval-1', at: '2026-11-26T10:00:00Z' };
+  state.gates.G0 = { status: 'passed', evidence: [state.intake.request] };
+  state.gates.G1 = { status: 'passed', approval };
+  bindDiscovery(root, state);
+  const task = id => ({
+    id, title: `Show result ${id}`, goal: 'User sees the result', scope: ['Result'], nonGoals: ['Alerts'],
+    blockedBy: [], document: evidence,
+    acceptanceCriteria: [{ id: `T${id}-AC1`, requirement: 'AC-1', text: 'Show the result', checks: ['junit'] }]
+  });
+  const plan = JSON.stringify({ parent: state.ticket, tasks: [task(1), task(2)] });
+  writeFileSync(join(root, 'tasks.json'), plan);
+  state.taskPlan = { path: 'tasks.json', sha256: createHash('sha256').update(plan).digest('hex') };
+  state.gates.G2 = { status: 'passed', evidence: [state.taskPlan], approval, reviews: [review('plan', 0)] };
+  state.gates.G4.reviews = [review('final', 2)];
+  state.slices = [
+    { id: 1, status: 'done', attempts: 1, red: evidence, green: evidence, subjectHead: 'a'.repeat(40),
+      reviews: [review('spec', 0), { ...review('standards', 1), acceptance: { ...approval, followUps: ['Track the residual finding'] } }] },
+    { id: 2, status: 'pending', reviews: [review('spec', 0), review('standards', 1)] }
+  ];
+  writeFileSync(firstState, JSON.stringify(state));
+
+  const run = (await loadRuns(repo)).find(candidate => candidate.id === 'local-alpha');
+  assert.deepEqual(run.warnings, []);
+  assert.deepEqual(run.reviews.map(item => [item.stage, item.sliceId, item.axis, item.status, item.accepted]), [
+    ['plan', null, 'plan', 'passed', false],
+    ['final', null, 'final', 'failed', false],
+    ['slice', 1, 'spec', 'passed', false],
+    ['slice', 1, 'standards', 'passed', true],
+    ['slice', 2, 'spec', 'unknown', false],
+    ['slice', 2, 'standards', 'failed', false]
+  ]);
 });
 
 test('invalid evidence and malformed run state never produce passed gates', async t => {
@@ -142,6 +190,37 @@ test('local association config is keyed by host and session, replaceable, remova
   assert.deepEqual(await loadAssociations(options), [{
     host: 'claude', sessionId: 'session-1', workspaceRoot: resolve('/work/repo'), runId: 'local-alpha'
   }]);
+});
+
+test('association saves and removals never lose a concurrent change, even from another process', async t => {
+  const homeDir = homeDirectory(t);
+  const options = configOptions(homeDir);
+  const save = sessionId => saveAssociation({ ...options, host: 'copilot', sessionId, workspaceRoot: '/work/repo', runId: 'local-alpha' });
+  const ids = async () => (await loadAssociations(options)).map(item => item.sessionId).sort();
+  await Promise.all(['one', 'two', 'three'].map(save));
+  assert.deepEqual(await ids(), ['one', 'three', 'two']);
+  await Promise.all([removeAssociation({ ...options, host: 'copilot', sessionId: 'one' }), save('four')]);
+  assert.deepEqual(await ids(), ['four', 'three', 'two']);
+
+  // Another dashboard process holds the config lock; a save must wait for it instead of writing over it.
+  const configPath = join(options.configHome, 'dashboard.json');
+  const holder = spawn(process.execPath, ['-e', `
+    const fs = require('node:fs');
+    const [lock, config] = process.argv.slice(1);
+    fs.mkdirSync(lock); fs.writeFileSync(lock + '/pid', String(process.pid));
+    console.log('held');
+    setTimeout(() => {
+      console.log(fs.readFileSync(config, 'utf8').includes('"five"') ? 'written-while-held' : 'waited');
+      fs.rmSync(lock, { recursive: true, force: true });
+    }, 400);`, `${configPath}.lock`, configPath], { stdio: ['ignore', 'pipe', 'inherit'] });
+  let output = '';
+  holder.stdout.on('data', chunk => { output += chunk; });
+  const exited = new Promise(resolve => holder.once('exit', resolve));
+  await new Promise(resolve => holder.stdout.once('data', resolve));
+  await save('five');
+  await exited;
+  assert.match(output, /waited/);
+  assert.deepEqual(await ids(), ['five', 'four', 'three', 'two']);
 });
 
 test('unsupported association config versions fail visibly without overwriting the file', async t => {
@@ -269,8 +348,66 @@ test('a session that moves between runs links to the latest run and attributes a
   assert.equal(session.associationSource, 'activity');
   assert.equal(session.events.find(event => event.id === 'early-test').runId, null);
   const runEventIds = id => workspace.runs.find(run => run.id === id).events.map(event => event.id);
-  assert.deepEqual(runEventIds('local-alpha'), ['alpha-plan', 'alpha-api']);
-  assert.deepEqual(runEventIds('local-beta'), ['beta-switch', 'beta-e2e']);
+  assert.deepEqual(runEventIds('local-alpha'), ['copilot/moving/alpha-plan', 'copilot/moving/alpha-api']);
+  assert.deepEqual(runEventIds('local-beta'), ['copilot/moving/beta-switch', 'copilot/moving/beta-e2e']);
+});
+
+test('a late tool result stays with the run that started it and a return visit makes that run current', async t => {
+  const { repo } = runWorkspace(t);
+  const homeDir = homeDirectory(t);
+  writeCopilotSession(homeDir, {
+    id: 'returning',
+    cwd: repo,
+    records: [
+      toolStart('alpha-check', '2026-11-26T10:01:00.000Z', 'node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/local-alpha/state.json'),
+      toolStart('alpha-api', '2026-11-26T10:02:00.000Z', 'npm run test:api'),
+      toolStart('beta-check', '2026-11-26T10:03:00.000Z', 'node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/local-beta/state.json'),
+      toolDone('alpha-api', '2026-11-26T10:04:00.000Z', false),
+      toolStart('beta-e2e', '2026-11-26T10:05:00.000Z', 'npm run test:e2e'),
+      toolStart('alpha-again', '2026-11-26T10:06:00.000Z', 'node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/local-alpha/state.json')
+    ]
+  });
+  const snapshot = await loadDashboardSnapshot({ homeDir, env: { AI_NATIVE_HARNESS_CONFIG_HOME: join(homeDir, 'config') } });
+  const workspace = snapshot.workspaces[0];
+  const session = workspace.sessions.find(item => item.id === 'returning');
+  assert.equal(session.events.find(event => event.id === 'alpha-api-done').runId, 'local-alpha');
+  assert.equal(session.events.find(event => event.id === 'beta-e2e').runId, 'local-beta');
+  assert.equal(session.runId, 'local-alpha');
+  assert.deepEqual(session.runIds, ['local-beta', 'local-alpha']);
+  const runEvents = id => workspace.runs.find(run => run.id === id).events.map(event => event.id);
+  assert.ok(runEvents('local-alpha').some(id => id.endsWith('alpha-api-done')));
+  assert.ok(!runEvents('local-beta').some(id => id.endsWith('alpha-api-done')));
+});
+
+test('sessions reusing record ids keep their own tool results inside a shared run', async t => {
+  const { repo } = runWorkspace(t);
+  const homeDir = homeDirectory(t);
+  const session = (id, minute, success) => writeCopilotSession(homeDir, {
+    id,
+    cwd: repo,
+    records: [
+      toolStart('check', `2026-11-26T10:0${minute}:00.000Z`, 'node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/local-alpha/state.json'),
+      toolStart('api', `2026-11-26T10:0${minute}:10.000Z`, 'npm run test:api'),
+      toolDone('api', `2026-11-26T10:0${minute}:20.000Z`, success)
+    ]
+  });
+  session('first', 1, true);
+  session('second', 3, false);
+  const snapshot = await loadDashboardSnapshot({ homeDir, env: { AI_NATIVE_HARNESS_CONFIG_HOME: join(homeDir, 'config') } });
+  const run = snapshot.workspaces[0].runs.find(item => item.id === 'local-alpha');
+  const ids = run.events.map(event => event.id);
+  assert.equal(new Set(ids).size, ids.length);
+
+  const app = readFileSync(new URL('../dashboard/app.js', import.meta.url), 'utf8');
+  const { summarizeActivity } = await import(`data:text/javascript;base64,${Buffer.from(app).toString('base64')}`);
+  const api = summarizeActivity(run).lanes.flatMap(lane => lane.nodes).find(node => node.key === 'verification:api');
+  assert.deepEqual(api.occurrences.map(item => [item.at, item.outcome]).sort(), [
+    ['2026-11-26T10:01:10.000Z', 'passed'],
+    ['2026-11-26T10:03:10.000Z', 'failed']
+  ]);
+  for (const owner of snapshot.workspaces[0].sessions) {
+    assert.ok(owner.events.some(event => event.id === 'api'), 'session timelines keep host record ids');
+  }
 });
 
 test('repeated snapshot and session warnings are summarized once with a count', async t => {

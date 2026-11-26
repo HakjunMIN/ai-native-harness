@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer, request as httpRequest } from 'node:http';
+import { connect } from 'node:net';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -198,6 +199,31 @@ test('bounds association request bodies and rejects unknown routes and methods',
 
   assert.equal((await request(server, { path: '/api/not-a-route' })).status, 404);
   assert.equal((await request(server, { method: 'POST', path: '/api/dashboard' })).status, 405);
+});
+
+test('a client that disconnects while sending an association body does not crash the server', async t => {
+  const { server } = await dashboardFixture(t);
+  const rejections = [];
+  const onRejection = reason => rejections.push(reason);
+  process.on('unhandledRejection', onRejection);
+  t.after(() => process.off('unhandledRejection', onRejection));
+  await new Promise((resolve, reject) => {
+    const socket = connect(server.address().port, '127.0.0.1', () => {
+      socket.write([
+        'POST /api/associations HTTP/1.1',
+        `Host: 127.0.0.1:${server.address().port}`,
+        `Origin: ${sameOrigin(server)}`,
+        'Content-Type: application/json',
+        'Content-Length: 200',
+        '', '{"host":"copilot"'
+      ].join('\r\n'));
+      setTimeout(() => { socket.destroy(); resolve(); }, 100);
+    });
+    socket.on('error', reject);
+  });
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.deepEqual(rejections, []);
+  assert.equal((await request(server, { path: '/api/dashboard' })).status, 200);
 });
 
 test('rejects encoded traversal and symlink escapes from the static asset root', async t => {

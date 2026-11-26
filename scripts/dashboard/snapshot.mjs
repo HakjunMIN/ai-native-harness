@@ -24,13 +24,23 @@ function gitRoot(cwd) {
   try { return realpathSync.native(result.stdout.trim()); } catch { return null; }
 }
 
+// A result belongs to the run of the event it answers and never moves the current-run cursor.
+// The touched list is kept in last-touch order, so its tail is the run the session is on now.
 function attributeRuns(events, runIds) {
   const touched = [];
+  const ownerById = new Map();
   let current = null;
   const owners = events.map(event => {
+    const origin = (event.relatedTo ?? []).find(id => ownerById.has(id));
+    if (origin !== undefined) return ownerById.get(origin);
     const refs = (event.runRefs ?? []).filter(id => runIds.has(id));
-    if (refs.length === 1) current = refs[0];
-    if (current && !touched.includes(current)) touched.push(current);
+    if (refs.length === 1) {
+      current = refs[0];
+      const visited = touched.indexOf(current);
+      if (visited >= 0) touched.splice(visited, 1);
+      touched.push(current);
+    }
+    if (typeof event.id === 'string') ownerById.set(event.id, current);
     return current;
   });
   return { owners, runIds: touched };
@@ -150,9 +160,17 @@ export async function loadDashboardSnapshot({ homeDir = homedir(), env = process
 
   for (const workspace of workspaces.values()) {
     for (const run of workspace.runs) {
-      run.events = workspace.sessions
-        .flatMap(session => session.events.filter(event => event.runId === run.id &&
-          (event.kind === 'skill' || event.kind === 'tool')));
+      // Host record ids are unique only within one session, so a run spanning sessions scopes them.
+      run.events = workspace.sessions.flatMap(session => {
+        const scope = id => `${session.host}/${session.id}/${id}`;
+        return session.events
+          .filter(event => event.runId === run.id && (event.kind === 'skill' || event.kind === 'tool'))
+          .map(event => ({
+            ...event,
+            ...(typeof event.id === 'string' ? { id: scope(event.id) } : {}),
+            ...(Array.isArray(event.relatedTo) ? { relatedTo: event.relatedTo.map(scope) } : {})
+          }));
+      });
     }
   }
   return { workspaces: [...workspaces.values()], warnings: summarizeWarnings(warnings) };

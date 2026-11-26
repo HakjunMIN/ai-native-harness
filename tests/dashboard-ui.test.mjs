@@ -18,6 +18,20 @@ test('dashboard page exposes workspace, session grid, drawer, SDLC, and separate
   assert.ok(!html.includes('data-region="session-list"'), 'standalone session list is removed');
 });
 
+test('global diagnostics stay visible without a session while session warnings live in the drawer', async () => {
+  const html = await readAsset('index.html');
+  const drawer = html.slice(html.indexOf('<aside id="session-drawer"'), html.indexOf('</aside>\n    </main>'));
+  const status = html.slice(html.indexOf('<section id="global-status"'), html.indexOf('<main'));
+  assert.ok(html.indexOf('</header>') < html.indexOf('<section id="global-status"'), 'status area follows the top bar');
+  for (const id of ['dashboard-error', 'snapshot-warnings']) {
+    assert.ok(status.includes(`id="${id}"`), `${id} is in the always-visible status area`);
+    assert.ok(!drawer.includes(`id="${id}"`), `${id} is not hidden inside the session drawer`);
+  }
+  assert.ok(drawer.includes('id="session-warnings"'), 'the drawer shows the selected session warnings');
+  const app = await readAsset('app.js');
+  assert.match(app, /session\.warnings/, 'the drawer renders session.warnings');
+});
+
 test('session grid orders attention before recent activity', async () => {
   const app = await readAsset('app.js');
   const { getSessionGridItems } = await import(`data:text/javascript;base64,${Buffer.from(app).toString('base64')}`);
@@ -246,6 +260,87 @@ test('dashboard renders transcript values as inert text', async () => {
   assert.equal(preserveAssociationSelection('stale-run', 'local-alpha', ['local-alpha']), 'local-alpha');
 });
 
+test('a check shows a result only when the newest run of that check has an exit status that proves it', async () => {
+  const app = await readAsset('app.js');
+  const { summarizeActivity } = await import(`data:text/javascript;base64,${Buffer.from(app).toString('base64')}`);
+  const at = minute => `2026-11-26T11:${String(minute).padStart(2, '0')}:00.000Z`;
+  const events = [
+    ['api-log', 0, 'npm run test:api > api.log 2>&1', 'failed'],
+    ['api-old', 1, 'npm run test:api', 'passed'],
+    ['api-new', 2, 'npm run test:api', null],
+    ['or-true', 3, 'npm run test:unit || true', 'passed'],
+    ['semicolon', 4, 'npx playwright test; echo done', 'passed'],
+    ['piped', 5, 'npm run build | tee build.log', 'passed'],
+    ['chain-pass', 6, 'cd app && npm run lint && npm test', 'passed'],
+    ['chain-fail', 7, 'cd app && npx playwright test', 'failed'],
+    ['chain-ambiguous', 8, 'npm run build && npm run test:e2e', 'failed'],
+    ['background', 9, 'npm run test:unit & wait', 'passed']
+  ].flatMap(([id, minute, command, outcome]) => [
+    { id, at: at(minute), kind: 'tool', command, relatedTo: [] },
+    ...(outcome ? [{ id: `${id}:result`, at: at(minute), kind: 'tool', outcome, relatedTo: [id] }] : [])
+  ]);
+  const nodes = new Map(summarizeActivity({ events }).lanes.flatMap(lane => lane.nodes).map(item => [item.key, item]));
+  const occurrences = key => nodes.get(key).occurrences.map(item => [item.label, item.outcome]);
+  assert.deepEqual(occurrences('verification:api'), [
+    ['npm run test:api', 'unknown'],
+    ['npm run test:api', 'passed'],
+    ['npm run test:api > api.log 2>&1', 'failed']
+  ]);
+  assert.equal(nodes.get('verification:api').outcome, 'unknown');
+  assert.deepEqual(occurrences('verification:unit'), [
+    ['npm run test:unit & wait', 'unknown'],
+    ['cd app && npm run lint && npm test', 'passed'],
+    ['npm run test:unit || true', 'unknown']
+  ]);
+  assert.deepEqual(occurrences('verification:e2e'), [
+    ['npm run build && npm run test:e2e', 'unknown'],
+    ['cd app && npx playwright test', 'failed'],
+    ['npx playwright test; echo done', 'unknown']
+  ]);
+  assert.deepEqual(occurrences('verification:build'), [
+    ['npm run build && npm run test:e2e', 'unknown'],
+    ['cd app && npm run lint && npm test', 'passed'],
+    ['npm run build | tee build.log', 'unknown']
+  ]);
+});
+
+test('only the next human gate still pending on an unfinished run is awaiting approval', async () => {
+  const app = await readAsset('app.js');
+  const { getAwaitingApprovalGate, getSessionGridItems } = await import(`data:text/javascript;base64,${Buffer.from(app).toString('base64')}`);
+  const ids = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5a', 'G5b'];
+  const run = (passed, phase, statuses = {}) => ({
+    id: `run-${passed}-${phase}`,
+    phase,
+    gates: ids.map((id, index) => ({
+      id,
+      owner: ['G1', 'G2', 'G5b'].includes(id) ? 'human' : 'system',
+      status: statuses[id] ?? (index < passed ? 'passed' : 'pending')
+    }))
+  });
+  assert.equal(getAwaitingApprovalGate(run(0, 'discover')), null);
+  assert.equal(getAwaitingApprovalGate(run(1, 'discover'))?.id, 'G1');
+  assert.equal(getAwaitingApprovalGate(run(1, 'discover', { G1: 'failed' })), null);
+  assert.equal(getAwaitingApprovalGate(run(3, 'build')), null);
+  assert.equal(getAwaitingApprovalGate(run(6, 'release'))?.id, 'G5b');
+  assert.equal(getAwaitingApprovalGate(run(2, 'done')), null);
+  assert.equal(getAwaitingApprovalGate(null), null);
+
+  const early = run(0, 'discover');
+  const waiting = run(1, 'discover');
+  const workspace = {
+    id: 'alpha',
+    path: '/work/alpha',
+    sessions: [
+      { host: 'copilot', id: 'early', runId: early.id, lastActivityAt: '2026-11-26T11:00:00Z' },
+      { host: 'claude', id: 'waiting', runId: waiting.id, lastActivityAt: '2026-11-26T10:00:00Z' }
+    ],
+    runs: [early, waiting]
+  };
+  const keys = items => items.map(({ session }) => session.id);
+  assert.deepEqual(keys(getSessionGridItems({ workspaces: [workspace] })), ['waiting', 'early']);
+  assert.deepEqual(keys(getSessionGridItems({ workspaces: [workspace] }, { filter: 'approval' })), ['waiting']);
+});
+
 test('activity summary compresses run events into skill, review, and verification lanes', async () => {
   const app = await readAsset('app.js');
   const { summarizeActivity } = await import(`data:text/javascript;base64,${Buffer.from(app).toString('base64')}`);
@@ -276,8 +371,8 @@ test('activity summary compresses run events into skill, review, and verificatio
     reviews: [
       { axis: 'plan', reviewerType: 'claude', status: 'passed', blocking: 0, evidencePaths: ['reviews/plan.md'] },
       { axis: 'final', reviewerType: 'claude', status: 'unknown', blocking: null, evidencePaths: [] },
-      { axis: 'slice-1', reviewerType: 'codex', status: 'failed', blocking: 2, evidencePaths: ['reviews/slice-1.md'] },
-      { axis: 'slice-2', reviewerType: 'codex', status: 'passed', blocking: 0, evidencePaths: [] }
+      { stage: 'slice', sliceId: 1, axis: 'spec', reviewerType: 'codex', status: 'failed', blocking: 2, evidencePaths: ['reviews/slice-1.md'] },
+      { stage: 'slice', sliceId: 2, axis: 'standards', reviewerType: 'codex', status: 'passed', blocking: 0, evidencePaths: [] }
     ],
     verification: [
       { name: 'Slice 1 TDD RED evidence', outcome: 'unknown', evidencePaths: ['evidence/s1-red.txt'] },
@@ -296,8 +391,8 @@ test('activity summary compresses run events into skill, review, and verificatio
       ['TDD RED→GREEN', 2, 'unknown'],
       ['단위 테스트', 2, 'unknown'],
       ['API 테스트', 2, 'passed'],
-      ['E2E 테스트', 2, 'failed'],
-      ['빌드 · 검사', 2, 'failed'],
+      ['E2E 테스트', 2, 'unknown'],
+      ['빌드 · 검사', 2, 'unknown'],
       ['G3 검증', 1, 'unknown']
     ]]
   ]);
@@ -315,6 +410,12 @@ test('activity summary compresses run events into skill, review, and verificatio
   assert.deepEqual(nodes.get('TDD RED→GREEN').evidencePaths, ['evidence/s1-red.txt', 'evidence/s1-green.txt', 'evidence/s2-red.txt']);
   assert.equal(nodes.get('Slice 리뷰').detail, '차단 지적 2건');
   assert.deepEqual(nodes.get('Slice 리뷰').evidencePaths, ['reviews/slice-1.md']);
+  assert.deepEqual(nodes.get('Slice 리뷰').occurrences.map(item => item.label),
+    ['Slice 2 · standards · codex · 차단 0', 'Slice 1 · spec · codex · 차단 2']);
+  const accepted = summarizeActivity({ reviews: [
+    { stage: 'slice', sliceId: 3, axis: 'standards', reviewerType: 'codex', status: 'passed', blocking: 1, accepted: true }
+  ] }).lanes.find(lane => lane.id === 'review').nodes[0];
+  assert.deepEqual([accepted.outcome, accepted.occurrences[0].label], ['passed', 'Slice 3 · standards · codex · 차단 1 (사람 수용)']);
   assert.deepEqual(summarizeActivity({}).lanes.map(lane => lane.nodes.length), [0, 0, 0]);
 });
 

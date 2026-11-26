@@ -111,15 +111,15 @@ function reclaim(lock) {
   } finally { rmSync(guard, { recursive: true, force: true }); }
 }
 
-export function withWorktreeLock(directory, action, waitMs = lockWaitMs) {
-  const lock = worktreeLock(directory);
+// Runs `action` while holding `lock`, a directory whose pid file names the holding process.
+export function withDirectoryLock(lock, action, waitMs = lockWaitMs, timeoutMessage = `Timed out waiting for ${lock}`) {
   if (held.has(lock)) return action();
   const deadline = Date.now() + waitMs;
   for (;;) {
     try { mkdirSync(lock); break; }
     catch (error) { if (error.code !== 'EEXIST') throw error; }
     if (abandoned(lock) && reclaim(lock)) continue;
-    if (Date.now() >= deadline) throw new Error(`Timed out waiting for another SDLC start to finish changing worktrees. If none is running, remove ${lock}`);
+    if (Date.now() >= deadline) throw new Error(timeoutMessage);
     sleep(10 + Math.floor(Math.random() * 40));
   }
   held.add(lock);
@@ -130,6 +130,12 @@ export function withWorktreeLock(directory, action, waitMs = lockWaitMs) {
     held.delete(lock);
     if (ownerOf(lock) === process.pid) rmSync(lock, { recursive: true, force: true });
   }
+}
+
+export function withWorktreeLock(directory, action, waitMs = lockWaitMs) {
+  const lock = worktreeLock(directory);
+  return withDirectoryLock(lock, action, waitMs,
+    `Timed out waiting for another SDLC start to finish changing worktrees. If none is running, remove ${lock}`);
 }
 
 // Creates `branch` and a worktree for it, or leaves nothing behind. `git worktree prune` is avoided
