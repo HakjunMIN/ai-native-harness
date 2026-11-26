@@ -24,7 +24,7 @@ test('starts a resumable local SDLC without Jira or gate approval', t => {
   const {root,start,statePath,request} = fixture(t);
   const result = start();
   assert.equal(result.status,0,result.stderr);
-  assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
+  assert.equal(realpathSync.native(result.stdout.trim()),realpathSync.native(statePath));
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(state.ticket,'local-doc-change');
   assert.equal(state.intake.kind,'local');
@@ -47,7 +47,7 @@ test('starts from the target repository working directory without a root argumen
     [resolve('scripts/intake.mjs'),'start','local-doc-change','./request.md'],
     {cwd:repo,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
-  assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
+  assert.equal(realpathSync.native(result.stdout.trim()),realpathSync.native(statePath));
   assert.equal(JSON.parse(readFileSync(statePath,'utf8')).intake.kind,'local');
 });
 
@@ -59,7 +59,7 @@ test('starts a pending Jira-free run from interviewed Markdown on stdin', t => {
     {input:markdown,encoding:'utf8'});
   const result = run();
   assert.equal(result.status,0,result.stderr);
-  assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
+  assert.equal(realpathSync.native(result.stdout.trim()),realpathSync.native(statePath));
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(readFileSync(join(root,'intake.md'),'utf8'),markdown);
   assert.deepEqual(state.intake,{kind:'local',request:{path:'intake.md',sha256:digest(markdown)}});
@@ -94,7 +94,7 @@ test('stdin intake defaults to the working repository and requires a valid comma
   const result = spawnSync(process.execPath,[cli,'start-text','local-doc-change'],
     {cwd:repo,input:'Request\n',encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
-  assert.equal(realpathSync(result.stdout.trim()),realpathSync(statePath));
+  assert.equal(realpathSync.native(result.stdout.trim()),realpathSync.native(statePath));
 });
 
 test('stdin intake rejects missing input, invalid IDs and symlink output', t => {

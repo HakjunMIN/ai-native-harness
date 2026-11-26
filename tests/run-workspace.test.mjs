@@ -146,6 +146,20 @@ test('a run started through a differently spelled path to the repository lands i
   assert.deepEqual(JSON.parse(listed.stdout).map(entry => [entry.id, entry.dedicated]), [['local-alias', true]]);
 });
 
+test('a run resumed through a differently spelled state path still finds its pinned snapshot', t => {
+  const { root, repo } = projectRepo(t, { name: 'Repo' });
+  if (!existsSync(join(root, 'repo'))) return t.skip('file system is case-sensitive');
+  assert.equal(startLocal('local-resume', repo).status, 0);
+  const alias = runState(join(root, 'repo'), 'local-resume');
+  const runWith = (script, command) => spawnSync(process.execPath, [script, command, alias], { encoding: 'utf8' });
+  for (const [script, command] of [[harness, 'resolve'], [resolve('scripts/state.mjs'), 'progress']]) {
+    const result = runWith(script, command);
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`);
+  }
+  // A fresh run is not ready to reconcile; reaching that check proves the path was accepted.
+  assert.match(runWith(workspaces, 'reconcile').stderr, /ready requires implement phase/);
+});
+
 test('rolling back a failed start leaves worktrees whose directory is temporarily missing alone', t => {
   const { repo } = projectRepo(t);
   const feature = join(dirname(repo), 'feature');

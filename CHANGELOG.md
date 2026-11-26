@@ -23,10 +23,11 @@ Targets `0.2.0`.
   serialized by a repository lock and refused unless `/.worktrees/` is ignored.
   `workspaces.mjs list` lists runs across all worktrees. The snapshot cache stays
   in the primary checkout and is shared by every run worktree.
-  Run starts and `workspaces.mjs list` canonicalize paths with the native
-  realpath, so a directory given through a Windows 8.3 short name (`RUNNER~1`)
-  or different letter case resolves to the run worktree; a worktree that cannot
-  be created also leaves no branch behind on Node 22.
+  Run starts, `workspaces.mjs list` and resumes (`harness.mjs resolve`,
+  `state.mjs`, `workspaces.mjs`) canonicalize paths with the native realpath, so
+  a directory given through a Windows 8.3 short name (`RUNNER~1`) or different
+  letter case resolves to the run worktree and its pinned snapshot; a worktree
+  that cannot be created also leaves no branch behind on Node 22.
 - Copy and shared installers append `/.worktrees/` to `.gitignore` when no
   equivalent rule exists, preserving content, CRLF and mode; failures restore it.
 - The guard reads an untracked `ai-native-sdlc.config.json` from the primary

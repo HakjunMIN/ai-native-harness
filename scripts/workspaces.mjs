@@ -216,10 +216,10 @@ function main() {
     throw new Error('Usage: workspaces.mjs plan|start STATE [SCOPES.json] | reconcile STATE\n       workspaces.mjs list [REPOSITORY_ROOT]');
   }
   if (dispatchPinned('workspaces.mjs',file)) return;
-  const statePath = realpathSync(resolve(file));
+  const statePath = realpathSync.native(resolve(file));
   const original = readFileSync(statePath,'utf8');
   const state = JSON.parse(original);
-  const repo = realpathSync(git(dirname(statePath),'rev-parse','--show-toplevel'));
+  const repo = realpathSync.native(git(dirname(statePath),'rev-parse','--show-toplevel'));
   if (relative(repo,statePath).startsWith('..') || isAbsolute(relative(repo,statePath))) throw new Error('state must be inside the source repository');
   const ready = JSON.parse(execFileSync(process.execPath,[fileURLToPath(new URL('./state.mjs',import.meta.url)),'ready',statePath],{encoding:'utf8'}));
   if (command === 'reconcile') {
