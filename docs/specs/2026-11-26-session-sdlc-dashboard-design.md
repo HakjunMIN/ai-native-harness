@@ -72,7 +72,7 @@ Copilot's current documentation identifies local session files beneath `~/.copil
 
 - Implement as a local read-only web UI backed by a small Node.js local server, compatible with the repository's Node `>=22` engine. Reuse existing validation/test conventions; do not introduce a database for the first version.
 - Keep host-specific parsing behind three independent adapters that normalize into a small internal event/session model. Do not make a single parser depend on undocumented cross-host similarities.
-- Re-read run state/evidence and check host-file metadata on a short polling interval; no file watcher or background host hook is required for v1. The dashboard is observational and may show a brief refresh delay.
+- Re-read run state/evidence and check host-file metadata on a polling interval; no file watcher or background host hook is required for v1. The dashboard is observational and may show a refresh delay. The default is auto-refresh every 60 seconds; the header lets the user choose auto 10s, 30s, 1 min, 5 min, or manual (stored in browser `localStorage`), and a refresh-now button reloads immediately in any mode.
 - No new third-party dependencies unless required by the chosen distributable Astryx implementation or an existing package cannot safely parse a supported host format. If a dependency is proposed, document its license, maintenance, and test fixtures in the implementation plan.
 - Exact CLI syntax, default port, config path, polling interval, supported transcript schema versions, and retention of session associations are builder decisions, subject to the constraints above.
 

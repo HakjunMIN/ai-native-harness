@@ -31,7 +31,8 @@ Targets `0.2.0`.
   Copilot CLI, Claude Code and Codex sessions by Git workspace, links them to
   runs from harness tool activity, and shows SDLC gates, reviews, unit/API/E2E
   verification and highlighted approval waits and questions in a session grid
-  with a detail drawer. It runs on macOS, Linux and Windows (PowerShell); a
+  with a detail drawer. The page auto-refreshes every 60 seconds by default,
+  with 10s/30s/1 min/5 min/manual choices and a refresh-now button. It runs on macOS, Linux and Windows (PowerShell); a
   `dashboard-windows` CI job runs its tests on Windows.
 
 Compatibility and consumer actions:

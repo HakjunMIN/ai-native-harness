@@ -408,6 +408,10 @@ run 진행·게이트·스킬/리뷰/검증 요약 → 단위 테스트 상세 �
 리뷰 차단 건수, 단위/API/E2E 검증의 최근 결과만 압축해 보여 줍니다. 대시보드는 승인 상태를
 표시하지만 승인하거나 run 상태를 변경하지 않습니다.
 
+화면은 기본적으로 60초마다 자동 새로고침됩니다. 상단의 주기 선택에서 자동 10초·30초·1분·5분
+또는 수동을 고를 수 있고, 선택한 값은 브라우저에 저장됩니다. ↻(지금 새로고침) 버튼은 모드와
+관계없이 즉시 다시 읽습니다.
+
 macOS 터미널과 Windows PowerShell에서 같은 명령으로 실행하고 `Ctrl+C`로 종료합니다. 세션은
 사용자 홈 디렉터리의 `.copilot`, `.claude`, `.codex`(Windows는 `%USERPROFILE%\.copilot` 등)에서
 읽습니다. 수동 연결 설정은 macOS에서는 `~/Library/Application Support/ai-native-harness/dashboard.json`,

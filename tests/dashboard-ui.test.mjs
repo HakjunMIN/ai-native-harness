@@ -191,9 +191,35 @@ test('drawer navigation preserves selection across URL history', async () => {
   assert.equal(parseSessionHash('not-a-hash'), null);
 });
 
-test('dashboard polls every three seconds and renders transcript values as inert text', async () => {
+test('dashboard refresh defaults to auto 60 seconds with selectable auto steps and manual mode', async () => {
+  const [app, html] = await Promise.all([readAsset('app.js'), readAsset('index.html')]);
+  assert.match(html, /<select[^>]*id="refresh-interval"/);
+  assert.match(html, /id="refresh-button"[^>]*aria-label="지금 새로고침"/);
+  const {
+    DEFAULT_REFRESH_INTERVAL_MS,
+    REFRESH_INTERVAL_OPTIONS,
+    normalizeRefreshInterval,
+    setConnectedStatus
+  } = await import(`data:text/javascript;base64,${Buffer.from(app).toString('base64')}`);
+  assert.equal(DEFAULT_REFRESH_INTERVAL_MS, 60000);
+  assert.deepEqual(
+    REFRESH_INTERVAL_OPTIONS.map(option => [option.value, option.label]),
+    [[10000, '자동 10초'], [30000, '자동 30초'], [60000, '자동 1분'], [300000, '자동 5분'], [0, '수동']]
+  );
+  assert.equal(normalizeRefreshInterval(undefined), 60000);
+  assert.equal(normalizeRefreshInterval('garbage'), 60000);
+  assert.equal(normalizeRefreshInterval('3000'), 60000);
+  assert.equal(normalizeRefreshInterval('30000'), 30000);
+  assert.equal(normalizeRefreshInterval('0'), 0);
+  const status = { textContent: '' };
+  setConnectedStatus(status, new Date('2026-11-26T10:00:00.000Z'), 60000);
+  assert.match(status.textContent, /자동 1분$/);
+  setConnectedStatus(status, new Date('2026-11-26T10:00:00.000Z'), 0);
+  assert.match(status.textContent, /수동$/);
+});
+
+test('dashboard renders transcript values as inert text', async () => {
   const app = await readAsset('app.js');
-  assert.match(app, /REFRESH_INTERVAL_MS\s*=\s*3000/);
   assert.doesNotMatch(app, /\.innerHTML\b/);
   assert.match(app, /\.textContent\s*=/);
   const {

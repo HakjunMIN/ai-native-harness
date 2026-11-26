@@ -20,6 +20,10 @@
       <div class="topbar-status">
         <span class="live-indicator" aria-hidden="true"></span>
         <span id="refresh-status" aria-live="polite">로컬 데이터 연결 중</span>
+        <label class="sr-only" for="refresh-interval">자동 새로고침 주기</label>
+        <select id="refresh-interval" class="refresh-interval" title="자동 새로고침 주기">
+          <option value="60000">자동 1분</option>
+        </select>
         <button id="refresh-button" class="icon-button" type="button" aria-label="지금 새로고침" title="지금 새로고침">
           <span aria-hidden="true">↻</span>
         </button>

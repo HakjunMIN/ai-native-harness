@@ -113,6 +113,23 @@ a:focus-visible {
   box-shadow: 0 0 12px rgb(103 214 160 / 50%);
 }
 
+.refresh-interval {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.refresh-interval:hover,
+.refresh-interval:focus-visible {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
 .icon-button {
   display: grid;
   width: 32px;

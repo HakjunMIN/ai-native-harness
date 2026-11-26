@@ -1,4 +1,12 @@
-const REFRESH_INTERVAL_MS = 3000;
+export const DEFAULT_REFRESH_INTERVAL_MS = 60000;
+export const REFRESH_INTERVAL_OPTIONS = Object.freeze([
+  { value: 10000, label: '자동 10초' },
+  { value: 30000, label: '자동 30초' },
+  { value: 60000, label: '자동 1분' },
+  { value: 300000, label: '자동 5분' },
+  { value: 0, label: '수동' }
+]);
+const REFRESH_INTERVAL_STORAGE_KEY = 'ai-native-harness.dashboard.refreshInterval';
 const phaseOrder = ['discover', 'plan', 'implement', 'verify', 'release'];
 const phaseLabels = {
   discover: 'Discover',
@@ -30,7 +38,9 @@ const state = {
   visibleCount: 8,
   expandedLanes: new Set(),
   associationRunId: null,
-  refreshing: false
+  refreshing: false,
+  refreshIntervalMs: DEFAULT_REFRESH_INTERVAL_MS,
+  refreshTimer: null
 };
 const $ = id => document.getElementById(id);
 
@@ -49,8 +59,19 @@ export function preserveAssociationSelection(selectedRunId, currentRunId, availa
     : availableRunIds.includes(currentRunId) ? currentRunId : '';
 }
 
-export function setConnectedStatus(statusNode, now = new Date()) {
-  setText(statusNode, `로컬 데이터 · ${now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 갱신`);
+export function normalizeRefreshInterval(value) {
+  const parsed = Number(value);
+  const option = REFRESH_INTERVAL_OPTIONS.find(item => item.value === parsed);
+  return value === undefined || value === null || value === '' || !option ? DEFAULT_REFRESH_INTERVAL_MS : option.value;
+}
+
+function refreshIntervalLabel(intervalMs) {
+  return REFRESH_INTERVAL_OPTIONS.find(item => item.value === intervalMs)?.label ?? '';
+}
+
+export function setConnectedStatus(statusNode, now = new Date(), intervalMs = DEFAULT_REFRESH_INTERVAL_MS) {
+  const time = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  setText(statusNode, `로컬 데이터 · ${time} 갱신 · ${refreshIntervalLabel(normalizeRefreshInterval(intervalMs))}`);
 }
 
 export function setText(node, value) {
@@ -1034,7 +1055,7 @@ function render() {
   renderSnapshotWarnings();
   renderRun(workspace, session, run);
   renderDrawerNavigation();
-  if (!state.refreshing) setConnectedStatus($('refresh-status'));
+  if (!state.refreshing) setConnectedStatus($('refresh-status'), new Date(), state.refreshIntervalMs);
 }
 
 async function refreshDashboard() {
@@ -1057,8 +1078,34 @@ async function refreshDashboard() {
   } finally {
     state.refreshing = false;
     $('refresh-button').disabled = false;
-    if (state.snapshot && $('dashboard-error').hidden) setConnectedStatus($('refresh-status'));
+    if (state.snapshot && $('dashboard-error').hidden) setConnectedStatus($('refresh-status'), new Date(), state.refreshIntervalMs);
+    scheduleRefresh();
   }
+}
+
+function scheduleRefresh() {
+  window.clearTimeout(state.refreshTimer);
+  state.refreshTimer = null;
+  if (state.refreshIntervalMs > 0) state.refreshTimer = window.setTimeout(refreshDashboard, state.refreshIntervalMs);
+}
+
+function readStoredRefreshInterval() {
+  try {
+    return normalizeRefreshInterval(window.localStorage.getItem(REFRESH_INTERVAL_STORAGE_KEY));
+  } catch {
+    return DEFAULT_REFRESH_INTERVAL_MS;
+  }
+}
+
+function setRefreshInterval(value) {
+  state.refreshIntervalMs = normalizeRefreshInterval(value);
+  try {
+    window.localStorage.setItem(REFRESH_INTERVAL_STORAGE_KEY, String(state.refreshIntervalMs));
+  } catch {
+    // Storage can be unavailable in private windows; the choice still applies to this page.
+  }
+  if (state.snapshot && $('dashboard-error').hidden) setConnectedStatus($('refresh-status'), new Date(), state.refreshIntervalMs);
+  scheduleRefresh();
 }
 
 async function submitAssociation(remove = false) {
@@ -1094,6 +1141,16 @@ async function submitAssociation(remove = false) {
 }
 
 function initialize() {
+  const intervalSelect = $('refresh-interval');
+  intervalSelect.replaceChildren(...REFRESH_INTERVAL_OPTIONS.map(option => {
+    const node = document.createElement('option');
+    node.value = String(option.value);
+    setText(node, option.label);
+    return node;
+  }));
+  state.refreshIntervalMs = readStoredRefreshInterval();
+  intervalSelect.value = String(state.refreshIntervalMs);
+  intervalSelect.addEventListener('change', event => setRefreshInterval(event.currentTarget.value));
   $('refresh-button').addEventListener('click', refreshDashboard);
   $('drawer-close').addEventListener('click', () => closeSession());
   $('drawer-previous').addEventListener('click', () => navigateDrawer(-1));
@@ -1124,7 +1181,6 @@ function initialize() {
     if (entry?.run) renderActivity(entry.run);
   });
   void refreshDashboard();
-  window.setInterval(refreshDashboard, REFRESH_INTERVAL_MS);
 }
 
 if (typeof document !== 'undefined') initialize();

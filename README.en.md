@@ -469,6 +469,10 @@ automatic link. The skill, review, and verification summary shows only per-skill
 counts, review blocking totals, and the latest unit/API/E2E check outcomes. The
 dashboard displays approval status but cannot approve gates or change run state.
 
+The page refreshes automatically every 60 seconds by default. The interval selector in
+the header offers auto 10s, 30s, 1 min, 5 min, or manual, and the browser remembers your
+choice. The ↻ (refresh now) button reloads immediately in any mode.
+
 The same command works in a macOS terminal and in Windows PowerShell; stop it with
 `Ctrl+C`. Sessions are read from `.copilot`, `.claude`, and `.codex` in your home
 directory (`%USERPROFILE%\.copilot` and so on, on Windows). Manual links are saved to
