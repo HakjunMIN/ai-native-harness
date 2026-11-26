@@ -27,6 +27,12 @@ Targets `0.2.0`.
   equivalent rule exists, preserving content, CRLF and mode; failures restore it.
 - The guard reads an untracked `ai-native-sdlc.config.json` from the primary
   checkout when running in a linked worktree.
+- Add `npm run dashboard`, a read-only local web dashboard that groups GitHub
+  Copilot CLI, Claude Code and Codex sessions by Git workspace, links them to
+  runs from harness tool activity, and shows SDLC gates, reviews, unit/API/E2E
+  verification and highlighted approval waits and questions in a session grid
+  with a detail drawer. It runs on macOS, Linux and Windows (PowerShell); a
+  `dashboard-windows` CI job runs its tests on Windows.
 
 Compatibility and consumer actions:
 
@@ -37,6 +43,11 @@ Compatibility and consumer actions:
   with the exact `git worktree add` command for its dedicated worktree.
 - Rollback: reinstall `0.1.0`; remove `.worktrees/` only after integrating or
   preserving its run branches.
+- The dashboard runs from the harness source checkout. It only reads session
+  stores and run evidence and changes no run state, hook or installer behavior.
+  Copy installs carry `scripts/dashboard*` with the rest of `scripts/` but not
+  the `dashboard/` UI assets. To reset manual session links, delete the
+  per-user `ai-native-harness/dashboard.json` config file.
 
 ## Current manifest baseline
 

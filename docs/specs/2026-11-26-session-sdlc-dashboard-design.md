@@ -129,3 +129,32 @@ Make it practical to scan many concurrent host sessions at once while retaining 
 - Opening a card leaves the grid visible behind/alongside the detail drawer; keyboard navigation changes the selected session, Escape closes it, and URL history restores selection.
 - Approval and question states remain visually distinct in both card and detail views.
 - Existing session/run association, transcript parsing, and SDLC evidence behavior remains unchanged.
+
+## Revision — macOS and Windows support
+
+### Intent
+
+Run the same dashboard with the same command and data sources on macOS and on Windows (PowerShell, Node 22).
+
+### Design
+
+- Session stores are read from `.copilot`, `.claude`, and `.codex` under the user's home directory on every OS (`%USERPROFILE%` on Windows). Manual links use the platform config path described in the plan (`%APPDATA%\ai-native-harness\dashboard.json` on Windows).
+- Workspace roots are canonicalized with `realpathSync.native`, so Windows 8.3 short names (`RUNNER~1`) and case-only differences of one directory resolve to one workspace. Git root lookups are cached per working directory within a snapshot.
+- Codex SKILL.md reads are recognized from PowerShell (`Get-Content`, `gc`, `type`) and inside shell wrappers (`bash -lc`, `zsh -c`, `powershell -Command`, `pwsh -Command`, `cmd /c`). Writes such as `Set-Content` and `Copy-Item` are not reads.
+- Dashboard JS, CSS, and JSONL fixtures are checked out with LF. Font stacks include Windows fallbacks (Malgun Gothic, Consolas, Cascadia Mono).
+- A separate `dashboard-windows` CI job runs the four dashboard test files under PowerShell, independent of the existing Windows job.
+
+### Acceptance
+
+- The dashboard test files pass on Windows CI and on macOS; only the POSIX git-shim test is skipped on Windows.
+- Sessions whose working directory differs only by letter case share one canonical workspace (verified on Windows CI).
+- Sessions sharing a working directory trigger one Git root lookup per snapshot.
+
+### Decisions and known limits
+
+- Case-only grouping cannot fail on macOS because Git already returns the canonical case; Windows CI is its only proof.
+- Node's `kill()` on Windows terminates without running signal handlers, so the CLI test checks only that the process exits there. Graceful `Ctrl+C` shutdown on Windows is untested.
+- Codex Windows command shapes are inferred, not taken from real Windows Codex logs; unrecognized shapes under-count skill reads.
+- Stores relocated with `COPILOT_HOME`, `CLAUDE_CONFIG_DIR`, or `CODEX_HOME` remain unsupported on every OS.
+- Dashboard tests canonicalize fixture repositories with `realpathSync.native`. The existing short-name mismatch in `openRunWorkspace` (which still fails the `harness-revision` and `local-intake` tests on Windows CI) is outside this change.
+- Deferred: unwrapping shell wrappers also counts SKILL.md writes such as `bash -lc "cat > …/SKILL.md"` or `sed -i` as reads.
