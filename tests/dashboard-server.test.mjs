@@ -4,7 +4,7 @@ import { createServer, request as httpRequest } from 'node:http';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { startLocalText } from '../scripts/intake.mjs';
 import { startDashboardServer } from '../scripts/dashboard/server.mjs';
@@ -264,4 +264,24 @@ test('CLI validates its port and prints the allocated loopback URL before closin
   // Windows has no POSIX signal delivery: kill() terminates the process without running handlers.
   if (process.platform === 'win32') assert.ok(exit.code !== null || exit.signal !== null);
   else assert.deepEqual(exit, { code: 0, signal: null });
+});
+
+test('CLI closes cleanly on a SIGTERM that arrives as soon as it prints its URL', { skip: process.platform === 'win32' && 'Windows has no POSIX signal handlers' }, t => {
+  const directory = mkdtempSync(join(tmpdir(), 'dashboard-signal-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const preload = join(directory, 'signal-on-url.mjs');
+  writeFileSync(preload, `const write = process.stdout.write.bind(process.stdout);
+process.stdout.write = (chunk, ...rest) => {
+  const result = write(chunk, ...rest);
+  if (String(chunk).includes('http://127.0.0.1:')) process.kill(process.pid, 'SIGTERM');
+  return result;
+};
+`);
+  const script = fileURLToPath(new URL('../scripts/dashboard.mjs', import.meta.url));
+  const result = spawnSync(process.execPath, ['--import', pathToFileURL(preload).href, script, '--port', '0'], {
+    encoding: 'utf8',
+    timeout: 10000
+  });
+  assert.match(result.stdout, /^http:\/\/127\.0\.0\.1:\d+$/m);
+  assert.deepEqual({ status: result.status, signal: result.signal }, { status: 0, signal: null }, result.stderr);
 });

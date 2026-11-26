@@ -6,6 +6,9 @@ import { join, relative, resolve } from 'node:path';
 // Run and parallel slice worktrees live under the primary checkout: <main>/.worktrees/sdlc/<ID>/{integration,t<N>}.
 const runBranch = /^sdlc\/[^/]+\/(?:integration|t[1-9][0-9]*)$/;
 export const snapshotCache = '.ai-native-sdlc-revisions';
+// Native realpath expands Windows 8.3 short names and normalizes case, so paths derived from the
+// caller's directory and from Git compare and relativize consistently.
+const canonical = path => realpathSync.native(path);
 const present = path => {
   try { lstatSync(path); return true; }
   catch (error) { if (['ENOENT', 'ENOTDIR'].includes(error.code)) return false; throw error; }
@@ -39,7 +42,7 @@ export function requireIgnoredWorkspace(main, path) {
 
 function toplevel(directory) {
   const result = run(directory, ['rev-parse', '--show-toplevel']);
-  return result.status === 0 ? realpathSync(result.stdout.trim()) : null;
+  return result.status === 0 ? canonical(result.stdout.trim()) : null;
 }
 
 export function worktrees(directory) {
@@ -50,7 +53,7 @@ export function worktrees(directory) {
     }));
     const path = fields.get('worktree');
     const branch = fields.get('branch');
-    return { path: present(path) ? realpathSync(path) : path, branch: branch?.replace(/^refs\/heads\//, '') ?? null,
+    return { path: present(path) ? canonical(path) : path, branch: branch?.replace(/^refs\/heads\//, '') ?? null,
       bare: fields.has('bare'), prunable: fields.has('prunable') };
   });
 }
@@ -138,7 +141,8 @@ export function addWorktree(repository, branch, path, base) {
     const added = run(repository, ['worktree', 'add', '-q', '-b', branch, path, base]);
     if (added.status === 0) return;
     run(repository, ['worktree', 'remove', '--force', path]);
-    rmSync(path, { recursive: true, force: true });
+    // Node 22 reports ENOTDIR instead of ignoring a path under a file; such a path cannot exist.
+    try { rmSync(path, { recursive: true, force: true }); } catch (error) { if (error.code !== 'ENOTDIR') throw error; }
     run(repository, ['branch', '-D', branch]);
     throw new Error(`git worktree add -b ${branch} ${path} ${base} failed: ${added.stderr.trim() || `exit status ${added.status}`}`);
   });
@@ -161,7 +165,7 @@ export function discardWorktree(repository, worktree, branch) {
 // Returns the checkout that must hold the run's files. A linked worktree that is
 // already on sdlc/<id>/integration is adopted; otherwise a new one is created from HEAD.
 export function openRunWorkspace(id, repositoryRoot = process.cwd()) {
-  const start = realpathSync(repositoryRoot);
+  const start = canonical(repositoryRoot);
   const source = toplevel(start);
   if (!source) throw new Error(`${start} is not inside a Git repository; run git init and commit once, because every SDLC run needs its own worktree`);
   return withWorktreeLock(source, () => openLocked(id, start, source));
@@ -200,7 +204,7 @@ function openLocked(id, start, source) {
   }
   requireIgnoredWorkspace(main, path);
   addWorktree(source, branch, path, 'HEAD');
-  const worktree = realpathSync(path);
+  const worktree = canonical(path);
   process.stderr.write(`created run worktree ${worktree} on ${branch}\n`);
   return { root: subdirectory ? join(worktree, subdirectory) : worktree, worktree, branch, created: true,
     discard() { discardWorktree(source, worktree, branch); } };
@@ -228,7 +232,7 @@ function phaseOf(file) {
 // Lists runs across the primary checkout and every linked worktree. A copy in the
 // run's dedicated worktree wins over copies committed elsewhere.
 export function listRuns(directory = process.cwd()) {
-  const start = realpathSync(directory);
+  const start = canonical(directory);
   const source = toplevel(start);
   const trees = source
     ? worktrees(source).filter(tree => !tree.bare && !tree.prunable && present(tree.path))

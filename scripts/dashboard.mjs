@@ -18,7 +18,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     const port = parsePort(process.argv.slice(2));
     const server = await startDashboardServer({ port });
-    console.log(`http://127.0.0.1:${server.address().port}`);
+    // Handlers must be in place before the URL announces readiness, or an early signal kills the process.
     for (const signal of ['SIGINT', 'SIGTERM']) {
       process.once(signal, () => {
         server.close(error => {
@@ -29,6 +29,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         });
       });
     }
+    console.log(`http://127.0.0.1:${server.address().port}`);
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

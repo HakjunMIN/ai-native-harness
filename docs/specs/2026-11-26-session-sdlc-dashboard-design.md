@@ -156,5 +156,6 @@ Run the same dashboard with the same command and data sources on macOS and on Wi
 - Node's `kill()` on Windows terminates without running signal handlers, so the CLI test checks only that the process exits there. Graceful `Ctrl+C` shutdown on Windows is untested.
 - Codex Windows command shapes are inferred, not taken from real Windows Codex logs; unrecognized shapes under-count skill reads.
 - Stores relocated with `COPILOT_HOME`, `CLAUDE_CONFIG_DIR`, or `CODEX_HOME` remain unsupported on every OS.
-- Dashboard tests canonicalize fixture repositories with `realpathSync.native`. The existing short-name mismatch in `openRunWorkspace` (which still fails the `harness-revision` and `local-intake` tests on Windows CI) is outside this change.
+- Dashboard tests canonicalize fixture repositories with `realpathSync.native`. `scripts/run-workspace.mjs` now does the same for run starts and listing, which fixes the short-name mismatch in `openRunWorkspace` that failed the `harness-revision` and `local-intake` tests on Windows CI.
+- The dashboard CLI installs its `SIGINT`/`SIGTERM` handlers before printing its URL, so a signal sent as soon as the URL appears closes the server cleanly instead of killing the process.
 - Deferred: unwrapping shell wrappers also counts SKILL.md writes such as `bash -lc "cat > …/SKILL.md"` or `sed -i` as reads.

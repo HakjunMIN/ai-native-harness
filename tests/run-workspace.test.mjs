@@ -134,6 +134,18 @@ test('a worktree path that cannot be created leaves no branch behind', t => {
   assert.equal(startLocal('local-blocked', repo).status, 0);
 });
 
+test('a run started through a differently spelled path to the repository lands in its worktree', t => {
+  const { root, repo } = projectRepo(t, { name: 'Repo' });
+  const alias = join(root, 'repo');
+  if (!existsSync(alias)) return t.skip('file system is case-sensitive');
+  const started = startLocal('local-alias', alias);
+  assert.equal(started.status, 0, started.stderr);
+  assert.equal(realpathSync(started.stdout.trim()), realpathSync(runState(repo, 'local-alias')));
+  const listed = spawnSync(process.execPath, [workspaces, 'list', alias], { encoding: 'utf8' });
+  assert.equal(listed.status, 0, listed.stderr);
+  assert.deepEqual(JSON.parse(listed.stdout).map(entry => [entry.id, entry.dedicated]), [['local-alias', true]]);
+});
+
 test('rolling back a failed start leaves worktrees whose directory is temporarily missing alone', t => {
   const { repo } = projectRepo(t);
   const feature = join(dirname(repo), 'feature');
