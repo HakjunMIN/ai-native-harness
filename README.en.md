@@ -452,6 +452,12 @@ also run the [Pressure scenarios](tests/scenarios/pressure.md).
 
 ### Local SDLC run dashboard
 
+![Local SDLC run dashboard demo: approval filter, workspace selection, session detail drawer, and verification detail](docs/assets/session-sdlc-dashboard-demo.gif)
+
+_Recorded with synthetic demo data. The flow shows the approval-waiting filter → workspace
+selection → a session's "details" drawer → run progress, gates, and skill/review/verification
+summary → unit-test detail → next session → group by run._
+
 Run `npm run dashboard` and open the `127.0.0.1` URL printed in the terminal. The
 dashboard reads supported local GitHub Copilot CLI, Claude Code, and Codex session
 files and SDLC run evidence from their workspaces. Session content is not uploaded;

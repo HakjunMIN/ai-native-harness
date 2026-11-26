@@ -393,6 +393,11 @@ npm run validate
 
 ### 로컬 SDLC run 대시보드
 
+![로컬 SDLC run 대시보드 데모: 승인 대기 필터, 워크스페이스 선택, 세션 상세 드로어와 검증 상세 보기](docs/assets/session-sdlc-dashboard-demo.gif)
+
+_합성 데모 데이터로 녹화한 화면입니다. 승인 대기 필터 → 워크스페이스 선택 → 세션 "자세히보기" →
+run 진행·게이트·스킬/리뷰/검증 요약 → 단위 테스트 상세 → 다음 세션 이동 → run별 묶기 순서로 동작합니다._
+
 `npm run dashboard`를 실행한 뒤 터미널에 표시되는 `127.0.0.1` 주소를 브라우저에서 엽니다.
 대시보드는 지원되는 GitHub Copilot CLI, Claude Code, Codex의 로컬 세션 파일과 해당
 워크스페이스의 SDLC run 증거를 읽기 전용으로 표시합니다. 세션 내용은 외부로 업로드되지
