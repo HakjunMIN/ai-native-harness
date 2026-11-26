@@ -764,7 +764,6 @@ function combinedOutcome(outcomes) {
   return outcomes.length && outcomes.every(outcome => outcome === 'passed') ? 'passed' : 'unknown';
 }
 
-const SETUP_COMMAND = /^(?:cd|pushd|export)\b/;
 // `;`, `||`, `|`, a background `&` and newlines let the shell's exit status come from another
 // command; redirections such as `2>&1`, `>&2` and `&>` do not.
 const OPAQUE_STATUS = /;|\|\||\||\n|(?<![&>])&(?![&>])/;
@@ -789,15 +788,15 @@ function classifyCommand(command) {
   return [...new Set(commandSegments(command).map(segmentCheck).filter(Boolean))];
 }
 
-// A command's exit status speaks for a check only through an `&&` chain: success means every
-// step succeeded, and failure is pinned to a check only when every other step is setup.
+// An `&&` chain's success proves every step passed; its failure cannot identify the failed
+// step, even when the other steps are setup commands such as cd, pushd or export.
 function checkOutcomes(command, outcome) {
   const checks = classifyCommand(command);
   const proven = new Map(checks.map(check => [check, 'unknown']));
   if (!checks.length || OPAQUE_STATUS.test(unquoted(command))) return proven;
   if (outcome === 'passed') for (const check of checks) proven.set(check, 'passed');
   if (outcome === 'failed') {
-    const steps = commandSegments(command).filter(segment => !SETUP_COMMAND.test(segment));
+    const steps = commandSegments(command);
     if (steps.length === 1 && checks.length === 1) proven.set(checks[0], 'failed');
   }
   return proven;

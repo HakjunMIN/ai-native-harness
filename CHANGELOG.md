@@ -41,7 +41,8 @@ Targets `0.2.0`.
   `dashboard-windows` CI job runs its tests on Windows.
   Only the next human gate still pending counts as an approval wait; each
   check shows its newest run's outcome and compound shell commands (`;`, `||`,
-  `|`, `&`) leave it unknown; reviews are grouped by stage and show passed only
+  `|`, `&`) leave it unknown, as do failed `&&` chains (including setup steps);
+  reviews are grouped by stage and show passed only
   once state validation checked them; late tool results stay with their run;
   API errors and snapshot warnings stay visible without opening a session, and
   the drawer shows session warnings. Manual link saves are serialized by a lock

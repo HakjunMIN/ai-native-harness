@@ -294,7 +294,7 @@ test('a check shows a result only when the newest run of that check has an exit 
   ]);
   assert.deepEqual(occurrences('verification:e2e'), [
     ['npm run build && npm run test:e2e', 'unknown'],
-    ['cd app && npx playwright test', 'failed'],
+    ['cd app && npx playwright test', 'unknown'],
     ['npx playwright test; echo done', 'unknown']
   ]);
   assert.deepEqual(occurrences('verification:build'), [
@@ -302,6 +302,25 @@ test('a check shows a result only when the newest run of that check has an exit 
     ['cd app && npm run lint && npm test', 'passed'],
     ['npm run build | tee build.log', 'unknown']
   ]);
+});
+
+test('a failed setup chain does not prove that its check ran or failed', async () => {
+  const app = await readAsset('app.js');
+  const { summarizeActivity } = await import(`data:text/javascript;base64,${Buffer.from(app).toString('base64')}`);
+  for (const command of [
+    'cd missing && npm run test:api',
+    'pushd missing && npm run test:api',
+    'export 1INVALID=value && npm run test:api'
+  ]) {
+    const events = [
+      { id: 'check', kind: 'tool', command, relatedTo: [] },
+      { id: 'result', kind: 'tool', outcome: 'failed', relatedTo: ['check'] }
+    ];
+    const api = summarizeActivity({ events }).lanes.flatMap(lane => lane.nodes)
+      .find(node => node.key === 'verification:api');
+    assert.equal(api.outcome, 'unknown', command);
+    assert.deepEqual(api.occurrences.map(item => item.outcome), ['unknown'], command);
+  }
 });
 
 test('only the next human gate still pending on an unfinished run is awaiting approval', async () => {
