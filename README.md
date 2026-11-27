@@ -414,6 +414,15 @@ run 진행·게이트·스킬/리뷰/검증 요약 → 단위 테스트 상세 �
 또는 수동을 고를 수 있고, 선택한 값은 브라우저에 저장됩니다. ↻(지금 새로고침) 버튼은 모드와
 관계없이 즉시 다시 읽습니다.
 
+세션 카드에는 VS Code 링크와 **명령 복사** 버튼이 있습니다. Copilot CLI 세션의 **VS Code에서
+세션 열기**는 워크스페이스를 열고 세션을 VS Code 채팅으로 가져옵니다. VS Code 에이전트 호스트가
+가져올 수 있는 세션, 즉 VS Code에서 만든 세션과 VS Code 실행 중에 감지된 CLI 세션만 열립니다.
+그 밖의 오래된 CLI 세션은 VS Code에서 가져오기 오류가 표시됩니다. Claude Code와 Codex CLI 세션은
+VS Code가 가져오지 못하므로 **VS Code 폴더 열기**로 표시되며 워크스페이스만 엽니다. **명령 복사**는
+`copilot --resume <id>`, `claude --resume <id>`, `codex resume <id>`를 복사하므로 터미널에서 세션을
+이어 갈 수 있습니다. 오래된 세션 생략 같은 스냅샷 경고는 왼쪽 아래 **알림 N건** 버튼에 접혀 있으며
+누르면 펼쳐집니다. 대시보드를 읽지 못한 오류는 화면 위쪽에 그대로 표시됩니다.
+
 macOS 터미널과 Windows PowerShell에서 같은 명령으로 실행하고 `Ctrl+C`로 종료합니다. 세션은
 사용자 홈 디렉터리의 `.copilot`, `.claude`, `.codex`(Windows는 `%USERPROFILE%\.copilot` 등)에서
 읽습니다. 수동 연결 설정은 macOS에서는 `~/Library/Application Support/ai-native-harness/dashboard.json`,

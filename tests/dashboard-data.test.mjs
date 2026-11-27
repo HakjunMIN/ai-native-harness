@@ -283,6 +283,7 @@ test('snapshot keeps concurrent runs distinct, links harness activity, applies o
   assert.equal(workspace.runs.length, 2);
   const sessions = new Map(workspace.sessions.map(session => [session.id, session]));
   assert.equal(sessions.get('explicit-link').runId, 'local-alpha');
+  assert.equal(sessions.get('explicit-link').cwd, repo);
   assert.equal(sessions.get('explicit-link').associationSource, 'activity');
   assert.equal(sessions.get('unlinked').runId, null);
   assert.equal(sessions.get('unlinked').associationSource, null);

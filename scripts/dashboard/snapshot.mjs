@@ -143,6 +143,7 @@ export async function loadDashboardSnapshot({ homeDir = homedir(), env = process
     workspace.sessions.push({
       host: adapter.host,
       id: session.id,
+      cwd: session.cwd,
       startedAt: session.startedAt,
       updatedAt: session.updatedAt,
       lastActivityAt: lastActivity(events, session.updatedAt),

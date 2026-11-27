@@ -32,7 +32,6 @@
 
     <section id="global-status" class="global-status" aria-label="대시보드 상태" hidden>
       <div id="dashboard-error" class="error-banner" role="alert" hidden></div>
-      <div id="snapshot-warnings" class="warning-list" aria-live="polite"></div>
     </section>
 
     <main id="dashboard-grid" class="dashboard-grid">
@@ -185,6 +184,22 @@
         </div>
       </aside>
     </main>
+
+    <aside id="snapshot-alerts" class="snapshot-alerts" aria-label="스냅샷 알림" hidden>
+      <div id="snapshot-alerts-panel" class="snapshot-alerts-panel" hidden>
+        <div class="snapshot-alerts-heading">
+          <strong>스냅샷 알림</strong>
+          <button id="snapshot-alerts-close" class="icon-button" type="button" aria-label="알림 닫기" title="알림 닫기">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div id="snapshot-warnings" class="warning-list"></div>
+      </div>
+      <button id="snapshot-alerts-toggle" class="snapshot-alerts-toggle" type="button" aria-expanded="false" aria-controls="snapshot-alerts-panel">
+        <span aria-hidden="true">!</span>
+        <span id="snapshot-alerts-label">알림 0건</span>
+      </button>
+    </aside>
 
     <footer class="footer-note">
       <span>로컬 전용 · 읽기 전용</span>
