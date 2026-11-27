@@ -102,6 +102,37 @@ Legacy records without policy retain different-family requirements. Never weaken
 an approved snapshot from new defaults or a config edit. If policy or scope changes,
 invalidate G2 (G1 for requirements), regenerate and reapprove.
 
+## Run contract and E2E level
+
+Runs started by this release carry `runContract: 2` in `harness.lock.json`; locks
+without it are contract 1 and keep their workflow. Contract 2 adds
+`G1.approval.preferences` ([discovery review](discovery-review.md#execution-preferences)),
+the `policy.quality` contract ([code quality](code-quality.md)) and
+`policy.verification`. Contract-1 runs reject these fields and the `playwright` check.
+
+`tasks.mjs prepare` copies `policy.verification: {e2e, reason?}` from the G1
+preferences; the draft cannot set it. Levels:
+
+| `e2e` | Required E2E |
+|---|---|
+| `full` (default) | Playwright AC checks for UI behavior, affected-flow E2E, existing smoke regression, consumer-flow E2E for BFF/API changes, and conductor exploratory browser E2E when a browser tool is available |
+| `regression` | Playwright AC checks and smoke regression; no exploratory run |
+| `none` | No E2E; backend-only or non-UI work |
+
+`state.uiChange` and `policy.verification` must equal the approved preferences;
+changing them needs G1 re-approval. `uiChange: true` with `none` needs a human
+reason; with `full` or `regression` at least one AC must use `playwright-bdd`
+(Grafana Gherkin through `@grafana/plugin-e2e`) or `playwright` (other web UIs,
+the repository's own Playwright config).
+
+Subagent profiles have no MCP or browser tools, so the verifier runs the
+repository's Playwright runner through its shell. Exploratory browser E2E is
+conductor-owned: start the app locally, drive the AC scenarios through
+Playwright MCP or the host browser and save screenshots, console errors and
+failed requests under `e2e/` in the run directory, labelled exploratory, for the
+verifier to audit. It supplements regression tests and never replaces them; a
+missing browser tool is a recorded limitation, not a pass.
+
 ## Evidence and review records
 
 Write actual sanitized evidence, then hash with `state.mjs hash FILE`. References
@@ -121,7 +152,9 @@ general permission. Changed choices require updated evidence and final approval.
 The checker cannot authenticate the person or prove prose/diagram equivalence.
 Older locked revisions retain their own contracts; legacy unpinned gates remain
 unchanged until explicit adoption.
-G2 evidence includes the exact `taskPlan` reference. A local run always keeps
+G2 evidence includes the exact `taskPlan` reference; contract-2 G2 evidence also
+binds the hashed `02-plan.md` that holds the [proceed agreement](#autonomous-execution).
+A local run always keeps
 its copied or interview-recorded request at `state.intake.request`; G0 evidence
 must include that exact reference. Changing its contents invalidates the state;
 do not edit intake in place. Discovery produces the AC/module mapping before G0
@@ -130,7 +163,7 @@ is not a Jira key: do not create
 issues, enqueue writes, or label work remotely without a separate authorized run.
 
 G3/G4/G5a/G5b use the verified source `subjectHead`. Obtain the user's required
-commit authorization before recording committed source evidence; do not commit
+commit authorization (or an active standing grant) before recording committed source evidence; do not commit
 merely because a workflow needs a SHA. Record uncommitted/executable changes as
 unverified until the candidate is established. Never relabel old CI with a new SHA.
 Keep source SHA, built image digest and GitOps promotion revisions distinct.
@@ -163,7 +196,9 @@ If blockers remain after round 2, return `NEEDS_HUMAN` with three options: accep
 with follow-ups, fix once more, or descope. An accepted residual finding keeps its
 `blocking` count and adds `acceptance: {actor: "human", reference, at, followUps}`
 with nonempty follow-ups; acceptance is a human risk decision, not a human review,
-so it does not need `allowHumanReview`.
+so it does not need `allowHumanReview`. Contract-2 records also carry `round`
+(1 or 2) and `critical` (0..`blocking`) from the reviewer's verbatim output, and may
+use agent acceptance (see [autonomous execution](#autonomous-execution)).
 
 Strict axes are `plan` at G2, `spec` and `standards` per slice, `final` at G4.
 Light uses `combined` per slice and at G4. Split author scopes must be unique and
@@ -178,10 +213,82 @@ render, schema or relevant test evidence without fabricated RED. Non-behavior
 policies require `verificationReason`; behavior changes cannot be disguised as
 refactoring/configuration. G3/G4 always verify the final integrated candidate.
 
+## Autonomous execution
+
+Contract-2 runs ask every predictable question at G1 (see
+[execution preferences](discovery-review.md#execution-preferences)) and then run
+plan and implementation on recommendations. G2 and G5b stay human gates; G2 also
+approves how far the run proceeds without asking.
+
+**Standing grants.** `G1.approval.preferences.grants` may hold `plan-commit`
+(commit the approved plan), `slice-commit` (commit reviewed slice work) and
+`local-integration` (merge reviewed slices into `sdlc/<ID>/integration`). A grant
+satisfies the "user authorization" required for that local action in this
+protocol; record each action in history. Without it, ask each time. Push, merge
+to shared branches, PR publication and production are never grantable. A G0 or
+G1 invalidation resets G1 and drops the grants; G2 and later invalidations keep
+them. When the user revokes, append
+`{at, event: "grants-revoked", grants, reference}` to history; a grant named by a
+revocation later than the G1 approval is no longer active. The guard treats local
+Git as neutral; the record makes authorization auditable, not enforced.
+
+**Decision log.** Resolve non-critical plan, implementation and verification
+questions with the recommendation and append a row to the run's `decisions.md`
+([template](../../../templates/decisions.md)), continuing the discovery `D-n`
+sequence. The G2 presentation lists plan decisions, `03-impl-log.md` and
+`04-verify-report.md` reference implementation decisions, and the release report
+lists all decisions and agent acceptances.
+
+**Proceed agreement.** Every contract-2 `02-plan.md` has a `Proceed agreement`
+section, shown at G2 and bound by G2's hash of that file:
+
+- *Continue:* inside the approved sub tasks and ACs, implement, test, fix review
+  findings within the 2-round cap, format and run quality checks, look up facts
+  read-only, verify at the approved E2E level and take local Git actions that
+  active grants cover.
+- *Stop:* the critical list below, plus plan-specific conditions the planner
+  recommends or the human adds at G2, such as a real external connection instead
+  of synthetic data, a new write permission or a new external dependency. The
+  agreement cannot remove or weaken the critical list or extend grants.
+- *Separate approvals:* push, merge to shared branches, PR publication and
+  production (G5b) keep their own human approvals.
+
+Inside the agreement, a finished step, a passing check or the next ready sub task
+is a progress report, not a question: report it and continue; never ask whether
+to continue. A stop condition applies only when the approved work cannot be
+completed without crossing it; an optional suggestion to cross it keeps the
+approved path and becomes a `D-n` row with a follow-up. On a stop condition,
+pause only the affected work, keep unrelated authorized work going and return
+`NEEDS_HUMAN` with what changed, the decision needed, the options and the
+recommendation. Log the answer as a `D-n` row; an answer that changes scope,
+ACs, contracts or policy follows [invalidation](#invalidation-and-resumption)
+and renewed approval. Editing the agreement changes `02-plan.md` and needs a
+renewed G2. A light plan keeps the defaults and adds a stop condition only for
+an effect the plan actually touches.
+
+**Critical-only escalation.** Stop with `NEEDS_HUMAN` for: authority or policy
+exceptions; auth/tenant changes; destructive data or schema changes; public
+contract breaks; security issues with an exploit path; AC or scope changes
+(return to G1/G2); secrets or credentials; production or remote publication;
+the stop conditions of the G2 proceed agreement, including anything the user
+marked "ask me".
+
+**Residual findings.** `policy.autonomy.residualFindings` comes from the G1
+preferences: `follow-up` (default) or `human`. The independent reviewer, not the
+conductor, marks each blocking finding critical or not. Always critical: an unmet
+AC, a security defect with an exploit path, data loss, a broken build, test or
+required quality check, and anything on the escalation list. In practice only
+internal contract, standard or ADR violations can be non-critical. The record
+copies the reviewer's counts into `round` and `critical`. Agent acceptance
+`acceptance: {actor: "agent", decision: "D-n", followUps}` is valid only with
+`follow-up` policy, `round: 2`, `critical: 0`, `blocking >= 1`, nonempty follow-ups
+and a `D-n` row in `decisions.md`. Otherwise return `NEEDS_HUMAN`; human acceptance
+stays valid. The checker verifies shape and the logged row, not provenance.
+
 ## Source workspaces
 
-After G2, commit the approved plan with the required user authorization before
-forking source work. The conductor runs `workspaces.mjs plan STATE [SCOPES.json]`,
+After G2, commit the approved plan with the required user authorization (or the
+`plan-commit` grant) before forking source work. The conductor runs `workspaces.mjs plan STATE [SCOPES.json]`,
 then `start` with the same arguments, both in the run worktree (see
 [run worktrees](#run-worktrees)). One ready, nonconcurrent slice uses only
 `sdlc/<ID>/integration` in the run worktree. Concurrent independent slices
@@ -194,7 +301,7 @@ alone does not prove contract/behavior independence; defer coupled work.
 Workers edit only their workspace and allowlist; only the conductor writes shared
 state and evidence. Reconcile recorded branches/worktrees on resume. Integrate
 reviewed slice commits on the integration branch with explicit user authorization
-before unblocking dependents; workers do not merge.
+(or the `local-integration` grant) before unblocking dependents; workers do not merge.
 G3 checks each completed slice SHA is an ancestor of the final integrated SHA;
 rerun combined checks/reviews after merges or conflict fixes. See
 [operations](../../../docs/operations.md) for commands and cleanup.
@@ -281,9 +388,37 @@ Jira strict publishes children. Local runs have no Jira outbox or remote status.
 G5b and production authority remain human-controlled even for local runs.
 
 v1 hooks conservatively deny `git push`, `gh pr merge` and direct deployment mutation.
+`az` and `gh` are limited to read-only observation: `az version`, `account show|list`,
+`<group> show|list|query` and `aks get-versions|get-upgrades`, excluding credential
+words (`key(s)`, `credential(s)`, `secret(s)`, `password(s)`, `token(s)` alone or
+after `-`, `connection-string(s)`, `appsettings`, `sas`, and `iot … policy`), `rest`,
+`login`, `aks get-credentials`, `acr login`, `account get-access-token`, and leaf
+commands that take positional arguments (such as `acr build|run`, `config set`,
+`storage copy`), so `az acr build list` is not read as a `list`; a path word that
+is not a plain command name is denied. `gh pr|issue|run|workflow|release|repo|label`
+reads, `search`, `status`, `auth status` without `--show-token` and `api` GET without
+fields are observation;
+any gh flag other than `-R`/`--repo` before the subcommand is denied because it
+could hide the real subcommand. `gh pr|issue comment`, `pr checkout`,
+`run|release download` and `pr create --draft` (a flag value such as
+`--title --draft` does not count) are also neutral. Other `az`/`gh`
+commands are denied as requiring the human operator. The guard strips `VAR=`, `env`,
+`command`, `time`, `nohup`, `exec`, `nice`, `timeout`, `sudo` and shell keywords
+(`if`, `then`, `do`, `{`, `!` …), parses shell options to classify
+`bash|sh|zsh -c` recursively, denies `az`/`gh` fed to a shell or `source` through a
+script or stdin, classifies a shell launched by another program (for example
+`find -exec sh -c`), denies `az`/`gh` passed as an argument to another program (for
+example `find -exec`, `docker run`, `stdbuf`) except non-launching `which`, `type`,
+`echo`, `printf`, `grep` and `rg` without `--pre`, and fails closed when an `az`/`gh`
+command uses `$`, backticks, `<(`, `eval` or `xargs`. Codex `apply_patch` text is
+checked by its target paths, not parsed as a command; shell tools are always parsed. A command whose every segment is such an
+observation (or a kubectl/helm/argocd read) skips the production-text check, so
+`az group show -n production` stays neutral. Commands inside another program's
+string (for example `python -c`) and in script files are not parsed and rely on host
+permission prompts.
 Local `git merge` is neutral to the hook, not pre-approved: only the conductor
-integrates reviewed source slices with explicit user authorization and repository
-protections. Workers, including the release role, must not merge.
+integrates reviewed source slices with explicit user authorization (or the
+`local-integration` grant) and repository protections. Workers, including the release role, must not merge.
 Humans publish branches and merge GitOps promotions. Production proposals are
 allowed, actual production desired-state edits are not. Hooks are not a sandbox:
 external CI protections, human approvals and production RBAC remain necessary.

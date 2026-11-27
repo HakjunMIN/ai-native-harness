@@ -6,18 +6,46 @@
       "id": 1,
       "title": "<observable outcome>",
       "goal": "<end-to-end user or operator behavior>",
-      "scope": ["<included behavior>"],
-      "nonGoals": ["<excluded behavior>"],
+      "scope": [
+        "<included behavior>"
+      ],
+      "nonGoals": [
+        "<excluded behavior>"
+      ],
       "blockedBy": [],
       "acceptanceCriteria": [
         {
           "id": "T1-AC1",
           "requirement": "<parent discovery AC reference>",
           "text": "<measurable result>",
-          "checks": ["junit"]
+          "checks": [
+            "junit"
+          ]
         }
       ],
       "details": "<applicable contract/UX references, fixtures and verification rationale>"
     }
-  ]
+  ],
+  "quality": {
+    "modules": [
+      {
+        "id": "<module id, e.g. bff>",
+        "path": "<repository-relative module path>",
+        "tasks": [
+          1
+        ],
+        "checks": {
+          "lint": {
+            "command": "<config commands ID>"
+          },
+          "format-check": {
+            "command": "<config commands ID>"
+          },
+          "typecheck": {
+            "reason": "<why this check does not apply; never a missing tool or failing check>"
+          }
+        }
+      }
+    ]
+  }
 }

@@ -11,7 +11,7 @@ test('maintainer skill is available locally but excluded from the shipped runtim
   assert.match(skill, /^name: harness-dev$/m);
   assert.match(skill, /^disable-model-invocation: true$/m);
   assert.match(readFileSync('.agents/skills/harness-dev/agents/openai.yaml', 'utf8'),
-    /^policy:\n  allow_implicit_invocation: false$/m);
+    /^policy:\n {2}allow_implicit_invocation: false$/m);
   assert.match(readFileSync('AGENTS.md', 'utf8'), /\.agents\/skills\/harness-dev\/SKILL\.md/);
   assert.equal(readdirSync('skills').includes('harness-dev'), false);
 

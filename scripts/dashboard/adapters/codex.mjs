@@ -24,7 +24,7 @@ const IGNORED_ITEMS = new Set(['reasoning', 'agent_message', 'web_search_call'])
 const INJECTED_USER_TEXT = /^\s*(?:<[a-z_]+[\s>]|# AGENTS\.md)/;
 const SHELL_WRAPPER = /^\s*(?:&\s*)?(?:(?:ba|z)?sh|(?:powershell|pwsh|cmd)(?:\.exe)?)\b[^"';|&]*?\s(?:-l?c|-Command|\/c)\s+["']?/i;
 const SKILL_READ = /^\s*(?:sed|cat|head|tail|nl|bat|less|awk|more|type|gc|get-content)\b/i;
-const SKILL_FILE = /(?:^|[\/\\\s"'])skills[\/\\]+([A-Za-z0-9][A-Za-z0-9_.:-]*)[\/\\]+SKILL\.md\b/g;
+const SKILL_FILE = /(?:^|[/\\\s"'])skills[/\\]+([A-Za-z0-9][A-Za-z0-9_.:-]*)[/\\]+SKILL\.md\b/g;
 
 function readSkills(command) {
   if (typeof command !== 'string') return [];

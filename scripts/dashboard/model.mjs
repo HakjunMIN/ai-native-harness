@@ -112,7 +112,7 @@ export async function getFileTimestamps(path) {
   return fileStats.mtime.toISOString();
 }
 
-const RUN_REFERENCE = /(?:^|[^A-Za-z0-9_.-])(?:docs|\.worktrees)[\/\\]+sdlc[\/\\]+([A-Za-z0-9][A-Za-z0-9_-]{0,71})(?=$|[^A-Za-z0-9_-])/g;
+const RUN_REFERENCE = /(?:^|[^A-Za-z0-9_.-])(?:docs|\.worktrees)[/\\]+sdlc[/\\]+([A-Za-z0-9][A-Za-z0-9_-]{0,71})(?=$|[^A-Za-z0-9_-])/g;
 
 export function extractRunRefs(...values) {
   const refs = new Set();

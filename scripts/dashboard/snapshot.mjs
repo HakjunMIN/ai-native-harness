@@ -123,9 +123,9 @@ export async function loadDashboardSnapshot({ homeDir = homedir(), env = process
     }
     const association = associations.find(item => item.host === adapter.host && item.sessionId === session.id);
     const runIds = new Set(runs.map(run => run.id));
-    let runId = null;
-    let touchedRunIds = [];
-    let associationSource = null;
+    let runId;
+    let touchedRunIds;
+    let associationSource;
     if (association && association.workspaceRoot === root && runIds.has(association.runId)) {
       runId = association.runId;
       touchedRunIds = [runId];

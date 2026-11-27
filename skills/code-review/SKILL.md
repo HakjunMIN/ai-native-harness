@@ -40,10 +40,18 @@ supplied approved policy and handoff, not mutable config or guessed model routin
    violated approved AC/contract, a security defect with an exploit path, a broken
    build/test or data loss; other issues are should-fix/nit follow-ups. Zero
    findings must describe inspected scope, not assert universal safety.
+   For each blocking finding also state `critical: true|false`. Always critical:
+   an unmet AC, a security defect with an exploit path, data loss, a broken build,
+   test or required quality check, an auth/tenant, destructive data or public
+   contract change, secrets, or production effects. Only internal contract,
+   standard or ADR violations may be non-critical. End with the round number and
+   the blocking and critical counts so the conductor can copy them verbatim.
 5. Bind findings to the actual revision. New code requires renewed review. A subject
    gets at most 2 rounds: round 2 reviews only the fix diff and its blast radius and
    must not raise new should-fix/nit items outside it. Blockers left after round 2
-   go to the human as `NEEDS_HUMAN` (accept with follow-ups, fix once more, descope).
+   go to the human as `NEEDS_HUMAN` (accept with follow-ups, fix once more, descope),
+   unless the approved policy lets the agent accept non-critical ones (protocol
+   autonomous execution).
    Light G4 can reuse combined evidence only at the same revision with complete integrated
    spec/standards/security coverage and no unresolved blockers.
 

@@ -24,7 +24,8 @@ drift returns to the affected gate; release approval does not waive shared rules
    user-authorized local source integration belongs to implement, not promotion.
    Agents may create a draft PR only on an already-published,
    explicitly selected non-production branch with authorization.
-2. Inspect GitHub Actions required checks for the exact PR head SHA, including
+2. Inspect GitHub Actions required checks (`gh pr checks`, `gh run view --log`) for
+   the exact PR head SHA, including
    dependency/security/build/chart checks required by repository rules. Pending,
    skipped required jobs or a green result from another SHA do not qualify.
 3. Prepare dev/staging Helm promotion changes with immutable image digest. Any
@@ -44,7 +45,9 @@ drift returns to the affected gate; release approval does not waive shared rules
    pending and explicitly say “production handoff prepared,” not “deployed.”
 
 Write `05-release.md` including every environment's revision/digest/status, PRs,
-CI links, approvals, rollback target and (Jira runs only) pending outbox. For local
+CI links, approvals, rollback target, a decision summary (every `decisions.md`
+row and agent acceptance with its follow-ups, for after-the-fact human review) and
+(Jira runs only) pending outbox. For local
 runs do not create Jira issues or claim Jira Done. If health regresses,
 stop promotion and hand off rollback via GitOps to the human operator; never
 perform an emergency direct cluster mutation.

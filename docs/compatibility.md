@@ -144,6 +144,18 @@ Windows의 `child.kill`은 강제 종료이므로 CI는 프로세스 종료 여�
 정상 종료는 확인하지 않습니다. `COPILOT_HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`으로
 옮긴 세션 저장소는 운영체제와 관계없이 읽지 않습니다.
 
+0.3.0 run contract 2(자율 실행·품질·E2E·`az`/`gh` 조회 제한)는 macOS에서 다음을
+확인했습니다.
+- 0.2.0으로 시작한 run(lock에 `runContract` 없음)은 0.3.0 재설치 후에도 목록·resolve·
+  `state.mjs check`(현재 CLI와 고정 스냅숏)·캐시 삭제 후 restore가 동작합니다.
+  `workspaces.mjs plan`은 고정 스냅숏의 검사기로 위임됩니다.
+- 0.2.0으로 되돌리면 CLI는 contract-2 run을 고정 스냅숏으로 위임해 `OK`를 반환합니다.
+  0.2.0 대시보드는 상태를 프로세스 안에서 검사하므로 에이전트가 수용한 리뷰를
+  `residual finding acceptance requires a human record and follow-ups`로 표시합니다.
+- 훅의 `az`/`gh` 판정은 Copilot·Claude 어댑터 입력 형식으로 테스트했습니다. 실제
+  호스트 세션에서의 차단 동작, Playwright MCP·호스트 브라우저를 통한 탐색적 E2E,
+  `golangci-lint` 이외 언어별 품질 명령의 실제 실행은 확인하지 않았습니다.
+
 Copilot legacy manifest는 선택적 플러그인 설치용으로 유지합니다. Agent Plugins
 1.0의 고정 component 경로와 섞지 않습니다. Claude는 기본 `agents/`, `skills/`,
 `hooks/hooks.json` 검색을 사용하고 프로젝트 설치의 Copilot은 `.github/agents`,

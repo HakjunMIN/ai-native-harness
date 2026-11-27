@@ -21,7 +21,7 @@ function scopesFor(file, ready, repo) {
     if (!Array.isArray(paths) || !paths.length) throw new Error(`scope ${id}: nonempty exact files/directories required`);
     for (const path of paths) {
       if (typeof path !== 'string' || path.startsWith('/') || path.includes('\\') ||
-          path.split('/').some(part => !part || part === '.' || part === '..' || /[*?\[\]]/.test(part))) throw new Error(`scope ${id}: use safe repo-relative paths without globs`);
+          path.split('/').some(part => !part || part === '.' || part === '..' || /[*?[\]]/.test(part))) throw new Error(`scope ${id}: use safe repo-relative paths without globs`);
       if (overlaps(path,'docs/sdlc') || overlaps(path,'.git')) throw new Error(`scope ${id}: shared docs/sdlc and .git cannot be assigned`);
       let current = repo;
       for (const part of path.split('/')) {

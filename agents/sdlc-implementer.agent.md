@@ -23,6 +23,8 @@ Behavior needs RED; refactor needs a passing before-baseline; docs/config need
 meaningful checks. Strict freezes test hashes and permits production edits only;
 light may assign both tests and implementation. The parent audits the full diff.
 
+Before returning, format only your changed paths with the handoff's fix command and commit; never run mutating formatters on unrelated files or in parallel on shared files. Report the commands you ran.
+
 Implement the smallest production change that makes the specified tests pass. Refactor production code, then rerun affected tests. Do not edit assertions, fixtures, snapshots, feature files, skips, test configuration, or the approved contract to manufacture GREEN. If a test is wrong, return `BLOCKED` with the discrepancy to the test-writer.
 
 Keep the BFF behind the Grafana boundary and call query-service only; never direct ClickHouse, even after benchmarks. Discover the pinned API schema. Use verified authentication for tenant scope and server-managed secrets. Never copy or translate throwaway prototype code into production.

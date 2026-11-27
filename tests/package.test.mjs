@@ -129,6 +129,23 @@ test('discovery callers share question classification and a single scoped G1 rev
   const template = readFileSync('templates/discovery.md', 'utf8');
   assert.ok(inspectDiscovery(template).errors.length, 'unfilled templates cannot serve as discovery evidence');
 });
+test('contract-2 G2 approves a proceed agreement that turns in-scope progress into reports', () => {
+  const read = path => readFileSync(path, 'utf8');
+  const protocol = read('skills/sdlc/references/protocol.md');
+  assert.match(protocol, /\*\*Proceed agreement\.\*\*/);
+  assert.match(protocol, /progress report, not a question/);
+  assert.match(protocol, /cannot remove or weaken the critical list/);
+  assert.match(protocol, /stop conditions of the G2 proceed agreement/);
+  assert.match(protocol, /applies only when the approved work cannot be\s+completed without crossing it/);
+  assert.match(read('skills/sdlc-implement/SKILL.md'), /applies only when the slice\s+cannot be completed without crossing it/);
+  const plan = read('skills/sdlc-plan/SKILL.md');
+  assert.match(plan, /^\| Proceed agreement \|/m);
+  assert.match(plan, /G2 evidence[\s\S]{0,80}`02-plan\.md`/);
+  for (const path of ['skills/sdlc/SKILL.md', 'skills/sdlc-implement/SKILL.md', 'skills/sdlc-verify/SKILL.md']) {
+    assert.match(read(path), /proceed agreement/i, path);
+  }
+  assert.match(read('templates/handoff.md'), /^Proceed agreement: /m);
+});
 test('missing discovery runtime or template blocks package validation', t => {
   const root = copy(t);
   rmSync(join(root, 'scripts/discovery.mjs'));

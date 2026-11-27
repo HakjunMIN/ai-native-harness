@@ -2,8 +2,17 @@
 
 # ai-native-sdlc
 
+[![Validate plugin](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/validate.yml)
+[![Lint](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/lint.yml)
+[![Version](https://img.shields.io/github/package-json/v/HakjunMIN/ai-native-harness?label=version)](CHANGELOG.md)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](package.json)
+![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-informational)
+![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)
+
 **AI가 구현하고, 증거로 검증하며, 사람이 승인하는 로컬 개발 워크플로우.**
 Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->37개 스킬과 9개 전문 에이전트를 제공합니다.
+Discovery에서 사람에게 필요한 것을 충분히 묻고, 이후 계획·구현·검증은 권장안으로
+진행하며 중대 사항만 확인을 요청합니다.
 
 ## 소프트웨어 엔지니어링 원칙
 
@@ -12,12 +21,12 @@ Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->37�
 | 원칙 | 워크플로우에 적용하는 방식 |
 |---|---|
 | **작은 수직 단위로 전달** | DB/API/UI 계층별 작업 대신, 사용자 결과와 수용 기준(AC)을 갖춘 sub task로 나눕니다. |
-| **AC 기반 Verification & Validation** | 사용자 스토리·Jira 티켓 또는 요청에서 AC를 도출합니다. 프런트엔드 관찰 가능 동작은 AC에 연결된 Gherkin 시나리오로, 백엔드 AC는 API 예시와 JUnit(Spring) 또는 Go `testing`(Go) 단위·통합·API 테스트로 연결합니다. 구현 전 G1에서 사람이 AC·시나리오(UI는 프로토타입 포함)로 요구 의도를 확인(Validation)하고, 최종 검증에서 AC별 테스트 결과로 구현 충족을 확인(Verification)합니다. |
+| **AC 기반 Verification & Validation** | G1에서 AC·Gherkin 시나리오(UI는 프로토타입 포함)로 요구 의도를 확인하고, 최종 검증에서 AC별 테스트(Go `testing`·JUnit, Playwright E2E) 결과로 구현 충족을 확인합니다. |
 | **계약과 경계 우선** | 도메인 용어·API 계약·테스트 기대값을 맞추고, 인증·테넌트·제품 경계를 보존합니다. |
 | **위험 기반 검증** | 작고 저위험인 단일 결과는 light, 고위험·아키텍처 변경·다중 결과는 strict로 진행합니다. |
-| **변경에 맞는 테스트** | 동작 변경은 TDD(RED → GREEN), 리팩터링은 전후 비교, 문서·설정은 관련 정적 검증을 적용합니다. 동작을 바꾸는 설정은 동작 테스트가 필요합니다. |
-| **독립 리뷰와 역할 분리** | 작성자의 자기 검토를 독립 리뷰로 인정하지 않습니다. Strict는 테스트 작성과 구현 역할도 분리합니다. |
-| **증거 기반 완료와 추적성** | 테스트·리뷰·승인을 파일 해시와 코드 revision에 연결합니다. 변경으로 무효화된 증거는 재검증하며, 문서 존재나 과거 요약을 통과로 간주하지 않습니다. |
+| **변경에 맞는 테스트** | 동작 변경은 TDD(RED → GREEN), 리팩터링은 전후 비교, 문서·설정은 관련 정적 검증을 적용합니다. |
+| **독립 리뷰와 역할 분리** | 작성자와 다른 모델이 리뷰하며, 리뷰 대상별 2라운드가 상한입니다. Strict는 테스트 작성과 구현 역할도 분리합니다. |
+| **증거 기반 완료와 추적성** | 테스트·리뷰·승인을 파일 해시와 코드 revision에 연결하고, 변경으로 무효화된 증거는 재검증합니다. |
 | **사람이 결정하는 승인과 운영** | 요구사항(G1), 계획(G2), 운영 반영(G5b)은 사람이 승인합니다. 에이전트는 스스로 승인하거나 실제 운영 변경을 수행하지 않습니다. |
 
 세부 기준: [공통 원칙](skills/sdlc/references/principles.md) ·
@@ -25,55 +34,37 @@ Jira 티켓 또는 자연어 요청에서 시작하며, <!-- skill-count -->37�
 
 ## 대상과 흐름
 
-기본 기술 지침은 **Grafana datasource/panel/app + React/TypeScript → Spring Boot BFF (Gradle)
-→ SigNoz query-service** 관측성 스택을 대상으로 합니다.
-BFF는 ClickHouse에 직접 접근하지 않으며, SigNoz 자체 UI는 노출하지 않습니다.
-Go로 작성한 BFF·백엔드 서비스에는 `go-backend`·`go-testing`을 적용하며 같은 경계를 유지합니다.
-모노레포 또는 여러 MSA 서비스 리포에서 사용할 수 있으며, 공유 설치를 사용해도
-각 리포의 경로·명령·공통 기준은 `sdlc-setup`으로 별도 확인합니다.
+기본 기술 지침은 **Grafana datasource/panel/app + React/TypeScript → BFF → SigNoz
+query-service** 관측성 스택을 대상으로 합니다. BFF는 Go가 기본(`go-backend`·`go-testing`)이며
+Spring Boot(Gradle)도 지원합니다. BFF는 ClickHouse에 직접 접근하지 않으며 SigNoz 자체 UI는
+노출하지 않습니다. 모노레포와 여러 MSA 리포에서 사용할 수 있으며, 리포별 경로·명령·공통
+기준은 `sdlc-setup`으로 확인합니다.
 
 **Discovery → Plan → Implement → Verify → Release**
 
 ![단계별 서브에이전트, 필수·조건부 스킬과 G1/G2/G5b 사람 승인 게이트](docs/assets/ai-native-sdlc-skills.svg)
 
-`sdlc`가 진행·중단·재개를 관리합니다. 기술 스킬은 독립적으로 사용할 수 있으며,
-호출만으로 전체 SDLC나 Jira 작업이 시작되지는 않습니다.
-
-### 기술 스킬은 실행 시점에 공식 문서 조회
-
-개발 워크플로우 스킬은 로컬 절차·승인·검증 기준을 정의합니다. 반면 Mimir,
-Prometheus, SigNoz, ClickStack, OTel, Grafana, React/TypeScript, Spring, Go 및
-Helm/ArgoCD 기술 스킬은 **정적 제품 매뉴얼 대신 공식 문서 조회 절차**를 제공합니다.
-
-- 각 기술 스킬의 `references/sources.md`에서 관련 공식 URL을 골라 웹 조회 도구,
-  문서 MCP 또는 HTTP GET으로 **현재 작업에서 실제 본문을 가져온 뒤** 적용합니다.
-- 로컬 MD에는 URL 라우팅·프로젝트 경계·검증 질문만 유지합니다. API·설정 기본값·
-  지원 기능은 가져온 문서와 설치 버전의 소스/설정으로 확인합니다.
-- `latest`/`main`은 탐색 시작점입니다. 배포 버전에 맞는 문서·태그를 확인하고,
-  결과에 조회 URL·절·조회 시각·대상 버전·적용 근거를 남깁니다.
-- 조회 실패 시 정적 요약이나 모델 기억을 최신 문서로 대체하지 않고 의존 작업을
-  `BLOCKED`로 보고합니다. 문서 조회는 설치·업그레이드·운영 변경을 허가하지 않습니다.
-
-공통 규칙: [실시간 기술 문서 조회 프로토콜](skills/sdlc/references/live-documentation.md).
-티켓의 harness lock은 로컬 지침과 URL 목록만 고정하며, 외부 문서 본문은 고정하지
-않습니다. 재현에 필요한 조회 근거는 해당 작업의 증거에 별도로 보존합니다.
+`sdlc`가 진행·중단·재개를 관리합니다. 기술 스킬은 독립적으로 사용할 수 있으며, 호출만으로
+SDLC나 Jira 작업이 시작되지는 않습니다. 기술 스킬은 정적 제품 매뉴얼 대신 실행 시점에 공식
+문서를 조회하고, 조회에 실패하면 모델 기억으로 대체하지 않고 `BLOCKED`로 보고합니다.
+[실시간 기술 문서 조회 프로토콜](skills/sdlc/references/live-documentation.md)
 
 ## 설치
 
-### MSA: 형제 리포에서 하네스 공유 (Bash / PowerShell)
+Git과 **Node.js 22 이상**이 필요합니다. 공개 저장소이므로 인증 없이 설치할 수 있습니다.
 
-3~4개 서비스 리포가 같은 상위 디렉터리에 있다면 **공유 클론 + 심볼릭 링크**
-설치를 사용하세요. 설치기가 서비스 리포와 같은 레벨에 `ai-native-harness`를
-먼저 클론하고, 이미 있으면 `git pull --ff-only`로 갱신합니다.
-Git과 **Node.js 22 이상**이 필요합니다.
+### MSA: 형제 리포에서 하네스 공유
+
+여러 서비스 리포가 같은 상위 디렉터리에 있다면 **공유 클론 + 심볼릭 링크** 설치를 사용하세요.
+설치기는 서비스 리포 옆에 `ai-native-harness`를 클론하거나 `git pull --ff-only`로 갱신한 뒤
+각 리포에 링크를 만듭니다.
 
 ```text
 workspace/
 ├── ai-native-harness/       # 공통 스킬·훅·에이전트의 Git 클론
 ├── .ai-native-sdlc-revisions/ # 첫 티켓 생성 시 만드는 공유 리비전 캐시
 ├── service-api/
-├── service-web/
-└── service-worker/
+└── service-web/
     ├── .ai-native-sdlc -> ../ai-native-harness
     ├── AGENTS.md -> .ai-native-sdlc/templates/project-AGENTS.md
     ├── .agents/skills/* -> ../../.ai-native-sdlc/skills/*
@@ -81,40 +72,23 @@ workspace/
     └── docs/sdlc/<ID>/      # 해당 서비스의 상태·lock·작업 이력
 ```
 
-**Bash/zsh** — 대상은 미리 존재하는 리포 경로입니다.
-
 ```bash
 set -o pipefail
 curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install-shared.sh' |
-  bash -s -- /workspace/service-api /workspace/service-web /workspace/service-worker
+  bash -s -- /workspace/service-api /workspace/service-web
 ```
-
-**PowerShell 7+** — Windows에서도 Bash 없이 설치하고 훅을 실행합니다.
 
 ```powershell
 $url = 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install-shared.ps1'
 & ([scriptblock]::Create((Invoke-WebRequest -Uri $url).Content)) `
-  'C:\workspace\service-api' 'C:\workspace\service-web' 'C:\workspace\service-worker'
+  'C:\workspace\service-api' 'C:\workspace\service-web'
 ```
 
-이미 하네스가 있다면 [install-shared.sh](install-shared.sh) 또는
-[install-shared.ps1](install-shared.ps1)를 직접 실행할 수 있습니다.
-Windows에서 심볼릭 링크를 만들려면 **개발자 모드 또는 관리자 권한**이 필요합니다.
-같은 명령을 재실행하면 공통 설치 자산이 갱신됩니다. 새 티켓과 standalone 스킬은
-갱신된 자산을 사용하지만, 기존 티켓의 실행 기준은 해당 lock을 유지합니다.
-현재 공통 안전 훅은 계속 갱신되며, 스킬·에이전트 추가/삭제와 리포별 설정 변경은
-모든 대상 리포를 지정해 재설치해야 반영됩니다.
-기존 `AGENTS.md`는 보존하며, 새로 만드는 `AGENTS.md`만 프로젝트용 공통 템플릿에
-연결합니다. 훅 실행 코드와 역할 원문은 공유하고, 대상 경로가 들어가는 CLI 훅 설정과
-Codex 네이티브 에이전트 TOML은 리포별로 생성합니다.
-충돌·기존 복사 설치를 자동 덮어쓰거나 변환하지 않습니다.
-옵션, 안전한 업데이트 및 프로젝트별 지침 관리 방법은 [설치 안내](docs/install.md)를 참고하세요.
+Windows에서 심볼릭 링크를 만들려면 **개발자 모드 또는 관리자 권한**이 필요합니다. 재실행하면
+공통 자산이 갱신되지만 기존 티켓은 자신의 lock을 유지합니다. 기존 `AGENTS.md`와 충돌 파일은
+덮어쓰지 않으며, `.gitignore`에 `/.worktrees/` 규칙을 추가합니다.
 
-### 기존 방식: 프로젝트 내부 복사 설치
-
-공개 저장소이므로 인증 없이 설치할 수 있습니다. curl, Git, Bash와
-설치 후 실행에 사용할 **Node.js 22 이상**이 필요합니다.
-기존 대상 저장소 경로를 지정하세요.
+### 프로젝트 내부 복사 설치
 
 ```bash
 set -o pipefail
@@ -122,87 +96,14 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
   bash -s -- /absolute/path/to/target-repo
 ```
 
-원격 스크립트를 바로 실행하지 않는 방법과 호스트별 설정은
-[설치 안내](docs/install.md), 권한·훅의 한계는 [호환성](docs/compatibility.md)을 참고하세요.
-같은 명령을 다시 실행하면 프로젝트 내부의 관리 파일을 새 버전으로 갱신합니다.
-사용자가 수정한 관리 파일이나 공유 링크 설치는 자동으로 덮어쓰지 않습니다.
+원격 스크립트를 직접 실행하지 않는 방법, 옵션, 업데이트·충돌 처리와 호스트별 확인은
+[설치 안내](docs/install.md)를, 권한·훅의 한계는 [호환성](docs/compatibility.md)을 참고하세요.
 
 ## 시작
 
-### 티켓별 스킬 리비전
-
-**설치는 공유할 수 있고, 실행 기준은 티켓별로 고정합니다.** 공유·복사 설치 모두
-`docs/sdlc/<ID>/harness.lock.json`을 만들며 `state.json`에 lock 파일의 해시를 연결합니다.
-서비스 리포 전체에 하나의 버전을 고정하는 방식이 아닙니다.
-lock에는 실제 자산의 **콘텐츠 SHA256**과 소스 커밋(확인 가능할 때)을 기록합니다.
-미커밋 변경도 포함하므로, 커밋 번호만으로 항상 같은 자산을 복원할 수 있는 것은 아닙니다.
-
-`sdlc` 워크플로우로 시작하면 에이전트가 새 Jira 작업의 상태와 lock을 생성하고,
-로컬 자연어 작업은 intake 단계에서 자동으로 lock을 생성합니다. 재개 시에도
-에이전트가 기존 리비전과 상태를 검증하므로 **사용자가 별도로 명령을 실행할 필요는 없습니다.**
-
-> [!NOTE]
-> **선택 사항: 수동 수행·점검용 명령**
-> 아래 명령은 워크플로우의 필수 사전 작업이 아니라, 사용자가 직접 생성·재개·점검할 때의 예시입니다.
-> 대상 서비스 리포 루트에서 실행하며 Bash와 PowerShell 모두 동일합니다.
->
-> ```sh
-> node .ai-native-sdlc/scripts/harness.mjs start ABC-123
-> node .ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/ABC-123/state.json
-> node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/ABC-123/state.json
-> ```
->
-> 첫 줄은 **새 Jira 작업에만** 실행합니다. 기존 작업은 `resolve`부터 실행하며,
-> 로컬 자연어 작업에는 `start`를 중복 실행하지 않습니다.
-> 선택적인 것은 사용자의 수동 실행입니다. Node.js 런타임과 에이전트의 내부 스크립트 실행은 필요합니다.
-
-생성 시 설치된 자산을 그대로 보관하며, 원격 하네스를 자동으로
-pull하지 않고 Jira 조회·동기화나 사람 승인도 대신하지 않습니다.
-기존 작업은 `resolve`부터 실행하고, 반환된 `root` 아래의 스킬·역할·템플릿을 읽습니다.
-`state.mjs`의 상태 관련 명령은 해당 티켓의 스냅샷 검증기로 자동 연결됩니다.
-
-sub task·서브에이전트는 부모 conductor의 lock과 원본 상태 경로를 상속합니다.
-공유 링크는 티켓 전환 시 바꾸지 않으며, 현재 공통 안전 훅과 프로젝트 보안 지침은
-과거 스냅샷으로 되돌리지 않습니다.
-
-| 작업 | 명령과 조건 |
-|---|---|
-| 재개 | `resolve STATE` — lock과 캐시 무결성 확인. 누락·불일치 시 중단하며 최신 버전으로 대체하지 않습니다. |
-| 캐시 복구 | `restore STATE --source PATH` — 정확한 이전 자산 또는 해당 커밋을 포함한 로컬 Git 소스 필요. 원격 fetch는 하지 않습니다. |
-| 과거 작업에 최초 적용 | `adopt STATE --reason "이유" --confirm` — lock 없는 작업에 현재 기준을 명시적으로 설정합니다. |
-| 진행 중 기준 변경 | `upgrade STATE --reason "이유" --confirm` — 기본은 현재 설치본, 다른 소스는 `--source PATH`로 지정합니다. |
-
-표의 명령은 `node .ai-native-sdlc/scripts/harness.mjs` 뒤에 붙이며, `STATE`는 티켓의
-상태 파일 경로입니다. `adopt`와 `upgrade`는 이전 상태·lock을 `harness-history/`에
-보존하고 **G0부터 모든 게이트를 재검증**하도록 초기화합니다. `--confirm`은 버전 변경
-의사 표시이지 게이트 승인이 아니며, 완료된 작업은 변경하지 않습니다.
-기존 integration 브랜치가 있으면 재승인된 계획을 commit하고 이전 작업 공간을
-보존·정리한 뒤 `workspaces.mjs reconcile STATE`로 재개합니다.
-상세 조건은 [브랜치·워크트리 운영 절차](docs/operations.md#브랜치와-병렬-워크트리)를 따릅니다.
-새 작업은 시작 시 primary checkout 안의 `.worktrees/sdlc/<ID>/integration` 전용 워크트리
-(브랜치 `sdlc/<ID>/integration`)에서 진행하므로 `STATE`도 그 안의 경로입니다. 설치기는
-`.gitignore`에 `/.worktrees/`를 추가하며, 전체 run은 `workspaces.mjs list`로 조회합니다.
-
-스냅샷 캐시는 `.ai-native-sdlc-revisions/<SHA256>/`에 둡니다. 공유 설치는 실제 하네스
-클론 옆에서 여러 서비스가 공유하고, 복사 설치는 각 서비스 리포 내부에 보관합니다.
-**lock·상태·작업 이력은 함께 커밋하고 캐시는 제외**하세요. 참조 중인 캐시는 임의로
-지우거나 편집하지 마세요. 미커밋 자산으로 만든 스냅샷은 복구용 원본도 보존해야 합니다.
-
-Windows와 함께 사용한다면 대상 서비스의 기존 `.gitattributes`에 다음 규칙을 추가해
-새 lock·증거 파일의 줄바꿈을 유지하세요. 하네스 리포의 설정은 서비스에 자동 적용되지
-않으며, 과거 증거의 줄바꿈이나 해시는 임의로 다시 쓰지 않습니다.
-
-```gitattributes
-docs/sdlc/** text=auto eol=lf
-```
-
-상세 복구 절차·PowerShell 예제·제약은 [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md)를 참고하세요.
-
-### 워크플로 시작
-
-대상 저장소에서 **최초 한 번 `sdlc-setup`**으로 모듈 경로·테스트 명령·모델과
-공통 표준·ADR의 위치·담당자를 확인하고 설정한 뒤, Jira 키 또는 자연어 요청으로
-시작합니다. 설정에 토큰은 저장하지 않습니다.
+대상 저장소에서 **최초 한 번 `sdlc-setup`**을 실행합니다. 저장소·CI·배포 대상은 `gh`·`az`·
+`kubectl` 읽기 전용 조회로 먼저 파악하고, 모듈 경로·테스트·품질 명령·모델과 공통 표준·ADR
+위치를 한 번에 확인받습니다. 설정에 토큰은 저장하지 않습니다.
 
 ```text
 sdlc-setup
@@ -213,223 +114,150 @@ sdlc 문서 검색 화면의 빈 상태를 개선해줘
 ```
 
 - **Jira:** Atlassian Rovo MCP 연결·인증이 필요합니다. Light는 부모 이슈로, strict는 G2 승인 후 자식 티켓을 발행해 구현합니다.
-- **로컬:** 필요한 사항만 확인해 원래 요청과 답변을 `intake.md`에 기록합니다. Jira 없이 진행하되 사람 승인과 검증 기준은 동일하게 유지합니다.
-- **재개:** 산출물과 상태는 `docs/sdlc/<ID>/`에 저장합니다. `sdlc`로 목록을 보고, `sdlc <ID>`로 이어갑니다.
+- **로컬:** 필요한 사항만 확인해 원래 요청과 답변을 `intake.md`에 기록합니다. 사람 승인과 검증 기준은 Jira 작업과 같습니다.
+- **재개:** `sdlc`로 저장된 작업 목록을 보고 `sdlc <ID>`로 이어갑니다. 산출물과 상태는 `docs/sdlc/<ID>/`에 저장합니다.
 
-### Discovery 질문과 승인
+### Discovery: 질문과 G1 승인
 
-AI가 코드·기존 답변·프로젝트 기준으로 확인할 수 있는 내용은 먼저 조사합니다.
-지금 답이 없으면 안전하게 진행할 수 없는 결정만 묶어 질문하고, 초안을 만들 수
-있는 사람 소유 결정은 추천안으로 G1에 모읍니다. 가역적인 저위험 구현 선택은
-근거를 기록하며, 사전 질문이 0개일 수도 있습니다.
-
-G1에서는 긴 문서 경로 목록 대신 목표, 범위/제외, 작은 Mermaid 동작도와
-AC·결정·위험 요약을 채팅에 보여 줍니다. 상세 근거는 같은 discovery 문서에 남기고
-ID로 연결합니다. 일반 추천안과 승인을 한 폼에서 확인하되 고위험 선택은
-결정권자에게 개별 확인합니다. 요약과 상세의 ID/상태 불일치, 누락과 미결정은
-검사로 차단하며, 승인은 문서 전체의 해시에 묶입니다.
-
-```sh
-node .ai-native-sdlc/scripts/state.mjs discovery docs/sdlc/ABC-123/state.json
-node .ai-native-sdlc/scripts/state.mjs discovery docs/sdlc/ABC-123/state.json --text
-```
-
-명령은 읽기 전용입니다. Mermaid 미지원 호스트는 텍스트 요약을 사용합니다.
-기존 실행은 고정 리비전을 유지하며 자동 업그레이드하지 않습니다.
+AI가 코드·기존 답변·프로젝트 기준으로 확인할 수 있는 내용은 먼저 조사하고, 이후 단계에 필요한
+결정은 지금 묶어 질문합니다. 초안을 만들 수 있는 결정은 추천안으로 제시합니다. G1에서는
+목표, 범위/제외, 작은 Mermaid 동작도, AC·결정·위험 요약을 채팅에 보여 주고 승인은 문서
+전체의 해시에 묶습니다. 고위험 선택은 결정권자가 항목별로 확인합니다.
 [승인 예시](examples/ABC-123/01-discovery.md) ·
 [형식과 질문 기준](skills/sdlc/references/discovery-review.md) ·
 [운영 절차](docs/operations.md#discovery-승인-요약)
 
-### 채팅에서 진행 상황 확인
+### 자율 실행과 의사결정 기록
 
-상태 조회, 세션 재개, 단계 전환, 승인 대기·차단 및 완료 시 에이전트가
-작업 ID와 함께 간결한 Mermaid 진행도를 채팅에 표시합니다.
-완료·현재·대기·승인 대기·차단을 구분하고, 하위 작업 수와 다음 행동을 안내합니다.
-`sdlc`는 저장된 작업별 요약을 보여주며 호스트의 실시간 세션 목록을 조회하지는 않습니다.
+0.3.0 이후 시작한 run은 G1 폼에서 실행 선호도도 함께 확인합니다. 확인 항목은 UI 변경
+여부(`uiChange`), E2E 수준(`full` 기본, `regression`, `none`), 로컬 Git 상시 권한
+(`plan-commit`, `slice-commit`, `local-integration`), 잔여 리뷰 지적 처리(`follow-up` 기본,
+`human`)입니다. 이후 계획과 구현은 권장안으로 진행하고 비중대 결정은 run의 `decisions.md`에
+기록합니다. 권한·인증/테넌트·파괴적 데이터 변경·공개 계약 파괴·보안 취약점·AC/범위
+변경·비밀정보·운영 반영 같은 중대 사항만 사람에게 묻습니다. G2·G5b 승인과 push·merge·PR
+게시·운영 반영은 계속 사람이 담당합니다. G2 승인 폼에는 `02-plan.md`의 진행 합의도 함께
+표시됩니다. 승인된 sub task·AC 안의 구현·테스트·리뷰 수정·검증은 묻지 않고 진행 보고만
+하며, 계획별 멈춤 조건(예: 실제 외부 연결, 새 쓰기 권한)에 걸린 작업만 멈추고 묻습니다.
+리뷰 2라운드 후 남은 지적은 리뷰어가 비중대(`critical: 0`)로 분류한 경우에만 follow-up과
+결정 기록을 남기고 에이전트가 수용하며, 릴리스 보고서에 전체 결정 목록을 남깁니다.
 
-수동 조회는 다음과 같습니다. 파일이나 승인 상태를 변경하지 않습니다.
+검증 단계에서는 승인된 코드 품질 정책(lint·format-check·typecheck)의 통과 보고서를
+슬라이스·G3·G4에 묶습니다. Go BFF는 `golangci-lint run ./...`, `golangci-lint fmt --diff`,
+`go build ./...`를 사용합니다. UI 변경에는 Playwright AC 검사가 필요하며, `full`은 영향 흐름·
+smoke 회귀·탐색적 브라우저 E2E까지 수행합니다. 품질 검사는 훅이 아니라 구현·검증 단계에서
+실행합니다.
+[자율 실행](skills/sdlc/references/protocol.md#autonomous-execution) ·
+[코드 품질](skills/sdlc/references/code-quality.md) ·
+[운영 절차](docs/operations.md#자율-실행품질e2e-contract-2)
+
+### 진행 상황과 하위 작업
+
+상태 조회·재개·단계 전환·승인 대기·차단·완료 시 에이전트가 작업 ID와 함께 Mermaid 진행도와
+다음 행동을 채팅에 표시합니다. 수동 조회는 파일이나 승인 상태를 바꾸지 않습니다.
 
 ```sh
-node .ai-native-sdlc/scripts/state.mjs progress docs/sdlc/ABC-123/state.json
 node .ai-native-sdlc/scripts/state.mjs progress docs/sdlc/ABC-123/state.json --text
 ```
 
-Mermaid 미지원 환경에서는 `--text` 출력을 사용합니다. 완료 여부는 저장된
-게이트와 증거 검증으로 판단하며, 증거 불일치 등 검증 실패 시 `BLOCKED`와 오류를
-표시하고 실패 코드로 종료합니다. 현재 단계 표시는 작업자가 실행 중이라는 뜻이 아닙니다.
-조사 전용 spike 완료는 제품 구현·배포 완료와 구분합니다.
-이 요약은 승인, 상태 검사 및 프로젝트 표준 변경 확인을 대신하지 않습니다.
-기존 고정 리비전에 명령이 없으면 해당 리비전의 검증 결과를 텍스트로 안내하며,
-진행도를 표시하기 위해 실행 기준을 자동 변경하지 않습니다.
-
-### 하위 작업과 병렬 실행
-
 **sub task는 AC·범위·의존성을 가진 실행 단위이고, Jira 티켓은 원격 이슈입니다.**
-큰 티켓이나 요청은 여러 sub task로 나누며, 작은 범위의 작업은 하나의 sub task로
-진행합니다. `sdlc-subtasks`가 sub task 정의와 필요한 Jira 발행을 담당합니다.
-이 명칭은 Jira의 특정 이슈 타입을 강제하지 않습니다. 로컬 작업은 Jira 발행이 없고,
-Jira light는 부모 티켓을 사용하며 Jira strict/legacy만 승인 후 자식 티켓을 발행합니다.
-단일 sub task는 현재 checkout의 브랜치에서, 독립적인 병렬 sub task는 별도 Git 워크트리에서
-수행한 뒤 통합 검증합니다. 백엔드는 JUnit(Spring) 또는 Go `testing`(Go), 프런트엔드 E2E는 Gherkin을 사용합니다.
+큰 요청은 여러 sub task로 나눕니다. 단일 sub task는 run 워크트리에서, 독립적인 병렬 sub task는
+별도 Git 워크트리에서 수행한 뒤 통합 검증합니다.
+[진행 상황 조회](docs/operations.md#진행-상황-조회) ·
+[sub task 계약](skills/sdlc-subtasks/references/sub-task-contract.md)
 
-기존 실행과의 호환성을 위해 `tasks`, `taskPlan`, `slices`, `tasks.json`, `tasks/` 및
-`tasks.mjs` 명령은 유지합니다. 상세 대응은 [sub task 계약](skills/sdlc-subtasks/references/sub-task-contract.md)을 참고하세요.
+### 티켓별 리비전과 run 워크트리
 
-### PR 본문과 회고
+**설치는 공유할 수 있고, 실행 기준은 티켓별로 고정합니다.** 각 작업은
+`docs/sdlc/<ID>/harness.lock.json`에 자산의 콘텐츠 SHA256을 기록하고, 재개할 때
+`.ai-native-sdlc-revisions/<SHA256>/`의 같은 스냅샷을 사용합니다. 설치를 갱신해도 진행 중인
+작업은 자동 전환되지 않으며, 전환은 `harness.mjs upgrade`로 명시하고 G0부터 재검증합니다.
+새 run은 primary checkout 안의 `.worktrees/sdlc/<ID>/integration` 전용 워크트리(브랜치
+`sdlc/<ID>/integration`)에서 진행합니다. lock·상태·작업 이력은 커밋하고 캐시는 제외하세요.
+lock 생성과 검증은 에이전트가 수행하므로 사용자가 별도 명령을 실행할 필요는 없습니다.
+[티켓 리비전 관리](skills/sdlc/references/harness-revisions.md) ·
+[브랜치·워크트리](docs/operations.md#브랜치와-병렬-워크트리)
 
-**리뷰가 끝난 diff는 `pr`로 설명하고, 어려웠던 실행은 `retro`로 환경 개선에 연결합니다.**
-흐름은 `… → sdlc-verify(G4 최종 리뷰) → sdlc-release(pr) → done → retro(사람 호출)`입니다.
+### PR 본문, 회고, 불용 코드 점검
 
-- **`pr`**: 릴리스·GitOps 프로모션·운영 제안 PR 본문을 같은 형식으로 작성합니다.
-  Summary(가장 작은 시각화), Evidence(전/후 실행 증거), Merge Danger(one-way/two-way
-  door와 blast radius), Traceability로 구성합니다. 위험은 승인된 계획의 위험 기록보다
-  낮게 표시하지 않으며, 본문만 작성하고 push·merge는 하지 않습니다.
-- **`retro`**: 사용자가 명시적으로 호출할 때만 실행합니다. 세션과 `docs/sdlc/<ID>/`
-  기록에서 실제 마찰 지점을 찾아 개선 후보를 심각도 순으로 제안합니다. 기계적
-  위반은 자동 검사로, 판단이 필요한 규칙은 프로젝트 표준(`Enforcement: review`)으로
-  보내며 AGENTS.md에는 탐색 포인터만 둡니다. 별도 회고 보고서는 남기지 않고,
-  채택된 변경만 소유자 승인을 거쳐 표준·검사에 영속화합니다.
-
-### 불용 코드·스킬 수동 점검
-
-[prune-unused](skills/prune-unused/SKILL.md)는 사람이 필요할 때 호출하는 정리
-스킬입니다. 월 1회나 릴리스 전후 같은 주기로 직접 실행할 수 있지만, 스케줄러·CI·
-SDLC 단계에 자동 등록하지 않습니다. 기본 동작은 읽기 전용 점검입니다.
-
-```text
-prune-unused: 이 저장소의 불용 코드와 스킬 후보를 근거·위험도와 함께 보고해줘.
-```
-
-호출·import뿐 아니라 공개 API, 동적 로딩, CLI·설정과 스킬의 직접 호출·자동 발견을
-확인합니다. 참조나 사용 기록이 없다는 이유만으로 삭제하지 않으며, 후보 ID·근거·
-위험도·연관 변경·검증 계획을 보고한 뒤 사람이 선택한 항목만 정리합니다.
-다시 실행할 때는 현재 코드와 사용 근거를 재확인하며 지난 승인을 재사용하지 않습니다.
-공유 설치 링크, 티켓 스냅샷·과거 증거와 다른 사람의 미커밋 변경은 보존합니다.
-보고서는 기본적으로 채팅에 제공하며, 자동 커밋·푸시는 하지 않습니다.
+- **`pr`**: 리뷰가 끝난 diff를 Summary·Evidence·Merge Danger·Traceability 형식의 PR 본문으로 작성합니다. 본문만 작성하며 push·merge는 하지 않습니다.
+- **`retro`**: 사용자가 호출할 때만 실행해 실제 마찰 지점을 개선 후보로 제안합니다. 채택된 변경만 소유자 승인 후 표준·자동 검사에 반영합니다.
+- **[prune-unused](skills/prune-unused/SKILL.md)**: 사람이 호출하는 읽기 전용 점검입니다. 근거·위험도를 보고하고 사람이 고른 후보만 정리하며, 스케줄러·CI에 등록하지 않습니다.
 
 ## 프로젝트 공통 기준과 ADR
 
-**표준은 현재 지켜야 할 규칙, ADR은 그 결정을 내린 이유입니다.**
-여러 기능에 영향을 주는 결정은 프로젝트 차원에 두고, 기능별 계획은 이를 참조합니다.
-첫 기능에서 도입하더라도 인증·테넌트·공유 API 같은 공통 경계는 프로젝트 ADR입니다.
-
-대상 프로젝트의 기존 문서 위치를 우선 사용합니다. 별도 관례가 없다면 다음 구조를
-사용하며, 설치된 하네스 내부가 아니라 대상 프로젝트에 필요한 문서만 작성합니다.
+**표준은 현재 지켜야 할 규칙, ADR은 그 결정을 내린 이유입니다.** 인증·테넌트·공유 API처럼
+여러 기능에 영향을 주는 결정은 프로젝트 ADR로 두고 기능 계획은 원문을 참조합니다. 대상
+프로젝트의 기존 문서 위치를 우선하며, 관례가 없으면 다음 구조를 사용합니다.
 
 ```text
-AGENTS.md                         # 실제 문서 위치와 읽기 규칙
+AGENTS.md                  # 실제 문서 위치와 읽기 규칙
 docs/
-  architecture/
-    overview.md                   # 현재 시스템 경계와 의존성
-    adr/
-      README.md                   # 공통 결정 목록·상태·담당자
-      ADR-0001-<decision>.md       # 공통 결정의 근거·대안·승인
-  standards/
-    README.md                     # 표준 목록과 적용 범위
-    <topic>.md                    # 현재 규칙과 검증 방법
-  sdlc/
-    <ID>/
-      state.json                 # 진행 상태와 lock 해시
-      harness.lock.json          # 티켓별 하네스 콘텐츠 리비전
-      02-plan.md                  # 공통 기준 참조와 기능 설계
-      adr/<feature-decision>.md   # 필요한 경우에만 기능 한정 결정
+  architecture/adr/        # 공통 결정의 근거·대안·승인 (README.md 색인)
+  standards/               # 현재 규칙과 강제 방식 (README.md 색인)
+  sdlc/<ID>/               # state.json, harness.lock.json, 02-plan.md 등 작업별 기록
 ```
 
-Discovery에서 적용 기준과 충돌을 식별하고, Plan의 `Project baseline`에 문서
-경로·절·기준 commit을 기록합니다. 미커밋 문서는 실제 내용 해시를 사용합니다.
-구현·리뷰·검증·재개 시 기준 이후 변경과 예외 유효성을 확인하고, 릴리스·인계에는
-공통 결정 변경과 남은 마이그레이션 의무를 전달합니다.
-
-- 공통 규칙은 기능별로 복사하지 않고 원문을 참조합니다. 일반 구현 선택은 계획에 남깁니다.
-- 공통 변경과 한시적 예외는 해당 소유자의 명시적 승인이 필요합니다. 기능 G2 승인만으로 대신하지 않습니다.
-- 기능 결정의 공통 승격은 프로젝트 ADR로 기록하고 원래 작업을 연결합니다. 결정 대체 시 `superseded` 관계와 현재 표준을 갱신하며 과거 증거는 보존합니다.
-- 표준 규칙은 적용 범위·상태·소유자·출처와 함께 **강제 방식**(`check: <자동 검사>` 또는 `review`)을 기록합니다. 기존 `CODING_STANDARDS.md`·`CONTRIBUTING.md`는 별도 문서를 만들지 않고 표준 색인에 등록합니다. `retro` 제안은 `proposed`로 시작해 소유자 승인 후 적용됩니다.
-
-설치기는 빈 표준·ADR을 자동 생성하지 않습니다. 기존 설치본은 업데이트 후
-`sdlc-setup`으로 프로젝트 지침을 연결하며, 기존 AGENTS.md는 덮어쓰지 않고 diff로
-검토합니다. **공통 문서 변경 확인은 스킬 절차이며, 상태 검증기가 자동 감지하지는
-않습니다.** 비교 결과는 작업 내부 보고서에 남겨 기존 게이트 증거로 연결합니다.
-
-세부 규칙: [프로젝트 거버넌스](skills/sdlc/references/project-governance.md)
+Plan의 `Project baseline`에 참조 문서와 기준 commit을 기록하고 이후 단계에서 변경을 확인합니다.
+공통 변경과 예외는 해당 소유자의 승인이 필요하며 기능 G2 승인으로 대신하지 않습니다. 설치기는
+빈 표준·ADR을 만들지 않습니다.
+[프로젝트 거버넌스](skills/sdlc/references/project-governance.md)
 
 ## 안전 범위
 
-**v1 훅은 `git push`·`gh pr merge`와 직접 cluster 변경을 보수적으로 차단합니다.**
-로컬 `git merge`에 대한 훅의 중립 응답은 실행 허가가 아닙니다. 사용자 허가와
-프로젝트 보호규칙 아래 컨덕터만 검토된 소스 작업을 integration 브랜치에 통합하며,
-작업자·릴리스 역할은 직접 merge하지 않습니다.
-브랜치 게시와 dev/staging 프로모션은 사람이 실행합니다. 에이전트는 운영 변경안을
-`production-proposal/`에만 작성하며, 실제 prod values 변경·머지·ArgoCD sync는 사람이 담당합니다.
+**훅은 `git push`·`gh pr merge`와 직접 cluster 변경을 보수적으로 차단합니다.** `az`·`gh`는
+읽기 전용 조회(`az … show|list|query`, `gh pr|run view`, `gh api` GET 등)와 `gh pr|issue comment`,
+draft PR 생성 같은 정해진 명령만 통과시키고, 그 밖의 명령은 사람이 실행하도록 차단합니다. 하네스는 이 조회로
+CI·배포 상태 등을 먼저 찾아 제안하고 확인만 요청합니다.
 
-훅과 역할별 경로 제한은 **보안 샌드박스가 아닙니다.**
-GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요합니다.
-필수 검증이나 리뷰가 불가능하면 해당 작업은 차단하며, 통과로 처리하지 않습니다.
+로컬 통합은 사용자 허가(또는 `local-integration` 권한) 아래 컨덕터만 수행합니다. 브랜치 게시,
+dev/staging 프로모션, 실제 prod values 변경·머지와 ArgoCD sync는 사람이 담당하며, 에이전트는
+운영 변경안을 `production-proposal/`에만 작성합니다. 훅과 역할별 경로 제한은 **보안 샌드박스가
+아닙니다.** GitHub 브랜치 보호·필수 CI·ArgoCD prod RBAC가 별도로 필요하며, 필수 검증이나 리뷰가
+불가능하면 통과가 아니라 차단합니다. [훅 한계](docs/operations.md#훅-한계)
 
 ## 상세 안내
 
 | 문서 | 내용 |
 |---|---|
 | [설치 안내](docs/install.md) | MSA 공유·기존 복사 설치, Bash/PowerShell, 업데이트와 충돌 처리 |
-| [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md) | 티켓별 lock, 캐시, 재개·복구·명시적 버전 전환과 sub task 상속 |
+| [운영 절차](docs/operations.md) | light/strict 정책, 승인·재개, 진행 상황 조회, 병렬 워크트리, 자율 실행, 기존 상태 마이그레이션 |
+| [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md) | 티켓별 lock, 캐시, 재개·복구·명시적 버전 전환, `.gitattributes`와 sub task 상속 |
+| [호환성](docs/compatibility.md) | 호스트별 지원 범위, 권한·훅의 한계 |
 | [고객 리포 적용 사전 탐색](docs/customer-repository-discovery.md) | 인터뷰 질문, 산출물 양식, 도구·권한 조사, 개발 프로세스 매핑과 파일럿 도입 기준 |
-| [운영 절차](docs/operations.md) | light/strict 정책, 승인·재개, 병렬 워크트리, 기존 상태 마이그레이션 |
 | [프로젝트 거버넌스](skills/sdlc/references/project-governance.md) | 공통 표준·ADR, 기준 버전, 승인·예외·승격·대체와 변경 영향 확인 |
 | [sub task 예시](examples/ABC-123/README.md) | 계획·sub task·증거 산출물 구조 |
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
-| [Prune Unused](skills/prune-unused/SKILL.md) | 사람이 호출하는 불용 코드·스킬 점검. 근거 보고 후 승인한 후보만 정리하고 검증합니다. |
-| [SigNoz OSS](skills/signoz-oss/SKILL.md) · [ClickStack](skills/clickstack/SKILL.md) | 자체 호스팅 운영과 선택적 대안 평가. ClickStack은 필수 의존성이 아니며 자동 설치·이전하지 않습니다. |
-| [Mimir OSS](skills/mimir-oss/SKILL.md) · [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | 메트릭 저장소·쿼리 서비스 전환 평가와 운영, PromQL·BFF 쿼리 계약. 승인된 결정 없이 운영 전환하지 않습니다. |
-| [Go Backend](skills/go-backend/SKILL.md) · [Go Testing](skills/go-testing/SKILL.md) | Go BFF·백엔드 구현과 `go test` 증거. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang)은 작업 시 조회하는 비공식 체크리스트로만 쓰며, 의존성·`go` 버전 변경을 허가하지 않습니다. |
+| [Go Backend](skills/go-backend/SKILL.md) · [Go Testing](skills/go-testing/SKILL.md) | Go BFF·백엔드 구현과 `go test` 증거. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang)은 비공식 체크리스트로만 조회합니다. |
+| [SigNoz OSS](skills/signoz-oss/SKILL.md) · [ClickStack](skills/clickstack/SKILL.md) · [Mimir OSS](skills/mimir-oss/SKILL.md) · [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | 관측성 저장소·쿼리 서비스 운영과 대안 평가. 승인된 결정 없이 자동 설치·운영 전환하지 않습니다. |
+| [로컬 SDLC run 대시보드](docs/dashboard.md) | 세션·run 연결, VS Code 열기·명령 복사, 알림, 새로고침 주기, 저장 위치와 OS별 실행 |
 
 ## 패키지 개발
 
 ```bash
+npm ci            # ESLint 개발 의존성 설치
 npm test
+npm run lint
 npm run validate
 ```
 
-외부 서비스 없이 패키지를 검증하며, 대상 서비스의 테스트나 실제 Jira/ArgoCD 연결을
-대신하지 않습니다. 스킬 변경 시 [압박 시나리오](tests/scenarios/pressure.md)도 실행합니다.
+외부 서비스 없이 패키지를 검증하며, 대상 서비스의 테스트나 실제 Jira/ArgoCD 연결을 대신하지
+않습니다. CI는 `Validate plugin`(macOS·Linux·Windows)과 `Lint`(ESLint) 워크플로로 같은 검사를
+실행합니다. 스킬 변경 시 [압박 시나리오](tests/scenarios/pressure.md)도 실행합니다.
 
 ### 로컬 SDLC run 대시보드
 
 ![로컬 SDLC run 대시보드 데모: 승인 대기 필터, 워크스페이스 선택, 세션 상세 드로어와 검증 상세 보기](docs/assets/session-sdlc-dashboard-demo.gif)
 
-_합성 데모 데이터로 녹화한 화면입니다. 승인 대기 필터 → 워크스페이스 선택 → 세션 "자세히보기" →
-run 진행·게이트·스킬/리뷰/검증 요약 → 단위 테스트 상세 → 다음 세션 이동 → run별 묶기 순서로 동작합니다._
-
-`npm run dashboard`를 실행한 뒤 터미널에 표시되는 `127.0.0.1` 주소를 브라우저에서 엽니다.
-대시보드는 지원되는 GitHub Copilot CLI, Claude Code, Codex의 로컬 세션 파일과 해당
-워크스페이스의 SDLC run 증거를 읽기 전용으로 표시합니다. 세션 내용은 외부로 업로드되지
-않으며, 지원되지 않는 로컬 형식은 누락되거나 경고로 표시될 수 있습니다. 세션은 하네스
-도구 실행 기록(예: `docs/sdlc/<ID>/state.json`을 다루는 명령이나 파일 경로)으로 run에 자동
-연결되며, 여러 run을 오간 세션은 가장 최근 run에 연결됩니다. 연결되지 않은 세션은 직접 연결할
-수 있고, 자동 연결도 수동으로 변경할 수 있습니다. 스킬 · 리뷰 · 검증 요약은 스킬별 호출 횟수,
-리뷰 차단 건수, 단위/API/E2E 검증의 최근 결과만 압축해 보여 줍니다. `;`, `||`, `|`로 이어진
-명령처럼 종료 코드가 검사 결과를 증명하지 못하면 결과를 미확인으로 둡니다. 승인 대기는 run의
-다음 차례 게이트가 아직 승인되지 않은 사람 게이트(G1·G2·G5b)일 때만 강조합니다. 대시보드는 승인
-상태를 표시하지만 승인하거나 run 상태를 변경하지 않습니다.
-
-화면은 기본적으로 60초마다 자동 새로고침됩니다. 상단의 주기 선택에서 자동 10초·30초·1분·5분
-또는 수동을 고를 수 있고, 선택한 값은 브라우저에 저장됩니다. ↻(지금 새로고침) 버튼은 모드와
-관계없이 즉시 다시 읽습니다.
-
-세션 카드에는 VS Code 링크와 **명령 복사** 버튼이 있습니다. Copilot CLI 세션의 **VS Code에서
-세션 열기**는 워크스페이스를 열고 세션을 VS Code 채팅으로 가져옵니다. VS Code 에이전트 호스트가
-가져올 수 있는 세션, 즉 VS Code에서 만든 세션과 VS Code 실행 중에 감지된 CLI 세션만 열립니다.
-그 밖의 오래된 CLI 세션은 VS Code에서 가져오기 오류가 표시됩니다. Claude Code와 Codex CLI 세션은
-VS Code가 가져오지 못하므로 **VS Code 폴더 열기**로 표시되며 워크스페이스만 엽니다. **명령 복사**는
-`copilot --resume <id>`, `claude --resume <id>`, `codex resume <id>`를 복사하므로 터미널에서 세션을
-이어 갈 수 있습니다. 오래된 세션 생략 같은 스냅샷 경고는 왼쪽 아래 **알림 N건** 버튼에 접혀 있으며
-누르면 펼쳐집니다. 대시보드를 읽지 못한 오류는 화면 위쪽에 그대로 표시됩니다.
-
-macOS 터미널과 Windows PowerShell에서 같은 명령으로 실행하고 `Ctrl+C`로 종료합니다. 세션은
-사용자 홈 디렉터리의 `.copilot`, `.claude`, `.codex`(Windows는 `%USERPROFILE%\.copilot` 등)에서
-읽습니다. 수동 연결 설정은 macOS에서는 `~/Library/Application Support/ai-native-harness/dashboard.json`,
-Windows에서는 `%APPDATA%\ai-native-harness\dashboard.json`에 저장됩니다.
+`npm run dashboard`를 실행한 뒤 터미널에 표시되는 `127.0.0.1` 주소를 엽니다. GitHub Copilot CLI,
+Claude Code, Codex의 로컬 세션 파일과 SDLC run 증거를 읽기 전용으로 보여 주며, 세션 내용은
+외부로 업로드되지 않습니다. 세션은 하네스 도구 실행 기록으로 run에 자동 연결되고,
+연결되지 않은 세션은 직접 연결할 수 있습니다. 세션 카드에서 VS Code로 열거나 이어 가기 명령을
+복사할 수 있습니다. 승인 상태를 표시하지만 승인하거나 run 상태를 변경하지 않습니다.
+[대시보드 안내](docs/dashboard.md)
 
 ### 하네스 유지보수: `harness-dev`
 
-[`harness-dev`](.agents/skills/harness-dev/SKILL.md)는 이 원본 저장소에서 하네스 자체를 개선할 때 쓰는 스킬입니다. 소비 프로젝트에 설치되는 스킬은 아닙니다. 예를 들어 회고에서 승인 절차 개선안이 나왔다면, 이 저장소에서 “`harness-dev`를 읽고 이 변경이 진행 중인 티켓에 미칠 영향을 검토해 줘”라고 요청합니다.
-
-오탈자는 바로 고치되, 승인 규칙이나 상태 형식이 바뀌면 기존 티켓의 호환성과 롤백 방법부터 확인합니다. 설계가 필요한 변경은 [설계 문서](docs/specs/)에, 구현 계획은 도구와 관계없이 [`docs/plans/`](docs/plans/)에 기록합니다.
+[`harness-dev`](.agents/skills/harness-dev/SKILL.md)는 이 원본 저장소에서 하네스 자체를 개선할 때
+쓰는 스킬이며 소비 프로젝트에는 설치되지 않습니다. 승인 규칙이나 상태 형식이 바뀌면 진행 중인
+티켓의 호환성과 롤백 방법부터 확인합니다. 설계는 [설계 문서](docs/specs/)에, 구현 계획은 도구와
+관계없이 [`docs/plans/`](docs/plans/)에 기록합니다.

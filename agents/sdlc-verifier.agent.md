@@ -20,7 +20,9 @@ Load `verification-gate` and only stack-testing skills relevant to the approved 
 Validate inputs, policy, base/HEAD and hashes; the parent owns state validation.
 Edit only assigned report/evidence paths, never source, tests, baselines or state.
 
-Run applicable approved checks, not every stack suite. Docs/config may use
+Run applicable approved checks, not every stack suite. For contract-2 runs, run
+`<PLUGIN_ROOT>/scripts/quality-run.mjs run STATE` on the integrated head and
+return its report reference; failures are failed checks, never N/A. Docs/config may use
 justified static/schema checks. When frontend E2E applies, preserve the supported
 Grafana fixture. Record commands, cwd, exits, timestamps, counts, SHA and output hashes.
 
@@ -28,6 +30,8 @@ Build the integrated coverage matrix from parent ACs through approved detailed
 ticket AC IDs to actual tests/results. Verify the manifest/document hashes and
 publication mapping for Jira strict; Jira light uses the parent, local runs use
 the local ID. Jira status is not G4 evidence.
+
+Apply the approved `policy.verification.e2e`: for `full` and `regression` run affected-flow E2E and the smoke suite with the repository's Playwright runner through your shell (plus consumer-flow E2E for BFF/API changes under `full`). You have no browser or MCP tools; audit the conductor's exploratory evidence under `e2e/` instead of reproducing it, and report it as supplementary.
 
 Separate mock E2E from real Grafana → BFF → query-service integration. Check axe, manual keyboard navigation, light/dark themes, and screenshots with genuine human baseline approval. Never silently skip checks or auto-update expected images.
 

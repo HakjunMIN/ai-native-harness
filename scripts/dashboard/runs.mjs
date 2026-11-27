@@ -89,7 +89,7 @@ function verificationSummaries(state, valid) {
 function summarize(entry) {
   const runRoot = dirname(entry.state);
   let state;
-  let warnings = [];
+  let warnings;
   try {
     const expectedStatePath = resolve(entry.state);
     const realRunRoot = realpathSync(runRoot);

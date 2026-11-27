@@ -29,7 +29,7 @@ Read the [shared principles](../sdlc/references/principles.md). Import `grafana-
 1. Use agreed behavior/contracts and assigned test scope. In SDLC the conductor
    supplies valid G2, manifest and policy (light parent, strict published child).
    Standalone use requires no publication or state. Map scenarios to relevant ACs.
-2. Inspect pinned versions/configuration. Where supported, extend the exported `@grafana/plugin-e2e` fixture with playwright-bdd `test.extend` and bind steps to that fixture. Never substitute bare Playwright.
+2. Inspect pinned versions/configuration. Where supported, extend the exported `@grafana/plugin-e2e` fixture with playwright-bdd `test.extend` and bind steps to that fixture. Never substitute bare Playwright for Grafana plugins; the generic `playwright` check is for non-Grafana web UIs only.
 3. Implement reusable steps and run configured BDD generation plus selected E2E. Capture the expected behavior failure before production implementation. Broken fixtures, unavailable dependencies, or zero discovered scenarios are not RED.
 
 ## Bounded example

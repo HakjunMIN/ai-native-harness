@@ -100,6 +100,8 @@ it through the protocol, preserving the audit trail. Do not repair by marking pa
 | done | report actual release or spike outcome |
 
 Route one phase at a time. Continue automatically only across agent-owned gates.
+After a contract-2 G2, work inside the proceed agreement is reported as progress,
+not asked about; pause only on its stop conditions.
 Plan snapshots risk/review policy before G2. Local work uses its local ID and
 routes directly to implementation, even when strict. Jira light uses the parent
 issue; Jira strict/legacy publishes child Jira tickets for approved sub tasks.

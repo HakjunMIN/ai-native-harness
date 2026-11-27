@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { digest, validateState } from './state.mjs';
-import { pinRun } from './harness.mjs';
+import { currentRunContract, pinRun } from './harness.mjs';
 import { withRunWorkspace } from './run-workspace.mjs';
 
 const localId = /^local-[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -16,7 +16,7 @@ function checkLocalId(id) {
 function startInWorktree(id, content, repositoryRoot) {
   checkLocalId(id);
   if (!content.trim()) throw new Error('nonempty local request required');
-  return withRunWorkspace(id,repositoryRoot,root => startLocalText(id,content,root));
+  return withRunWorkspace(id,repositoryRoot,root => startLocalText(id,content,root,{runContract:currentRunContract}));
 }
 
 function safeDirectory(root, name) {
@@ -38,7 +38,8 @@ export function startLocal(id, requestFile, repositoryRoot = process.cwd()) {
   return startLocalText(id,content,repositoryRoot);
 }
 
-export function startLocalText(id, content, repositoryRoot = process.cwd()) {
+// Direct helper calls keep the markerless contract-1 layout; the start commands pass the current contract.
+export function startLocalText(id, content, repositoryRoot = process.cwd(), {runContract} = {}) {
   checkLocalId(id);
   if (!content.trim()) throw new Error('nonempty local request required');
   const root = realpathSync(repositoryRoot);
@@ -57,7 +58,7 @@ export function startLocalText(id, content, repositoryRoot = process.cwd()) {
     state.intake = {kind:'local',request:{path:'intake.md',sha256:digest(content)}};
     delete state.jira;
     state.history.push({at:new Date().toISOString(),event:'local-intake-created',request:state.intake.request});
-    pinRun(state,stage,root);
+    pinRun(state,stage,root,undefined,{runContract});
     const errors = validateState(state,stage);
     if (errors.length) throw new Error(errors.join('\n'));
     writeFileSync(join(stage,'state.json'),`${JSON.stringify(state,null,2)}\n`,{flag:'wx'});

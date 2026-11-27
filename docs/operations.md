@@ -117,6 +117,25 @@ G3 이후는 필요한 사용자 허가를 받아 코드 commit을 확정하고 
 바뀐 경우에도 diff를 확인한 뒤 바인딩을 갱신합니다. CI는 항상 현재 PR SHA에서
 실행돼야 합니다. `docs/sdlc/` 밖의 uncommitted 변경은 보수적으로 차단합니다.
 
+### 진행 상황 조회
+
+상태 조회, 세션 재개, 단계 전환, 승인 대기·차단 및 완료 시 에이전트가 작업 ID와 함께
+간결한 Mermaid 진행도를 채팅에 표시합니다. 완료·현재·대기·승인 대기·차단을 구분하고
+하위 작업 수와 다음 행동을 안내합니다. `sdlc`는 저장된 작업별 요약을 보여 주며 호스트의
+실시간 세션 목록을 조회하지는 않습니다. 수동 조회는 파일이나 승인 상태를 변경하지 않습니다.
+
+```bash
+node "$PLUGIN_ROOT/scripts/state.mjs" progress docs/sdlc/ABC-123/state.json
+node "$PLUGIN_ROOT/scripts/state.mjs" progress docs/sdlc/ABC-123/state.json --text
+```
+
+Mermaid 미지원 환경에서는 `--text`를 사용합니다. 완료 여부는 저장된 게이트와 증거 검증으로
+판단하며, 증거 불일치 등 검증 실패 시 `BLOCKED`와 오류를 표시하고 실패 코드로 종료합니다.
+현재 단계 표시는 작업자가 실행 중이라는 뜻이 아니며, 조사 전용 spike 완료는 제품 구현·배포
+완료와 구분합니다. 이 요약은 승인, 상태 검사 및 프로젝트 표준 변경 확인을 대신하지 않습니다.
+기존 고정 리비전에 명령이 없으면 해당 리비전의 검증 결과를 텍스트로 안내하며, 진행도를
+표시하기 위해 실행 기준을 자동 변경하지 않습니다.
+
 ## 브랜치와 병렬 워크트리
 
 ### run 전용 워크트리
@@ -274,6 +293,39 @@ Behavior는 RED/GREEN, refactor는 before/GREEN, 문서·config는 의미 있는
 특정 호스트 보안 에이전트는 필수가 아닙니다. Light combined 리뷰는 동일 revision과
 전체 범위·보안 coverage가 확인될 때만 G4에서 재사용합니다.
 
+## 자율 실행·품질·E2E (contract 2)
+
+0.3.0 이후 시작한 run은 `harness.lock.json`에 `runContract: 2`가 기록되며, 아래 규칙은
+이 run에만 적용됩니다. 기존 run은 고정 리비전의 규칙을 유지합니다.
+
+- **G1 실행 선호도:** `G1.approval.preferences`에 `uiChange`, `grants`, `e2e`
+  (`full`·`regression`·`none`), `reason`, `residualFindings`(`follow-up`·`human`)를
+  기록합니다. `tasks.mjs prepare`가 이를 `policy.verification`·`policy.autonomy`로
+  복사하며 draft로는 바꿀 수 없습니다. 변경은 G1 재승인이 필요합니다.
+- **상시 권한 철회:** history에 `{at, event:"grants-revoked", grants, reference}`를
+  추가합니다. G1 승인 이후의 철회 이벤트에 있는 권한은 더 이상 유효하지 않습니다.
+- **결정 기록:** run 디렉터리의 `decisions.md`([템플릿](../templates/decisions.md))에
+  discovery의 `D-n` 번호를 이어서 기록합니다. 에이전트의 잔여 지적 수용은 이 행을
+  참조해야 상태 검사를 통과합니다.
+- **G2 진행 합의:** `02-plan.md`의 `Proceed agreement` 섹션에 계속 범위, 고정 중대 목록에
+  더하는 계획별 멈춤 조건, 별도 승인(push·merge·PR 게시·운영)을 적고, G2 evidence에
+  `02-plan.md` 해시를 묶습니다. 묶지 않으면 상태 검사가 실패하고, 섹션을 고치면 해시가
+  달라져 G2 재승인이 필요합니다. 범위 안의 완료와 다음 작업 착수는 질문이 아니라 진행
+  보고입니다. 멈춤 조건에 걸리면 해당 작업만 멈추고 무엇이 달라졌는지, 필요한 결정과
+  권장안을 묻고, 답변은 `decisions.md`에 기록합니다.
+- **품질 보고서:** 슬라이스 커밋 후 할당된 워크트리에서 다음을 실행해 `slice.quality`로
+  묶습니다. 통합 후에는 `--task` 없이 실행해 G3·G4의 `gate.quality`로 묶습니다.
+  실행기는 shell 없이 승인된 argv만 실행하고, `docs/sdlc/` 외 변경이 있는 source는
+  거부하며, 보고서는 run 디렉터리의 `quality/<uuid>/`에 남깁니다.
+- **E2E:** `uiChange: true`이고 `e2e`가 `none`이 아니면 AC 중 하나 이상에
+  `playwright` 또는 `playwright-bdd` 검사가 필요합니다. 탐색적 브라우저 E2E는
+  컨덕터가 수행하고 증거를 run의 `e2e/`에 남깁니다.
+
+```bash
+node "$PLUGIN_ROOT/scripts/quality-run.mjs" run docs/sdlc/ABC-123/state.json --task 1
+node "$PLUGIN_ROOT/scripts/quality-run.mjs" run docs/sdlc/ABC-123/state.json
+```
+
 ## Jira 장애
 
 ### Jira 자식 티켓 발행
@@ -380,6 +432,14 @@ prod 자격증명은 에이전트에 제공하지 말고 CI 환경 승인과 Arg
 연산자·치환·리다이렉션이 있거나 미지원 옵션이면 기존 보수적 검사를 적용합니다.
 `--output-dir`, `--post-renderer`, `--dependency-update`는 읽기 예외가 아니며,
 운영 파일 편집과 rollout restart/undo 등 실제 변경은 계속 차단합니다.
+
+`az`·`gh`는 읽기 전용 조회만 중립입니다. 허용 목록과 래퍼(`env`, `sudo`,
+`timeout`, `bash -c` 등)·셸 키워드 처리, 치환·`eval`·`xargs` 포함 시 차단, 다른
+프로그램 인자로 넘긴 `az`·`gh`(`find -exec`, `docker run` 등) 차단, gh 하위 명령 앞
+플래그 차단 규칙은 [프로토콜](../skills/sdlc/references/protocol.md)의 훅 설명을
+따릅니다. 모든 구간이 조회 명령이면 운영 경로 문자열 검사를 생략하므로
+`az group show -n production`은 중립입니다. `python -c` 내부 문자열이나 스크립트
+파일 안의 호출은 해석하지 않으며 호스트 권한 확인에 맡깁니다.
 
 현재 훅의 productionPaths는 문자열 경로 목록입니다. 환경별 실제 prod 경로를
 setup에서 채웁니다. 임의 glob이 적용된다고 가정하지 않습니다.

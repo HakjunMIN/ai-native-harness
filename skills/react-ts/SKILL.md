@@ -28,6 +28,9 @@ Read the [shared principles](../sdlc/references/principles.md). Use this plugin'
 6. Add memoization only for measured work or required referential stability; preserve correctness without relying on cache persistence. Use stable keys and avoid mutating shared frame values.
 7. Preserve agreed expectations and strict test ownership when assigned. Run
    existing typecheck, lint and affected tests; use Grafana E2E for relevant interactions.
+   Format only changed files with the fix command (`prettier --write <files>`); checks
+   stay check-only (`prettier --check`, ESLint, `tsc --noEmit`) per
+   [code quality](../sdlc/references/code-quality.md).
 
 ## Bounded example
 

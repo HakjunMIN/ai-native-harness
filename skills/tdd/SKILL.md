@@ -21,7 +21,7 @@ use the supplied approved policy, ACs and allowlist; phase entry is the conducto
   still need behavioral testing.
 
 Use existing tools: backend JUnit (Spring) or `go test` (Go) unit/integration/API tests, frontend unit tests
-or playwright-bdd for relevant E2E behavior. Mock external boundaries, and label
+or playwright-bdd for relevant Grafana E2E behavior (generic Playwright for other web UIs in contract-2 runs). Mock external boundaries, and label
 mock coverage separately from live integration. Record commands, cwd, exit codes,
 revision and useful output; preserve hashed evidence when the caller requires it.
 

@@ -205,3 +205,97 @@ test('saving a raw production patch as a proposal is not applying it', () => {
   }},'claude').permissionDecision,undefined);
   assert.equal(hook({tool_name:'Edit',tool_input:{patch}},'claude').permissionDecision,'deny');
 });
+test('az and gh are limited to read-only observation', () => {
+  for (const command of [
+    'az group delete -n rg --yes', 'az role assignment create --assignee x --role Reader --scope /subscriptions/s',
+    'az deployment group create -g rg -f main.bicep', 'az aks get-credentials -g rg -n c',
+    'az keyvault secret show --vault-name v -n s', 'az keyvault secret list --vault-name v',
+    'az storage account keys list -g rg -n sa', 'az webapp config appsettings list -g rg -n app',
+    'az storage account show-connection-string -g rg -n sa', 'az rest --url https://management.azure.com/x',
+    'az login', 'az acr login -n r', 'az account get-access-token', 'az -o json group list',
+    'gh api -X DELETE repos/o/r', 'gh api --method=PATCH repos/o/r', 'gh api -XPOST repos/o/r/issues',
+    'gh api -iXPUT repos/o/r', 'gh api repos/o/r -f name=x', 'gh api repos/o/r -Fname=x',
+    'gh api repos/o/r --raw-field=name=x', 'gh api repos/o/r --input body.json', 'gh api graphql',
+    'gh pr create --title t --body b', 'gh pr ready 1', 'gh pr review 1 --approve', 'gh pr edit 1 --title x',
+    'gh pr close 1', 'gh issue create --title t', 'gh issue close 1', 'gh repo sync',
+    'gh repo edit --visibility public', 'gh repo delete o/r --yes', 'gh secret set X', 'gh workflow run ci',
+    'gh release create v1', 'gh run rerun 2', 'gh auth login', 'gh auth token'
+  ]) {
+    assert.match(hook(shell(command)).permissionDecisionReason ?? '', /requires the human operator/, command);
+  }
+  for (const command of [
+    'az version', 'az --version', 'az account show', 'az account list -o table', 'az group list -o table',
+    'az aks show -g rg -n c', 'az aks get-versions -l koreacentral', 'az graph query -q "Resources | take 1"',
+    'gh pr view 1', 'gh -R o/r pr view 1', 'gh pr list --state open', 'gh pr diff 1', 'gh pr checks 1',
+    'gh run view 2 --log', 'gh run list -L 5', 'gh workflow view ci', 'gh release download v1 -p "*.tgz"',
+    'gh repo view o/r', 'gh label list', 'gh search prs --author @me', 'gh status', 'gh auth status',
+    'gh api repos/o/r', 'gh api -X GET repos/o/r/pulls', 'gh api --method=get repos/o/r -H "Accept: x"',
+    'gh pr create --draft --title t --body b', 'gh pr create -d -t t -b b', 'gh pr checkout 3',
+    'gh pr comment 1 -b x', 'gh issue comment 2 -b y', 'command -v gh', 'echo gh',
+    'git commit -m "use gh pr create"', 'kubectl get pods -n production'
+  ]) {
+    assert.equal(hook(shell(command)).permissionDecision, undefined, command);
+  }
+});
+test('wrappers, nested shells and expansions cannot hide az or gh mutations', () => {
+  for (const command of [
+    'bash -c "az group delete -n rg"', "sh -lc 'gh repo delete o/r'", `zsh -c "bash -c 'az group delete -n rg'"`,
+    'env A=1 gh repo delete o/r', 'env -i PATH=/bin az group delete -n rg', 'A=1 az group delete -n rg',
+    'sudo az group delete -n rg', 'sudo -u root az group delete -n rg', 'command gh repo delete o/r',
+    'time az group delete -n rg', 'nohup gh workflow run ci', 'timeout -s KILL 60 gh workflow run ci',
+    '/usr/local/bin/gh repo delete o/r', 'cd repo && gh repo delete o/r', 'gh pr view 1; gh pr close 1',
+    'az $(echo group) delete', 'eval "gh repo delete o/r"', 'gh pr view `echo 1`', 'gh pr view $PR',
+    'echo o/r | xargs gh repo delete', 'gh pr view "1'
+  ]) {
+    assert.equal(hook(shell(command)).permissionDecision, 'deny', command);
+  }
+  for (const command of ['bash -c "gh pr view 1"', 'env GH_PAGER= gh pr list', 'sudo -u me az account show',
+    'npm run gh-pages -- --tag $TAG', 'ls $HOME/az-lab']) {
+    assert.equal(hook(shell(command)).permissionDecision, undefined, command);
+  }
+});
+test('observation-only commands skip the production-text check', () => {
+  for (const adapter of ['copilot','claude']) {
+    for (const command of ['az group show -n production -o json',
+      'az aks show -g rg -n production && kubectl get pods -n production']) {
+      assert.equal(hook(shell(command),adapter).permissionDecision, undefined, command);
+    }
+  }
+  for (const command of ['az group show -n production -o json > deploy/prod/rg.json',
+    'az group show -n production && cp a deploy/prod/values.yaml', 'gh pr comment 1 -b "edit deploy/prod/ now"']) {
+    assert.equal(hook(shell(command)).permissionDecision, 'deny', command);
+  }
+});
+test('shell syntax, flag placement and positional arguments cannot disguise az or gh mutations', () => {
+  for (const command of [
+    'bash -euo pipefail -c "az group delete -n rg --yes"', 'bash -c -e "gh workflow run x"',
+    "bash -o pipefail -c 'gh release create v9'", 'if true; then az group delete -n rg --yes; fi',
+    '{ gh workflow run deploy.yml; }', '! gh workflow run deploy.yml', 'for i in 1; do gh release create v9; done',
+    'while true; do gh run rerun 2; done', 'setsid gh workflow run x', 'stdbuf -oL gh workflow run x',
+    'find . -exec gh workflow run x \\;', 'echo "gh workflow run x" | bash', 'rg --pre gh x docs',
+    'gh workflow --ref view run deploy.yml', 'gh issue --comment view close 5', 'gh release --notes view create v9',
+    'gh --description search repo edit', 'gh pr create --draft --draft=false',
+    'az acr build list -r reg -t img', 'az acr run list -r reg', 'az acr manifest delete list',
+    'az signalr key list -n s -g rg', 'az search admin-key show --service-name s -g rg',
+    'az search query-key list --service-name s -g rg', 'az eventgrid topic key list -n t -g rg',
+    'az iot hub policy list --hub-name h', 'az monitor app-insights api-key show --app a -g rg',
+    "setsid sh -c 'gh workflow run deploy.yml'", "stdbuf -o0 bash -c 'az group delete -n rg --yes'",
+    "find . -maxdepth 0 -exec sh -c 'gh workflow run deploy.yml' \\;", '*** Begin Patch\ngh workflow run deploy.yml',
+    'gh pr create --title --draft --body x', 'gh pr create -t --draft -b x', 'gh pr create -d -t x --draft=false',
+    'gh auth status --show-token', 'gh auth status -t', 'gh auth status -h github.com -at'
+  ]) {
+    assert.equal(hook(shell(command)).permissionDecision, 'deny', command);
+  }
+  for (const command of ['bash -euo pipefail -c "gh pr view 1"', 'if gh pr view 1; then echo ok; fi',
+    'which az', 'type gh', 'grep -rn gh docs', 'rg -n gh docs', 'gh pr -R o/r view 1', 'gh pr --repo=o/r view 1',
+    'gh pr view 1 --repo o/r', 'az acr show -n reg', 'az pipelines build list',
+    "setsid sh -c 'gh pr view 1'", 'gh pr create --title x --draft', 'gh pr create -t x -d', 'gh pr create -dt --draft=false', 'gh auth status -h github.com']) {
+    assert.equal(hook(shell(command)).permissionDecision, undefined, command);
+  }
+});
+test('Codex patches that mention az or gh are judged by their target paths', () => {
+  const patch = '*** Begin Patch\n*** Add File: docs/notes.md\n+Use `gh pr view 1` to read.\n+gh workflow run deploy.yml\n' +
+    '+Run `az group list` first.\n*** End Patch';
+  const result = hook({hook_event_name:'PreToolUse',tool_name:'apply_patch',tool_input:{command:patch},cwd:process.cwd()},'codex');
+  assert.equal(result.hookSpecificOutput?.permissionDecision, undefined);
+});

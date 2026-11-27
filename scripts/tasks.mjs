@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { createPolicy, renderTask, taskDefinitionErrors } from './workflow.mjs';
 import { digest, validateState, nextPhase } from './state.mjs';
-import { dispatchPinned } from './harness.mjs';
+import { dispatchPinned, runContract } from './harness.mjs';
 
 function safeDirectory(root, relativePath) {
   let directory = root;
@@ -38,8 +38,9 @@ export function prepareTasks(statePath, config, draft) {
   if (!entry.taskPlan) delete entry.policy;
   const errors = validateState(entry,root);
   if (errors.length) throw new Error(errors.join('\n'));
-  const policy = createPolicy(config,state.classification,draft);
-  const definitionErrors = taskDefinitionErrors(draft.tasks);
+  const contract = runContract(state,root);
+  const policy = createPolicy(config,state.classification,draft,{runContract:contract,preferences:state.gates.G1.approval?.preferences});
+  const definitionErrors = taskDefinitionErrors(draft.tasks,{runContract:contract});
   if (definitionErrors.length) throw new Error(definitionErrors.join('\n'));
   if (policy.profile === 'light' && (draft.tasks.length !== 1 || draft.tasks[0].blockedBy.length)) throw new Error('light policy requires one independent outcome; use strict for decomposed work');
   const tasks = draft.tasks.map(task => {

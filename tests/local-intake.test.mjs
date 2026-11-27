@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { digest, validateState, nextPhase } from '../scripts/state.mjs';
 import { bindDiscovery, discovery } from './helpers/discovery.mjs';
-import { git, projectRepo, runBranches, runRoot, runState, worktreeCount } from './helpers/run-fixture.mjs';
+import { documentationQuality, git, planEvidence, projectRepo, runBranches, runRoot, runState, worktreeCount } from './helpers/run-fixture.mjs';
 
 // Every run is created in its own worktree under the project repository's ignored .worktrees directory.
 function fixture(t) {
@@ -118,7 +118,7 @@ test('stdin intake rejects missing input, invalid IDs and symlink output', t => 
 });
 
 test('local intake is immutable evidence and G0 must bind it before planning', t => {
-  const {repo,root,start,statePath} = fixture(t);
+  const {root,start,statePath} = fixture(t);
   assert.equal(start().status,0);
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   writeFileSync(join(root,'other.md'),'Synthetic discovery evidence.\n');
@@ -148,7 +148,7 @@ test('local light work uses the same ID without requiring model plan review or J
   const approval = {actor:'human',reference:'synthetic:approval',at:'2026-09-29T00:00:00Z'};
   state.classification = 'bounded';
   state.gates.G0 = {status:'passed',evidence:[state.intake.request]};
-  state.gates.G1 = {status:'passed',evidence:[state.intake.request],approval};
+  state.gates.G1 = {status:'passed',evidence:[state.intake.request],approval:{...approval,preferences:{uiChange:false}}};
   bindDiscovery(root, state, discovery.replaceAll('AC-1', 'local-AC-1'));
   state.phase = 'plan';
   writeFileSync(statePath,JSON.stringify(state));
@@ -156,14 +156,14 @@ test('local light work uses the same ID without requiring model plan review or J
     verificationReason:'Validate links',tasks:[{id:1,title:'Guide',goal:'Readable guidance',
       scope:['Docs'],nonGoals:['Runtime'],blockedBy:[],acceptanceCriteria:[{
         id:'T1-AC1',requirement:'local-AC-1',text:'Valid link',checks:['static']
-      }]}]}));
+      }]}],quality:documentationQuality()}));
   writeFileSync(join(repo,'config.json'),JSON.stringify({workflow:{boundedProfile:'light'},
     review:{requireDifferentFamily:false,allowHumanReview:true}}));
   const prepare = spawnSync(process.execPath,['scripts/tasks.mjs','prepare',statePath,
     join(repo,'config.json'),join(repo,'draft.json')],{encoding:'utf8'});
   assert.equal(prepare.status,0,prepare.stderr);
   const prepared = JSON.parse(readFileSync(statePath,'utf8'));
-  prepared.gates.G2 = {status:'passed',evidence:[prepared.taskPlan],approval};
+  prepared.gates.G2 = {status:'passed',evidence:[prepared.taskPlan,planEvidence(root)],approval};
   prepared.phase = 'implement';
   assert.deepEqual(validateState(prepared,root),[]);
   assert.equal(nextPhase(prepared),'implement');
@@ -179,14 +179,14 @@ test('local strict plan proceeds without child Jira publication while preserving
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   const approval = {actor:'human',reference:'synthetic:approval',at:'2026-09-29T00:00:00Z'};
   state.gates.G0 = {status:'passed',evidence:[state.intake.request]};
-  state.gates.G1 = {status:'passed',evidence:[state.intake.request],approval};
+  state.gates.G1 = {status:'passed',evidence:[state.intake.request],approval:{...approval,preferences:{uiChange:false}}};
   bindDiscovery(root, state, discovery.replaceAll('AC-1', 'local-AC-1'));
   state.phase = 'plan';
   writeFileSync(statePath,JSON.stringify(state));
   const draft = {changeKind:'documentation',risks:[],verificationReason:'Check Markdown links',tasks:[{
     id:1,title:'Local documentation',goal:'Accurate guidance',scope:['README'],nonGoals:['Code'],blockedBy:[],
     acceptanceCriteria:[{id:'T1-AC1',requirement:'local-AC-1',text:'The guidance is accurate',checks:['static']}]
-  }]};
+  }],quality:documentationQuality()};
   const config = {workflow:{boundedProfile:'strict'}};
   writeFileSync(join(repo,'draft.json'),JSON.stringify(draft));
   writeFileSync(join(repo,'config.json'),JSON.stringify(config));
@@ -195,8 +195,9 @@ test('local strict plan proceeds without child Jira publication while preserving
   assert.equal(prepare.status,0,prepare.stderr);
   const planned = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(planned.policy.profile,'strict');
+  assert.equal(planned.policy.quality.version,1);
   assert.equal(planned.gates.G2.status,'pending');
-  planned.gates.G2 = {status:'passed',evidence:[planned.taskPlan],approval,reviews:[{
+  planned.gates.G2 = {status:'passed',evidence:[planned.taskPlan,planEvidence(root)],approval,reviews:[{
     axis:'plan',reviewerType:'model',authorModel:'author',authorFamily:'openai',authorSession:'author-session',
     reviewerModel:'reviewer',reviewerFamily:'anthropic',reviewerSession:'review-session',blocking:0,
     evidence:planned.intake.request
@@ -245,7 +246,7 @@ test('refuses to replace an existing broken symlink at the chosen local ID', t =
 });
 
 test('local intake rejects a missing request while preserving pending human gates', t => {
-  const {repo,root,start,statePath} = fixture(t);
+  const {root,start,statePath} = fixture(t);
   assert.equal(start().status,0);
   const state = JSON.parse(readFileSync(statePath,'utf8'));
   assert.equal(state.gates.G1.status,'pending');

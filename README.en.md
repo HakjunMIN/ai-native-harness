@@ -2,9 +2,18 @@
 
 # ai-native-sdlc
 
+[![Validate plugin](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/validate.yml)
+[![Lint](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/HakjunMIN/ai-native-harness/actions/workflows/lint.yml)
+[![Version](https://img.shields.io/github/package-json/v/HakjunMIN/ai-native-harness?label=version)](CHANGELOG.md)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](package.json)
+![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-informational)
+![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)
+
 **A local development workflow where AI implements, evidence verifies, and people approve.**
 Start from a Jira ticket or a natural-language request, with <!-- skill-count -->37 skills
-and 9 specialized agents.
+and 9 specialized agents. Discovery asks people what it needs up front; planning,
+implementation and verification then follow the recommendations and stop only for
+critical matters.
 
 ## Software Engineering Principles
 
@@ -13,12 +22,12 @@ and 9 specialized agents.
 | Principle | How the workflow applies it |
 |---|---|
 | Deliver small vertical increments | Split work into sub tasks with user outcomes and acceptance criteria (AC), rather than separate database, API, and UI layers. |
-| AC-based verification and validation | Derive AC from user stories, Jira tickets, or requests. Connect observable frontend behavior to AC-linked Gherkin scenarios, and backend AC to API examples and unit, integration, and API tests using JUnit for Spring or Go `testing`. Before implementation, people validate intent at G1 through AC and scenarios, including prototypes for UI work. Final verification checks implementation against test results for each AC. |
+| AC-based verification and validation | At G1, people validate intent through AC and Gherkin scenarios, including prototypes for UI work. Final verification checks the implementation against per-AC test results (Go `testing` or JUnit, Playwright E2E). |
 | Contracts and boundaries first | Align domain terminology, API contracts, and test expectations. Preserve authentication, tenant, and product boundaries. |
 | Risk-based verification | Use light mode for a small, low-risk, single outcome. Use strict mode for high-risk changes, architectural changes, or multiple outcomes. |
-| Tests appropriate to the change | Use TDD (RED to GREEN) for behavior changes, before-and-after comparisons for refactoring, and relevant static checks for documentation and configuration. Configuration that changes behavior requires behavioral tests. |
-| Independent review and separated roles | An author's self-review does not count as independent review. Strict mode also separates test writing from implementation. |
-| Evidence-based completion and traceability | Bind tests, reviews, and approvals to file hashes and code revisions. Revalidate evidence invalidated by changes. Document existence or an earlier summary is not a pass. |
+| Tests appropriate to the change | Use TDD (RED to GREEN) for behavior changes, before-and-after comparisons for refactoring, and relevant static checks for documentation and configuration. |
+| Independent review and separated roles | A model other than the author's reviews the work, with at most two rounds per review subject. Strict mode also separates test writing from implementation. |
+| Evidence-based completion and traceability | Bind tests, reviews, and approvals to file hashes and code revisions. Revalidate evidence invalidated by changes. |
 | Human approval and operations | People approve requirements (G1), plans (G2), and operational changes (G5b). Agents cannot approve their own work or perform actual production changes. |
 
 Details: [Shared principles](skills/sdlc/references/principles.md) and
@@ -27,62 +36,39 @@ Details: [Shared principles](skills/sdlc/references/principles.md) and
 ## Scope and Flow
 
 The default technical guidance targets an observability stack:
-**Grafana datasource/panel/app + React/TypeScript -> Spring Boot BFF (Gradle)
--> SigNoz query-service**.
-The BFF does not access ClickHouse directly, and the SigNoz UI is not exposed.
-Go BFFs and backend services use `go-backend` and `go-testing` with the same boundaries.
-Use the harness in a monorepo or across multiple microservice repositories.
-Even with a shared installation, run `sdlc-setup` separately for each repository's
-paths, commands, and project baseline.
+**Grafana datasource/panel/app + React/TypeScript -> BFF -> SigNoz query-service**.
+The BFF is Go by default (`go-backend` and `go-testing`); Spring Boot (Gradle) is also
+supported. The BFF does not access ClickHouse directly, and the SigNoz UI is not
+exposed. Use the harness in a monorepo or across multiple microservice repositories;
+`sdlc-setup` confirms each repository's paths, commands, and project baseline.
 
 **Discovery -> Plan -> Implement -> Verify -> Release**
 
 ![Stage-specific agents, required and conditional skills, and G1/G2/G5b human approval gates](docs/assets/ai-native-sdlc-skills.svg)
 
 `sdlc` manages progress, pauses, and resumption. Technical skills can run independently;
-invoking one does not start the full SDLC workflow or Jira work.
-
-### Technical Skills Retrieve Official Documentation at Execution Time
-
-Workflow skills define local procedures, approvals, and verification criteria.
-Technical skills for Mimir, Prometheus, SigNoz, ClickStack, OTel, Grafana,
-React/TypeScript, Spring, Go, and Helm/ArgoCD provide **official documentation
-retrieval procedures rather than static product manuals**.
-
-- Select relevant official URLs from each skill's `references/sources.md` and
-  retrieve the actual content during the current task through a web tool,
-  documentation MCP, or HTTP GET before applying it.
-- Local Markdown keeps URL routing, project boundaries, and verification questions.
-  Confirm APIs, configuration defaults, and supported capabilities against retrieved
-  documentation and the installed version's source or configuration.
-- `latest` and `main` are starting points. Find documentation or tags matching the
-  deployed version. Record the URL, section, retrieval time, target version, and
-  rationale for applying the guidance.
-- If retrieval fails, report dependent work as `BLOCKED`. Do not substitute static
-  summaries or model memory for current documentation. Retrieval does not authorize
-  installation, upgrades, or operational changes.
-
-Shared rule: [Live documentation protocol](skills/sdlc/references/live-documentation.md).
-A ticket's harness lock pins local guidance and URL lists, not external documentation
-content. Preserve retrieval evidence separately with the task when reproducibility
-requires it.
+invoking one does not start the SDLC workflow or Jira work. Technical skills retrieve
+official documentation at execution time instead of shipping static product manuals.
+If retrieval fails, they report `BLOCKED` rather than substituting model memory.
+See the [Live documentation protocol](skills/sdlc/references/live-documentation.md).
 
 ## Installation
 
+Git and **Node.js 22 or later** are required. The repository is public, so
+installation needs no authentication.
+
 ### Microservices: Share the Harness Across Sibling Repositories
 
-For three or four service repositories under the same parent directory, use a
-**shared clone with symbolic links**. The installer first clones `ai-native-harness`
-alongside the service repositories, or updates an existing clone with
-`git pull --ff-only`. Git and **Node.js 22 or later** are required.
+For service repositories under the same parent directory, use a **shared clone with
+symbolic links**. The installer clones `ai-native-harness` next to the services, or
+updates it with `git pull --ff-only`, and then links each repository.
 
 ```text
 workspace/
 ├── ai-native-harness/        # Shared Git clone of skills, hooks, and agents
 ├── .ai-native-sdlc-revisions/ # Shared revision cache created with the first ticket
 ├── service-api/
-├── service-web/
-└── service-worker/
+└── service-web/
     ├── .ai-native-sdlc -> ../ai-native-harness
     ├── AGENTS.md -> .ai-native-sdlc/templates/project-AGENTS.md
     ├── .agents/skills/* -> ../../.ai-native-sdlc/skills/*
@@ -90,43 +76,24 @@ workspace/
     └── docs/sdlc/<ID>/       # This service's state, lock, and task history
 ```
 
-Bash/zsh: pass paths to repositories that already exist.
-
 ```bash
 set -o pipefail
 curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install-shared.sh' |
-  bash -s -- /workspace/service-api /workspace/service-web /workspace/service-worker
+  bash -s -- /workspace/service-api /workspace/service-web
 ```
-
-PowerShell 7+: install and run hooks on Windows without Bash.
 
 ```powershell
 $url = 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/install-shared.ps1'
 & ([scriptblock]::Create((Invoke-WebRequest -Uri $url).Content)) `
-  'C:\workspace\service-api' 'C:\workspace\service-web' 'C:\workspace\service-worker'
+  'C:\workspace\service-api' 'C:\workspace\service-web'
 ```
 
-If the harness is already available, run [install-shared.sh](install-shared.sh) or
-[install-shared.ps1](install-shared.ps1) directly.
 On Windows, symbolic links require **Developer Mode or administrator privileges**.
-Rerunning the command updates shared installation assets. New tickets and standalone
-skills use updated assets; existing tickets retain their locked execution baseline.
-Current shared safety hooks continue to update. To apply skill or agent additions
-and removals, or repository-specific configuration changes, reinstall with all target
-repositories specified.
+Rerunning updates shared assets; existing tickets keep their locks. Existing
+`AGENTS.md` files and conflicting files are not overwritten, and the installer adds a
+`/.worktrees/` rule to `.gitignore`.
 
-Existing `AGENTS.md` files are preserved. Only newly created files link to the shared
-project template. Hook execution code and role definitions are shared, while CLI hook
-configuration containing target paths and Codex native agent TOML are generated per
-repository. Conflicts and existing copy installations are not overwritten or converted
-automatically. See [Installation](docs/install.md) for options, safe updates, and
-project-specific guidance management.
-
-### Existing Method: Copy Into a Project
-
-The repository is public, so installation requires no authentication. You need curl,
-Git, Bash, and **Node.js 22 or later** for execution after installation.
-Specify an existing target repository.
+### Copy Into a Project
 
 ```bash
 set -o pipefail
@@ -134,97 +101,16 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
   bash -s -- /absolute/path/to/target-repo
 ```
 
-For alternatives to executing a remote script directly and host-specific configuration,
-see [Installation](docs/install.md). For permission and hook limitations, see
-[Compatibility](docs/compatibility.md). Rerunning the command updates managed files
-inside the project. User-modified managed files and shared-link installations are not
-overwritten automatically.
+See [Installation](docs/install.md) for running without piping a remote script,
+options, updates, conflicts, and host checks, and [Compatibility](docs/compatibility.md)
+for permission and hook limitations.
 
 ## Getting Started
 
-### Per-Ticket Skill Revisions
-
-**Share the installation, but pin the execution baseline per ticket.** Both shared and
-copy installations create `docs/sdlc/<ID>/harness.lock.json` and bind its hash in
-`state.json`. This does not pin one version for the entire service repository.
-The lock records each asset's **content SHA256** and source commit when available.
-It includes uncommitted changes, so a commit ID alone may not reproduce the assets.
-
-When you start through `sdlc`, the agent creates state and a lock for a new Jira task.
-Local natural-language tasks receive a lock automatically during intake. The agent
-also verifies the existing revision and state on resumption, so **you do not need to
-run separate commands manually**.
-
-> [!NOTE]
-> Optional commands for manual execution and inspection
->
-> These examples are not mandatory workflow prerequisites. Use them when creating,
-> resuming, or inspecting a task yourself. Run them from the target service repository
-> root; the commands are the same in Bash and PowerShell.
->
-> ```sh
-> node .ai-native-sdlc/scripts/harness.mjs start ABC-123
-> node .ai-native-sdlc/scripts/harness.mjs resolve docs/sdlc/ABC-123/state.json
-> node .ai-native-sdlc/scripts/state.mjs check docs/sdlc/ABC-123/state.json
-> ```
->
-> Run the first command only for a new Jira task. For existing tasks, start with
-> `resolve`. Do not also run `start` for a local natural-language task. Only the user's
-> manual execution is optional; the Node.js runtime and the agent's internal script
-> execution are required.
-
-Creation preserves the installed assets as they are. It does not automatically pull
-the remote harness, query or synchronize Jira, or grant human approvals.
-For existing work, start with `resolve` and read skills, roles, and templates under
-the returned `root`. State-related commands in `state.mjs` automatically delegate to
-that ticket's snapshot validator.
-
-Sub tasks and subagents inherit the parent conductor's lock and original state path.
-Shared links do not change when switching tickets. Current shared safety hooks and
-project security instructions are never rolled back to an older snapshot.
-
-| Operation | Command and conditions |
-|---|---|
-| Resume | `resolve STATE`: verify lock and cache integrity. Stop on missing or mismatched assets; do not substitute the latest version. |
-| Recover cache | `restore STATE --source PATH`: requires the exact previous assets or a local Git source containing that commit. Does not fetch remotely. |
-| First adoption for older work | `adopt STATE --reason "reason" --confirm`: explicitly apply the current baseline to work without a lock. |
-| Change an active baseline | `upgrade STATE --reason "reason" --confirm`: use the installed version by default, or select another source with `--source PATH`. |
-
-Append these commands to `node .ai-native-sdlc/scripts/harness.mjs`.
-`STATE` is the ticket's state file path. `adopt` and `upgrade` preserve earlier state
-and locks in `harness-history/` and reset **all gates for revalidation starting at G0**.
-`--confirm` confirms the version change, not gate approval. Completed tasks are not
-changed. If an integration branch already exists, commit the reapproved plan, preserve
-and clean up earlier workspaces, then resume with `workspaces.mjs reconcile STATE`.
-Follow the [Branch and worktree procedure](docs/operations.md#브랜치와-병렬-워크트리).
-Every new run starts in its own worktree at `.worktrees/sdlc/<ID>/integration` inside
-the primary checkout (branch `sdlc/<ID>/integration`), so `STATE` is a path inside it.
-Installers append `/.worktrees/` to `.gitignore`; `workspaces.mjs list` lists all runs.
-
-Snapshots live in `.ai-native-sdlc-revisions/<SHA256>/`. Shared installations keep the
-cache next to the actual harness clone for reuse across services. Copy installations
-keep it inside each service repository. **Commit locks, state, and task history
-together; exclude the cache.** Do not delete or edit referenced caches arbitrarily.
-Preserve recovery sources for snapshots created from uncommitted assets.
-
-When working with Windows, add this rule to the target service's existing
-`.gitattributes` to preserve line endings for new locks and evidence. The harness
-repository's settings do not automatically apply to services. Do not rewrite line
-endings or hashes of historical evidence.
-
-```gitattributes
-docs/sdlc/** text=auto eol=lf
-```
-
-For recovery procedures, PowerShell examples, and limitations, see
-[Ticket revisions](skills/sdlc/references/harness-revisions.md).
-
-### Start a Workflow
-
-Run **`sdlc-setup` once initially** in the target repository to confirm and configure
-module paths, test commands, models, and the locations and owners of shared standards
-and ADRs. Then start with a Jira key or a natural-language request. Tokens are not
-stored in configuration.
+Run **`sdlc-setup` once** in the target repository. It reads the repository, CI, and
+deployment targets with read-only `gh`, `az`, and `kubectl` queries first, then asks
+you to confirm module paths, test and quality commands, models, and the locations of
+shared standards and ADRs in one pass. Tokens are not stored in configuration.
 
 ```text
 sdlc-setup
@@ -234,192 +120,122 @@ or
 sdlc Improve the empty state of the document search screen
 ```
 
-- Jira requires an authenticated Atlassian Rovo MCP connection. Light mode uses the
-  parent issue; strict mode creates child tickets after G2 approval.
-- Local tasks ask only necessary questions and record the original request and
-  answers in `intake.md`. They need no Jira, but use the same human approvals and
-  verification criteria.
-- To resume, use `sdlc` to list saved work and `sdlc <ID>` to continue. Artifacts and
-  state are stored in `docs/sdlc/<ID>/`.
+- **Jira:** requires an authenticated Atlassian Rovo MCP connection. Light mode uses the parent issue; strict mode creates child tickets after G2 approval.
+- **Local:** asks only necessary questions and records the original request and answers in `intake.md`. Human approvals and verification criteria match Jira work.
+- **Resume:** use `sdlc` to list saved work and `sdlc <ID>` to continue. Artifacts and state live in `docs/sdlc/<ID>/`.
 
-### Discovery Questions and Approval
+### Discovery: Questions and G1 Approval
 
 The agent first investigates what it can establish from code, existing answers, and
-project standards. It batches only decisions that prevent safe progress without an
-answer now. Human-owned decisions that can be drafted become recommendations at G1.
-Reversible, low-risk implementation choices are recorded with their rationale.
-There may be no preliminary questions.
-
-At G1, chat shows the goal, scope and exclusions, a small Mermaid behavior diagram,
-and a summary of AC, decisions, and risks instead of a long list of document paths.
-Detailed evidence stays in the same discovery document, connected by IDs.
-Ordinary recommendations and approval share a form; high-risk choices require
-individual confirmation from the decision owner. Checks block mismatched IDs or
-statuses, omissions, and unresolved decisions. Approval binds to the whole document's
-hash.
-
-```sh
-node .ai-native-sdlc/scripts/state.mjs discovery docs/sdlc/ABC-123/state.json
-node .ai-native-sdlc/scripts/state.mjs discovery docs/sdlc/ABC-123/state.json --text
-```
-
-These commands are read-only. Use the text summary on hosts without Mermaid support.
-Existing runs retain their pinned revision and do not upgrade automatically.
-See the [Approval example](examples/ABC-123/01-discovery.md),
+project standards, then batches now the decisions later phases need. Decisions it can
+draft become recommendations. At G1, chat shows the goal, scope and exclusions, a small
+Mermaid behavior diagram, and a summary of AC, decisions, and risks; approval binds to
+the whole document's hash. High-risk choices need individual confirmation from the
+decision owner. See the [Approval example](examples/ABC-123/01-discovery.md),
 [format and question criteria](skills/sdlc/references/discovery-review.md), and
 [operating procedure](docs/operations.md#discovery-승인-요약).
 
-### Track Progress in Chat
+### Autonomous Execution and the Decision Log
 
-For status requests, session resumption, phase changes, approval waits, blockers,
-and completion, the agent shows a concise Mermaid progress diagram with the task ID
-in chat. It distinguishes completed, current, pending, awaiting approval, and blocked
-states, and reports sub task counts and the next action. `sdlc` summarizes saved work;
-it does not query the host's live session list.
+Runs started with 0.3.0 or later also confirm execution preferences in the G1
+form: whether the change touches UI (`uiChange`), the E2E level (`full` default,
+`regression`, `none`), standing local Git grants (`plan-commit`, `slice-commit`,
+`local-integration`) and residual review findings (`follow-up` default, `human`).
+Plan and implementation then follow the recommendations and log non-critical
+choices in the run's `decisions.md`. Only critical matters stop for a person:
+authority, auth/tenant changes, destructive data changes, public contract breaks,
+security issues, AC or scope changes, secrets and production effects. G2 and G5b
+approval and any push, merge, PR publication or production action stay with
+people. The G2 form also shows the proceed agreement in `02-plan.md`: inside the
+approved sub tasks and ACs, implementation, tests, review fixes and verification
+are reported as progress, not asked about, and only work that hits a plan-specific
+stop condition (for example a real external connection or a new write permission)
+pauses for a decision. After review round 2 the agent accepts remaining findings
+only when the reviewer classified them as non-critical (`critical: 0`), with
+follow-ups and a logged decision. The release report lists every decision.
 
-Manual inspection does not change files or approval state:
+Verification binds passing reports of the approved code quality policy (lint,
+format-check and typecheck) to each slice, G3 and G4. The Go BFF uses
+`golangci-lint run ./...`, `golangci-lint fmt --diff` and `go build ./...`. UI
+changes need Playwright AC checks, and `full` adds affected-flow, smoke regression
+and exploratory browser E2E. Quality checks run during implementation and
+verification, not in hooks. See
+[autonomous execution](skills/sdlc/references/protocol.md#autonomous-execution),
+[code quality](skills/sdlc/references/code-quality.md), and the
+[operating procedure](docs/operations.md#자율-실행품질e2e-contract-2).
+
+### Progress and Sub Tasks
+
+For status requests, resumption, phase changes, approval waits, blockers, and
+completion, the agent shows a Mermaid progress diagram and the next action with the
+task ID in chat. Manual inspection does not change files or approval state:
 
 ```sh
-node .ai-native-sdlc/scripts/state.mjs progress docs/sdlc/ABC-123/state.json
 node .ai-native-sdlc/scripts/state.mjs progress docs/sdlc/ABC-123/state.json --text
 ```
 
-Use `--text` without Mermaid support. Completion depends on saved gates and evidence
-validation. Validation failures, including evidence mismatches, show `BLOCKED` and an
-error and exit with a failure code. A current-phase marker does not mean a worker is
-running. A completed research spike is distinct from completed implementation or
-deployment. The summary does not replace approval, state checks, or project baseline
-change checks. If an older pinned revision lacks the command, the agent reports that
-revision's validation results as text rather than changing the execution baseline
-automatically to display progress.
-
-### Sub Tasks and Parallel Execution
-
 **A sub task is an execution unit with AC, scope, and dependencies; a Jira ticket is
-a remote issue.** Large tickets or requests become multiple sub tasks. Small work
-uses one. `sdlc-subtasks` defines sub tasks and handles Jira issuance when required;
-the name does not mandate a particular Jira issue type. Local tasks create no Jira
-issues. Jira light uses the parent ticket; Jira strict and legacy create child tickets
-only after approval.
+a remote issue.** Large requests become several sub tasks. A single sub task runs in
+the run worktree; independent parallel sub tasks run in separate Git worktrees and
+are verified after integration. See [progress inspection](docs/operations.md#진행-상황-조회)
+and the [Sub task contract](skills/sdlc-subtasks/references/sub-task-contract.md).
 
-A single sub task runs on the current checkout's branch. Independent parallel sub
-tasks run in separate Git worktrees and undergo integration verification afterward.
-Backend tests use JUnit for Spring or Go `testing`; frontend E2E uses Gherkin.
+### Per-Ticket Revisions and Run Worktrees
 
-For compatibility, `tasks`, `taskPlan`, `slices`, `tasks.json`, `tasks/`, and
-`tasks.mjs` commands remain. See the
-[Sub task contract](skills/sdlc-subtasks/references/sub-task-contract.md).
+**Share the installation, but pin the execution baseline per ticket.** Each task records
+the content SHA256 of its assets in `docs/sdlc/<ID>/harness.lock.json` and resumes from
+the same snapshot in `.ai-native-sdlc-revisions/<SHA256>/`. Updating the installation
+does not switch active work; switching is an explicit `harness.mjs upgrade` that
+revalidates from G0. Every new run works in its own worktree at
+`.worktrees/sdlc/<ID>/integration` inside the primary checkout (branch
+`sdlc/<ID>/integration`). Commit locks, state, and task history; exclude the cache.
+The agent creates and verifies locks, so you do not need to run commands yourself.
+See [Ticket revisions](skills/sdlc/references/harness-revisions.md) and the
+[branch and worktree procedure](docs/operations.md#브랜치와-병렬-워크트리).
 
-### PR Bodies and Retrospectives
+### PR Bodies, Retrospectives, and Unused Code Audits
 
-**Use `pr` to explain a reviewed diff, and `retro` to turn difficult execution into
-environment improvements.** The flow is:
-`... -> sdlc-verify (G4 final review) -> sdlc-release (pr) -> done -> retro (human-invoked)`.
-
-- `pr` writes release, GitOps promotion, and operational proposal PR bodies using
-  Summary (the smallest useful visualization), Evidence (before-and-after execution),
-  Merge Danger (one-way or two-way door and blast radius), and Traceability. Risk
-  cannot be rated below the approved plan's risk record. It writes the body only;
-  it does not push or merge.
-- `retro` runs only when explicitly invoked by the user. It identifies actual
-  friction in the session and `docs/sdlc/<ID>/` records and proposes improvements
-  by severity. Mechanical violations go to automated checks; judgment-based rules
-  go to project standards with `Enforcement: review`. `AGENTS.md` holds discovery
-  pointers only. No separate retrospective report is created. Only accepted changes
-  persist in standards or checks after owner approval.
-
-### Manually Audit Unused Code and Skills
-
-[prune-unused](skills/prune-unused/SKILL.md) is a human-invoked cleanup skill.
-You can run it periodically, such as monthly or around releases, but it is not
-registered with a scheduler, CI, or an automatic SDLC phase. The default is a
-read-only audit.
-
-```text
-prune-unused: Audit unused code and skills in this repository; report candidates with evidence and risk.
-```
-
-The audit checks not only calls and imports, but also public APIs, dynamic loading,
-CLI and configuration entrypoints, and direct invocation and discovery of skills.
-Missing references or usage records alone do not justify deletion. It reports
-candidate IDs, evidence, risk, associated changes, and a verification plan, then
-cleans up only what a person selects. Each new run checks current code and usage
-evidence rather than reusing earlier approval.
-
-Shared installation links, ticket snapshots, historical evidence, and other people's
-uncommitted changes are preserved. Reports go to chat by default. The skill does not
-automatically commit or push.
+- **`pr`** writes a PR body for a reviewed diff with Summary, Evidence, Merge Danger, and Traceability. It writes the body only; it does not push or merge.
+- **`retro`** runs only when you invoke it and proposes improvements from actual friction. Only accepted changes persist in standards or automated checks after owner approval.
+- **[prune-unused](skills/prune-unused/SKILL.md)** is a human-invoked, read-only audit. It reports candidates with evidence and risk, cleans up only what a person selects, and is not registered with a scheduler or CI.
 
 ## Project Baselines and ADRs
 
 **Standards define current rules; ADRs explain why a decision was made.** Decisions
-affecting multiple features belong at project level, with feature plans referencing
-them. Shared boundaries such as authentication, tenancy, and shared APIs require
-project ADRs even when introduced by the first feature.
-
-Prefer the target project's existing documentation locations. Without an established
-convention, use this structure. Create only necessary documents in the target project,
-not inside the installed harness.
+affecting multiple features, such as authentication, tenancy, and shared APIs, belong
+in project ADRs, and feature plans reference them. Prefer the target project's existing
+documentation locations; without a convention, use this structure.
 
 ```text
-AGENTS.md                         # Actual documentation locations and reading rules
+AGENTS.md                  # Actual documentation locations and reading rules
 docs/
-  architecture/
-    overview.md                   # Current system boundaries and dependencies
-    adr/
-      README.md                   # Shared decisions, status, and owners
-      ADR-0001-<decision>.md       # Rationale, alternatives, and approval
-  standards/
-    README.md                     # Standards index and scope
-    <topic>.md                    # Current rules and verification methods
-  sdlc/
-    <ID>/
-      state.json                  # Progress state and lock hash
-      harness.lock.json           # Per-ticket harness content revision
-      02-plan.md                  # Baseline references and feature design
-      adr/<feature-decision>.md   # Feature-only decisions when needed
+  architecture/adr/        # Shared decisions: rationale, alternatives, approval (README.md index)
+  standards/               # Current rules and enforcement (README.md index)
+  sdlc/<ID>/               # state.json, harness.lock.json, 02-plan.md, and other task records
 ```
 
-Discovery identifies applicable standards and conflicts. The plan's `Project baseline`
-records document paths, sections, and baseline commits. Uncommitted documents use
-their content hash. Implementation, review, verification, and resumption check changes
-since that baseline and the validity of exceptions. Release and handoff communicate
-shared decision changes and remaining migration obligations.
-
-- Reference shared rules instead of copying them into each feature. Record ordinary
-  implementation choices in the plan.
-- Shared changes and temporary exceptions require explicit approval from their owner.
-  Feature-level G2 approval cannot substitute for it.
-- Promote feature decisions to project ADRs when they become shared, linking the
-  original task. When replacing a decision, update the `superseded` relationship and
-  current standards while preserving historical evidence.
-- Record each standard's scope, status, owner, source, and enforcement method:
-  `check: <automated check>` or `review`. Register existing `CODING_STANDARDS.md` and
-  `CONTRIBUTING.md` in the standards index rather than creating replacements.
-  `retro` proposals start as `proposed` and take effect after owner approval.
-
-The installer does not create empty standards or ADRs. After updating an existing
-installation, use `sdlc-setup` to connect project guidance and review changes to
-existing `AGENTS.md` as a diff rather than overwriting it.
-**Checking shared document changes is a skill procedure; the state validator does
-not detect them automatically.** Record comparisons in the task's internal report
-and connect them to existing gate evidence.
-
-Details: [Project governance](skills/sdlc/references/project-governance.md).
+The plan's `Project baseline` records referenced documents and baseline commits, and
+later phases check changes since then. Shared changes and exceptions require their
+owner's approval; feature-level G2 approval cannot substitute for it. The installer
+does not create empty standards or ADRs. See
+[Project governance](skills/sdlc/references/project-governance.md).
 
 ## Safety Boundaries
 
-**v1 hooks conservatively block `git push`, `gh pr merge`, and direct cluster changes.**
-A neutral hook response to local `git merge` is not execution permission. Under user
-authorization and project protection rules, only the conductor integrates reviewed
-source work into an integration branch. Worker and release roles do not merge directly.
-People publish branches and promote dev or staging. Agents write production change
-proposals only under `production-proposal/`; people change actual production values,
-merge, and synchronize ArgoCD.
+**Hooks conservatively block `git push`, `gh pr merge`, and direct cluster changes.**
+`az` and `gh` pass only for read-only observation (`az … show|list|query`,
+`gh pr|run view`, `gh api` GET, and similar) and a few set commands such as
+`gh pr|issue comment` and draft PR creation; other commands are denied as requiring
+the human operator. The harness uses these reads to find CI and deployment facts
+first and asks only for confirmation.
 
-Hooks and role-specific path restrictions are **not a security sandbox**.
-GitHub branch protection, required CI, and ArgoCD production RBAC are still required.
-If required verification or review is unavailable, the task is blocked, not passed.
+Only the conductor integrates locally, under user authorization or the
+`local-integration` grant. People publish branches, promote dev or staging, change
+actual production values, merge, and synchronize ArgoCD; agents write production
+change proposals only under `production-proposal/`. Hooks and role-specific path
+restrictions are **not a security sandbox**. GitHub branch protection, required CI,
+and ArgoCD production RBAC are still required. If required verification or review is
+unavailable, the task is blocked, not passed. See [hook limits](docs/operations.md#훅-한계).
 
 ## Further Reading
 
@@ -428,71 +244,47 @@ The linked guides retain their existing language.
 | Resource | Coverage |
 |---|---|
 | [Installation](docs/install.md) | Shared microservice and copy installations, Bash/PowerShell, updates, and conflicts. |
-| [Ticket revisions](skills/sdlc/references/harness-revisions.md) | Per-ticket locks, caches, resumption, recovery, explicit version changes, and inheritance. |
+| [Operations](docs/operations.md) | Light/strict policy, approvals, resumption, progress inspection, parallel worktrees, autonomous execution, and existing state migration. |
+| [Ticket revisions](skills/sdlc/references/harness-revisions.md) | Per-ticket locks, caches, resumption, recovery, explicit version changes, `.gitattributes`, and inheritance. |
+| [Compatibility](docs/compatibility.md) | Host support and permission and hook limitations. |
 | [Customer repository discovery](docs/customer-repository-discovery.md) | Interview questions, artifact templates, tool and permission discovery, process mapping, and pilot criteria. |
-| [Operations](docs/operations.md) | Light/strict policy, approvals, resumption, parallel worktrees, and existing state migration. |
 | [Project governance](skills/sdlc/references/project-governance.md) | Shared standards and ADRs, baseline versions, approvals, exceptions, promotion, supersession, and impact checks. |
 | [Sub task example](examples/ABC-123/README.md) | Plans, sub tasks, and evidence artifact structure. |
 | [Technical skills](skills/) | Independently usable stack-specific development, testing, and operational guidance. |
-| [Prune Unused](skills/prune-unused/SKILL.md) | Human-invoked unused code and skill audits. Only selected candidates are cleaned up and verified after evidence review and approval. |
-| [SigNoz OSS](skills/signoz-oss/SKILL.md) and [ClickStack](skills/clickstack/SKILL.md) | Self-hosted operations and optional alternative evaluation. ClickStack is not a required dependency and is not installed or migrated to automatically. |
-| [Mimir OSS](skills/mimir-oss/SKILL.md) and [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | Metrics storage and query-service evaluation, operations, PromQL, and BFF query contracts. No operational migration without an approved decision. |
-| [Go Backend](skills/go-backend/SKILL.md) and [Go Testing](skills/go-testing/SKILL.md) | Go BFF/backend implementation and `go test` evidence. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang) is a non-authoritative checklist retrieved during a task, not authorization to change dependencies or the Go version. |
+| [Go Backend](skills/go-backend/SKILL.md) and [Go Testing](skills/go-testing/SKILL.md) | Go BFF/backend implementation and `go test` evidence. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang) is retrieved only as a non-authoritative checklist. |
+| [SigNoz OSS](skills/signoz-oss/SKILL.md), [ClickStack](skills/clickstack/SKILL.md), [Mimir OSS](skills/mimir-oss/SKILL.md), and [Prometheus Query API](skills/prometheus-query-api/SKILL.md) | Observability storage and query-service operations and alternative evaluation. Nothing is installed or migrated automatically without an approved decision. |
+| [Local SDLC run dashboard](docs/dashboard.md) | Session-to-run linking, VS Code links and resume commands, alerts, refresh intervals, storage locations, and per-OS use. |
 
 ## Package Development
 
 ```bash
+npm ci            # install ESLint development dependencies
 npm test
+npm run lint
 npm run validate
 ```
 
 These commands validate the package without external services. They do not replace
-target-service tests or actual Jira/ArgoCD connectivity checks. When changing skills,
-also run the [Pressure scenarios](tests/scenarios/pressure.md).
+target-service tests or actual Jira/ArgoCD connectivity checks. CI runs the same checks
+in the `Validate plugin` (macOS, Linux, Windows) and `Lint` (ESLint) workflows. When
+changing skills, also run the [Pressure scenarios](tests/scenarios/pressure.md).
 
 ### Local SDLC run dashboard
 
 ![Local SDLC run dashboard demo: approval filter, workspace selection, session detail drawer, and verification detail](docs/assets/session-sdlc-dashboard-demo.gif)
 
-_Recorded with synthetic demo data. The flow shows the approval-waiting filter → workspace
-selection → a session's "details" drawer → run progress, gates, and skill/review/verification
-summary → unit-test detail → next session → group by run._
-
 Run `npm run dashboard` and open the `127.0.0.1` URL printed in the terminal. The
-dashboard reads supported local GitHub Copilot CLI, Claude Code, and Codex session
-files and SDLC run evidence from their workspaces. Session content is not uploaded;
-unsupported local formats may be omitted or shown as warnings. Sessions link to a
-run automatically from harness tool activity (a command or file path that touches
-`docs/sdlc/<ID>/state.json` or other run files); a session that moves between runs
-links to the latest one. You can associate unlinked sessions manually or override an
-automatic link. The skill, review, and verification summary shows only per-skill call
-counts, review blocking totals, and the latest unit/API/E2E check outcomes. The
-dashboard displays approval status but cannot approve gates or change run state.
-
-The page refreshes automatically every 60 seconds by default. The interval selector in
-the header offers auto 10s, 30s, 1 min, 5 min, or manual, and the browser remembers your
-choice. The ↻ (refresh now) button reloads immediately in any mode.
-
-Each session card has a VS Code link and a **명령 복사** (copy command) button. For
-Copilot CLI sessions, **VS Code에서 세션 열기** (open session in VS Code) opens the
-workspace and imports the session into VS Code Chat. This works only for sessions the
-VS Code agent host can adopt: sessions created in VS Code, and CLI sessions it
-discovered while VS Code was running. Older CLI sessions fail with an import error in
-VS Code. VS Code cannot import Claude Code or Codex CLI sessions, so their link is
-**VS Code 폴더 열기** (open folder in VS Code) and opens only the workspace. The copy
-button copies `copilot --resume <id>`, `claude --resume <id>`, or `codex resume <id>`
-so you can continue the session in a terminal. Snapshot warnings, such as omitted
-older sessions, are collapsed into an **알림 N건** (N alerts) button at the bottom left;
-click it to read them. Errors that stop the dashboard from loading stay at the top.
-
-The same command works in a macOS terminal and in Windows PowerShell; stop it with
-`Ctrl+C`. Sessions are read from `.copilot`, `.claude`, and `.codex` in your home
-directory (`%USERPROFILE%\.copilot` and so on, on Windows). Manual links are saved to
-`~/Library/Application Support/ai-native-harness/dashboard.json` on macOS and
-`%APPDATA%\ai-native-harness\dashboard.json` on Windows.
+dashboard shows local GitHub Copilot CLI, Claude Code, and Codex session files and
+SDLC run evidence read-only; session content is not uploaded. Sessions link to runs
+automatically from harness tool activity, and you can link unlinked sessions manually.
+Session cards open the session in VS Code or copy its resume command. It shows
+approval status but cannot approve gates or change run state. See the
+[dashboard guide](docs/dashboard.md).
 
 ### Maintaining the harness: `harness-dev`
 
-Use [`harness-dev`](.agents/skills/harness-dev/SKILL.md) in this source repository to improve the harness itself. It is not installed as a skill in consuming projects. For example, if a retrospective proposes changing an approval rule, ask: “Read `harness-dev` and check how this change would affect tickets already in progress.”
-
-A typo can be fixed directly. A change to approval rules or the state format calls for checking compatibility with existing tickets and planning a rollback first. When a change needs a design, record it in [`docs/specs/`](docs/specs/). Keep implementation plans in [`docs/plans/`](docs/plans/) regardless of the tool used.
+Use [`harness-dev`](.agents/skills/harness-dev/SKILL.md) in this source repository to
+improve the harness itself; it is not installed in consuming projects. When approval
+rules or state formats change, check compatibility and rollback for tickets already in
+progress first. Record designs in [design documents](docs/specs/) and implementation
+plans in [`docs/plans/`](docs/plans/), whichever tool produced them.

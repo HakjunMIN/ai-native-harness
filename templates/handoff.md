@@ -6,6 +6,7 @@ description: "Scoped SDLC assignment inputs, constraints and evidence return for
 
 Run: <Jira key or local ID> | Intake: <Jira snapshot or hashed local request> | Phase: <phase> | Sub task: <id or N/A>
 Policy: <approved snapshot/profile, verification mode and review flags; legacy strict if absent>
+Proceed agreement: <contract 2: 02-plan.md hash and the stop conditions that apply to this assignment; N/A otherwise>
 Sub task reference: <local ID, Jira parent key for light, or Jira child key for strict>
 Sub task definition: <manifest path/hash and optional generated document path/hash>
 Acceptance criteria: <local AC IDs -> parent requirement references>

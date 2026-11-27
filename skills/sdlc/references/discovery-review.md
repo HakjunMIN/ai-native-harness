@@ -19,6 +19,11 @@ the choice exceeds delegated authority, and its answer is needed now.
 | `g1` | A human owns the choice, but a meaningful draft can be prepared without the answer | Present a clearly marked recommendation in the G1 summary and confirmation form |
 | `record` | A fact, an existing decision or a reversible low-risk choice within delegated authority | Investigate or decide, record the basis, and do not interrupt the person |
 
+Before asking for a value, look it up read-only (repository files, `git`, `gh`
+reads, `az … show|list|query`, `kubectl get`, `helm get values`) and ask only to
+confirm the prefilled proposal, citing each value's source. A missing `az login`
+or `gh auth` is a capability limitation to report, not something to perform.
+
 Do not turn actors, permissions, errors, limits or exclusions into a mandatory
 questionnaire. They are investigation prompts. Do not re-ask answers from intake
 or policy. Low confidence alone does not justify a question: try bounded research
@@ -130,6 +135,26 @@ for a Mermaid-capable Markdown preview; a browser/server requires consent throug
    unchanged choices need not be re-interviewed, but the final approval must cover
    the updated full artifact. Scope changes may require new owner decisions.
    Silence, a choice without gate approval, and a preview click never pass G1.
+
+### Execution preferences
+
+For contract-2 runs (`runContract: 2` in the lock) the same G1 form always ends
+with an execution-preference block, prefilled with the recommendation and its
+basis. Record the answers as `G1.approval.preferences`:
+
+| Field | Values | Default | Meaning |
+|---|---|---|---|
+| `uiChange` | boolean | required | Propose `true` when impacted modules include UI modules or frontend paths; record the basis. Must equal `state.uiChange` |
+| `e2e` | `full`, `regression`, `none` | `full` | Verification level copied into `policy.verification` |
+| `reason` | text | - | Required when `uiChange` is true and `e2e` is `none` |
+| `grants` | `plan-commit`, `slice-commit`, `local-integration` | none | Standing local Git authorization ([protocol](protocol.md#autonomous-execution)) |
+| `residualFindings` | `follow-up`, `human` | `follow-up` | Who may accept non-critical blockers left after review round 2 |
+
+Unknown fields, unknown grants and duplicates fail validation. Push, merge, PR
+publication and production are never grantable. Ask about every field once here
+so plan and implementation can proceed on recommendations; changing a preference
+later requires G1 re-approval. Plan-specific stop conditions are agreed later in
+the G2 [proceed agreement](protocol.md#autonomous-execution), not asked here.
 
 `open` decisions block G1. Missing/duplicate/unknown IDs, summary status mismatch,
 hidden human decisions or risks, and missing individual high-impact confirmation

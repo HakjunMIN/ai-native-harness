@@ -17,11 +17,24 @@ requirement or plan changes return to G1/G2. Use run-local reports as gate evide
 not repository-relative project-document paths or parent traversal.
 
 Run only applicable approved checks: Gradle or `go test` unit/integration/API, FE Jest/RTL,
-lint/typecheck, build, Gherkin generation or Playwright. Documentation/config can
+lint/typecheck, build, Gherkin generation or Playwright. Contract-2 G4 binds an
+integration `quality-run.mjs run STATE` report at the verified head as
+`gate.quality` and in `gate.evidence`; reuse the G3 report only for an unchanged
+policy, source and coverage ([code quality](../sdlc/references/code-quality.md)). Documentation/config can
 use justified static/schema checks; do not require unrelated stack infrastructure.
 Do not assume `gradlew test` runs
 custom integration tasks. Verify real plugin -> BFF -> query-service behavior for
 impacted integration AC; label mock tests separately.
+
+Apply the approved `policy.verification.e2e` level ([protocol](../sdlc/references/protocol.md#run-contract-and-e2e-level)).
+For `full` and `regression` the verifier runs affected-flow E2E and smoke
+regression with the repository's Playwright runner, plus consumer-flow E2E for
+BFF/API changes under `full`. For `full`, the conductor also runs exploratory
+browser E2E with Playwright MCP or the host browser and stores it under `e2e/`
+for the verifier to audit. Record a missing browser tool as a limitation.
+Contract-2 verification stays inside the G2 proceed agreement
+([autonomous execution](../sdlc/references/protocol.md#autonomous-execution)):
+run checks and route fixes through the G3 invalidation below without asking; pause on its stop conditions.
 
 For UI changes invoke `grafana-plugin-testing`: light/dark screenshot comparison,
 axe, keyboard/manual accessibility, Grafana design-system and heuristic review by
@@ -41,7 +54,8 @@ necessary expertise blocks that review, not unrelated checks. No cloud delegatio
 
 Write `04-verify-report.md`: AC matrix, commands/cwd/exit codes/timestamps,
 subject SHA, output hashes, environment versions, UX artifacts, model provenance,
-review findings/dispositions, untested paths and limitations. All required checks
+review findings/dispositions, untested paths and limitations, and referenced
+`decisions.md` IDs for verification choices and agent acceptances. All required checks
 must actually pass. Tests unavailable due to Docker/Grafana/MCP are BLOCKED.
 
 Code fixes invalidate G3 and downstream gates; use impacted slices plus transitive

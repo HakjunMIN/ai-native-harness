@@ -45,10 +45,14 @@ The conductor owns state, preparation and publication; specialists return drafts
 
 Write one draft using the [definition template](../../../templates/sub-task-plan.json).
 It contains changeKind, risks, tasks and (for non-behavior work) verificationReason.
+Contract-2 runs also include `quality.modules` assessing lint, format-check and
+typecheck for every task; see [code quality](../../sdlc/references/code-quality.md).
 Each sub task requires stable positive id, title, goal, nonempty scope/nonGoals,
 blockedBy IDs and acceptanceCriteria. Each AC has a locally unique id, parent
 requirement reference, observable text and checks. Supported kinds: junit, jest,
-playwright-bdd, go, chart, manual, static. Select applicable checks; manual cannot
+playwright-bdd, go, chart, manual, static; contract-2 runs add `playwright` for
+non-Grafana web UIs. A contract-2 UI change with E2E needs at least one
+`playwright-bdd` or `playwright` AC. Select applicable checks; manual cannot
 replace required automated behavior tests. Details hold contract/UX/fixture
 references, not duplicate ACs. Do not recycle retired IDs.
 

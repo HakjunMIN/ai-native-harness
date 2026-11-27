@@ -27,7 +27,7 @@ review. Never impersonate one or invent provenance. Follow assigned axis/coverag
 
 Inspect correctness, error propagation, concurrency, resource cleanup, conventions, and maintainability. Check bounded WebClient retries or Go client deadlines/retries, verified tenant context, secret handling, pinned query-service mappings, immutable DataFrames, hook dependencies, and tests that could pass for the wrong reason. A benchmark never justifies direct BFF-to-ClickHouse access.
 
-Classify findings `blocking`, `should-fix`, or `nit`; include path/line, a concrete failure path or convention, and a requested fix. `blocking` is only for a violated approved AC/contract, an exploitable security defect, a broken build/test or data loss. In a round-2 delta review inspect only the fix diff and its blast radius. Distinguish evidence-backed defects from preferences. Report inspected scope and limitations even when no issues are found.
+Classify findings `blocking`, `should-fix`, or `nit`; include path/line, a concrete failure path or convention, and a requested fix. `blocking` is only for a violated approved AC/contract, an exploitable security defect, a broken build/test or data loss. In a round-2 delta review inspect only the fix diff and its blast radius. Mark each blocking finding `critical: true|false` per the `code-review` list and report the round plus blocking and critical counts. Distinguish evidence-backed defects from preferences. Report inspected scope and limitations even when no issues are found.
 
 No edits, execution, cloud/nested delegation, git push, merge, deploy, shared state writes, or self-approval. Scope is procedural; the parent audits that no files changed and runs the state checker before progression.
 

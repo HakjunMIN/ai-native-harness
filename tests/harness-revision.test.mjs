@@ -268,6 +268,44 @@ test('legacy adoption is explicit and finished runs are not rewritten', t => {
   assert.match(fixture_.run('harness.mjs', 'upgrade', join(directory, 'state.json'), '--reason', 'change', '--confirm').stderr, /Completed runs/);
 });
 
+test('new local and Jira runs record run contract 2; upgrades preserve it and adoption never adds it', t => {
+  const fixture_ = fixture(t);
+  const lockOf = id => json(join(runRoot(fixture_.repo, id), 'harness.lock.json'));
+  assert.equal(fixture_.start('local-first').status, 0);
+  assert.equal(lockOf('local-first').runContract, 2);
+  assert.equal(fixture_.run('harness.mjs', 'start', 'ABC-124', fixture_.repo).status, 0);
+  assert.equal(lockOf('ABC-124').runContract, 2);
+  writeFileSync(join(fixture_.source, 'skills/sdlc/SKILL.md'), 'new workflow');
+  const upgraded = fixture_.run('harness.mjs', 'upgrade', fixture_.state('local-first'), '--reason', 'Adopt', '--confirm');
+  assert.equal(upgraded.status, 0, upgraded.stderr);
+  assert.equal(lockOf('local-first').runContract, 2);
+  const directory = join(fixture_.repo, 'docs/sdlc/ABC-123');
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, 'state.json'), JSON.stringify(json(join(fixture_.source, 'templates/state.json'))));
+  const adopted = fixture_.run('harness.mjs', 'adopt', join(directory, 'state.json'), '--reason', 'Baseline', '--confirm');
+  assert.equal(adopted.status, 0, adopted.stderr);
+  assert.equal(json(join(directory, 'harness.lock.json')).runContract, undefined);
+  writeFileSync(join(fixture_.source, 'skills/sdlc/SKILL.md'), 'newer workflow');
+  const legacyUpgrade = fixture_.run('harness.mjs', 'upgrade', join(directory, 'state.json'), '--reason', 'Adopt', '--confirm');
+  assert.equal(legacyUpgrade.status, 0, legacyUpgrade.stderr);
+  assert.equal(json(join(directory, 'harness.lock.json')).runContract, undefined);
+});
+
+test('run locks reject unknown run contracts', t => {
+  const fixture_ = fixture(t);
+  assert.equal(fixture_.start('local-first').status, 0);
+  const statePath = fixture_.state('local-first');
+  const lockPath = join(runRoot(fixture_.repo, 'local-first'), 'harness.lock.json');
+  const lock = json(lockPath);
+  lock.runContract = 3;
+  const body = JSON.stringify(lock);
+  writeFileSync(lockPath, body);
+  const state = json(statePath);
+  state.harness.sha256 = createHash('sha256').update(body).digest('hex');
+  writeFileSync(statePath, JSON.stringify(state));
+  assert.match(fixture_.run('harness.mjs', 'resolve', statePath).stderr, /Invalid harness lock/);
+});
+
 test('unsafe IDs, linked run/cache paths and forged lock references are rejected', t => {
   const fixture_ = fixture(t);
   assert.match(fixture_.run('harness.mjs', 'start', '../ABC-123', fixture_.repo).stderr, /ticket key/);

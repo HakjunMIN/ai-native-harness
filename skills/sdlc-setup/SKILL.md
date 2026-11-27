@@ -21,6 +21,9 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
    `{cwd, argv, purpose}` for unit, integration, API, typecheck, lint, BDD generation,
    E2E, axe, screenshots, build and chart validation where applicable. Missing
    required commands block their checks, not unrelated work. Reuse repository tools.
+   For every code module propose check-only `lint`, `format-check` and `typecheck`
+   commands plus separate fix commands per [code quality](../sdlc/references/code-quality.md)
+   (Go BFF first: `golangci-lint run ./...`, `golangci-lint fmt --diff`, `go build ./...`).
 4. For Jira work, discover available Atlassian MCP schemas; verify authorized read access and
    project/status transition IDs without changing an issue. Store mappings,
    never tokens. Missing MCP is an explicit capability limitation.
@@ -69,6 +72,13 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
 9. Update existing domain context only when useful; use `domain-context` for
    consequential vocabulary gaps, not a mandatory empty glossary. Report setup diff and unresolved
    capabilities in Korean.
+
+Detect once, then confirm once: derive repository and remote (`git remote -v`,
+`gh repo view`), Jira or GitHub scope, models, module paths, quality and E2E
+commands, CI jobs (`gh workflow list`, `gh run list`) and deployment targets
+(`az … show|list`, `kubectl get`, `helm get values`) read-only, then present one
+confirmation form with each proposed value and its source. Ask separately only
+for values no read-only source can establish.
 
 Run approved read-only version/build discovery commands. Do not install dependencies
 until a relevant manifest changes or execution shows missing dependencies.

@@ -105,6 +105,223 @@ function remotePublicationCommand(command) {
   }));
 }
 
+// az/gh: only read-only observation passes; every other subcommand needs the human operator.
+const shells = new Set(['bash','sh','zsh','dash','ksh']);
+const namesAzGh = /(?:^|[\s;&|()'"`=])(?:[^\s;&|()'"`]*[\\/])?(?:az|gh)(?:\.exe)?(?=$|[\s;&|()'"`])/i;
+const indirect = /[$`]|[<>]\(|\beval\b|\bxargs\b/i;
+const azCredentialWord = /^(?:.*-)?(?:keys?|credentials?|secrets?|connection-strings?|passwords?|tokens?)$|^(?:appsettings|sas)$/;
+// Leaf commands that take positional arguments, so a trailing `list` would be an argument, not a subcommand.
+const azPositionalLeaves = ['acr build','acr run','acr pack build','acr helm delete','acr helm push',
+  'acr manifest delete','acr manifest restore','acr manifest update-metadata','acr manifest metadata update',
+  'config set','config unset','config param-persist delete','demo secret-store save','storage blob sync','storage copy'];
+const azDenied = ['rest','login','logout','aks get-credentials','acr login','account get-access-token',...azPositionalLeaves];
+const shellKeywords = new Set(['if','then','elif','else','do','while','until','!','{','}']);
+const cannotLaunch = new Set(['which','type','whereis','echo','printf','grep','egrep','fgrep','rg','man']);
+const truthy = ['1','t','T','true','TRUE','True'];
+const prCreateValueFlags = new Set(['--title','--body','--body-file','--base','--head','--assignee','--label',
+  '--milestone','--project','--reviewer','--template','--recover','--repo']);
+
+// pflag lets a value flag written without `=` take the next word, even `--draft`.
+function prCreateDraft(args) {
+  let draft = false;
+  for (let i = 0; i < args.length; i++) {
+    const argument = args[i];
+    if (argument === '--') break;
+    const long = argument.match(/^--draft(?:=(.*))?$/);
+    if (long) { draft = long[1] === undefined || truthy.includes(long[1]); continue; }
+    if (argument.startsWith('--')) { if (prCreateValueFlags.has(argument)) i++; continue; }
+    if (!/^-./.test(argument)) continue;
+    for (let j = 1; j < argument.length; j++) {
+      if (argument[j] === 'd') {
+        if (argument[j + 1] === '=') { draft = truthy.includes(argument.slice(j + 2)); break; }
+        draft = true;
+      } else if ('tbFBHalmprTR'.includes(argument[j])) { if (j === argument.length - 1) i++; break; }
+    }
+  }
+  return draft;
+}
+const ghAllowed = {
+  pr:{view:'observe',list:'observe',diff:'observe',checks:'observe',status:'observe',checkout:'allow',comment:'allow'},
+  issue:{view:'observe',list:'observe',status:'observe',comment:'allow'},
+  run:{view:'observe',list:'observe',watch:'observe',download:'allow'},
+  workflow:{view:'observe',list:'observe'},
+  release:{view:'observe',list:'observe',download:'allow'},
+  repo:{view:'observe',list:'observe'},
+  label:{list:'observe'},
+  auth:{status:'observe'}
+};
+
+function skipOptions(words, valueOptions) {
+  while (words[0]?.startsWith('-') && words[0] !== '-') {
+    const option = words.shift();
+    if (option === '--') break;
+    if (valueOptions.includes(option)) words.shift();
+  }
+}
+
+// Strip launchers that run their arguments as the real command.
+function unwrap(segment) {
+  const words = [...segment];
+  while (words.length) {
+    const name = commandName(words[0]);
+    if (shellKeywords.has(words[0]) || /^[A-Za-z_]\w*=/.test(words[0])) { words.shift(); continue; }
+    if (name === 'env') {
+      words.shift();
+      while (words[0]?.startsWith('-') && words[0] !== '-') {
+        const option = words.shift();
+        if (option === '--') break;
+        if (option === '-S' || option === '--split-string') words.unshift(...(words.shift() ?? '').split(/\s+/).filter(Boolean));
+        else if (option.startsWith('--split-string=')) words.unshift(...option.slice(15).split(/\s+/).filter(Boolean));
+        else if (['-u','--unset','-C','--chdir'].includes(option)) words.shift();
+      }
+      continue;
+    }
+    if (name === 'command') {
+      words.shift();
+      if (['-v','-V'].includes(words[0])) return [];
+      skipOptions(words, []);
+      continue;
+    }
+    if (name === 'time' || name === 'nohup') { words.shift(); skipOptions(words, []); continue; }
+    if (name === 'exec') { words.shift(); skipOptions(words, ['-a']); continue; }
+    if (name === 'nice') { words.shift(); skipOptions(words, ['-n','--adjustment']); continue; }
+    if (name === 'sudo') {
+      words.shift();
+      skipOptions(words, ['-u','-g','-h','-p','-C','-D','-r','-t','-U','-T','--user','--group','--host',
+        '--prompt','--close-from','--chdir','--role','--type','--other-user','--command-timeout']);
+      continue;
+    }
+    if (name === 'timeout') { words.shift(); skipOptions(words, ['-s','-k','--signal','--kill-after']); words.shift(); continue; }
+    break;
+  }
+  return words;
+}
+
+function azVerdict(args) {
+  const path = [];
+  for (const argument of args) { if (argument.startsWith('-')) break; path.push(argument.toLowerCase()); }
+  const joined = path.join(' '), label = ['az', ...path].join(' ');
+  if (!path.length) return {verdict:args.length === 1 && args[0] === '--version' ? 'observe' : 'deny', label};
+  if (path.some(word => azCredentialWord.test(word) || !/^[a-z][a-z0-9-]*$/.test(word)) ||
+      (path[0] === 'iot' && path.includes('policy')) ||
+      azDenied.some(d => joined === d || joined.startsWith(`${d} `))) return {verdict:'deny', label};
+  const read = ['version','aks get-versions','aks get-upgrades'].includes(joined) ||
+    (path.length > 1 && ['show','list','query'].includes(path.at(-1)));
+  return {verdict:read ? 'observe' : 'deny', label};
+}
+
+function ghApiReadOnly(args) {
+  for (let i = 0; i < args.length; i++) {
+    const argument = args[i];
+    if (argument === 'graphql') return false;
+    if (/^-[A-Za-z]/.test(argument)) {
+      for (let j = 1; j < argument.length; j++) {
+        const option = argument[j];
+        if (option === 'f' || option === 'F') return false;
+        if (option === 'X') {
+          const method = argument.slice(j + 1) || args[++i];
+          if (method?.toUpperCase() !== 'GET') return false;
+          break;
+        }
+        if ('Hqtp'.includes(option)) { if (j === argument.length - 1) i++; break; }
+      }
+      continue;
+    }
+    if (/^--(?:field|raw-field|input)(?:$|=)/.test(argument)) return false;
+    if (argument === '--method' || argument.startsWith('--method=')) {
+      const method = argument === '--method' ? args[++i] : argument.slice(9);
+      if (method?.toUpperCase() !== 'GET') return false;
+      continue;
+    }
+    if (['--header','--jq','--template','--preview','--hostname','--cache'].includes(argument)) i++;
+  }
+  return true;
+}
+
+// gh resolves its command path after removing flags it cannot know are boolean, so any flag
+// other than --repo before the subcommand could swallow the real subcommand: deny it.
+function ghVerdict(args) {
+  if (args.length === 1 && args[0] === '--version') return {verdict:'observe', label:'gh --version'};
+  const positional = [];
+  let index = -1;
+  for (let i = 0; i < args.length; i++) {
+    const argument = args[i];
+    if (argument === '-R' || argument === '--repo') { i++; continue; }
+    if (/^(?:-R.|--repo=)/.test(argument)) continue;
+    if (argument.startsWith('-')) return {verdict:'deny', label:`gh ${[...positional, argument].join(' ')}`};
+    positional.push(argument);
+    index = i;
+    if (positional.length === 2 || ['api','search','status','version'].includes(argument)) break;
+  }
+  const [group, sub] = positional, label = ['gh', ...positional].join(' ');
+  if (!group) return {verdict:'deny', label};
+  if (group === 'api') return {verdict:ghApiReadOnly(args.slice(index + 1)) ? 'observe' : 'deny', label:'gh api'};
+  if (['search','status','version'].includes(group)) return {verdict:'observe', label};
+  if (group === 'pr' && sub === 'create') return {verdict:prCreateDraft(args.slice(index + 1)) ? 'allow' : 'deny', label};
+  if (group === 'auth' && sub === 'status' &&
+      args.slice(index + 1).some(a => /^--show-token(?:=|$)/.test(a) || /^-[^-]*t/.test(a))) return {verdict:'deny', label:`${label} --show-token`};
+  return {verdict:ghAllowed[group]?.[sub] ?? 'deny', label};
+}
+
+// Returns the -c command string, or null when the shell reads a script or stdin.
+function shellCommandString(words) {
+  let command = false;
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    if (word === '--' || word === '-') return command ? words[i + 1] ?? null : null;
+    if (word.startsWith('--')) { if (['--rcfile','--init-file'].includes(word)) i++; continue; }
+    if (/^[-+]./.test(word)) {
+      if (word[0] === '-' && word.includes('c')) command = true;
+      i += [...word.slice(1)].filter(letter => letter === 'o' || letter === 'O').length;
+      continue;
+    }
+    return command ? word : null;
+  }
+  return null;
+}
+
+// Returns denials for az/gh commands and whether every segment is a read-only observation.
+function classifyCommand(command, depth = 0) {
+  const result = {denials:[], observation:true};
+  const segments = indirect.test(command) || depth > 4 ? null : shellSegments(command);
+  if (!segments) {
+    if (namesAzGh.test(command)) result.denials.push('az/gh with shell expansion or indirect execution requires the human operator; run it literally');
+    result.observation = false;
+    return result;
+  }
+  for (const segment of segments) {
+    const words = unwrap(segment);
+    if (!words.length) continue;
+    const name = commandName(words[0]);
+    // A shell may also be launched through another program, as in `find -exec sh -c …`.
+    const launched = cannotLaunch.has(name) ? -1 : words.findIndex((word, i) => i > 0 && shells.has(commandName(word)));
+    if (shells.has(name) || name === 'source' || name === '.' || launched > 0) {
+      const script = name === 'source' || name === '.' ? null : shellCommandString(words.slice(Math.max(launched, 0)));
+      if (script !== null) {
+        const inner = classifyCommand(script, depth + 1);
+        result.denials.push(...inner.denials);
+        result.observation &&= inner.observation && launched < 0;
+      } else {
+        if (namesAzGh.test(command)) result.denials.push('az/gh fed to a shell script or stdin requires the human operator; run az/gh literally');
+        result.observation = false;
+      }
+      if (launched < 0) continue;
+    }
+    if (name === 'az' || name === 'gh') {
+      const {verdict, label} = (name === 'az' ? azVerdict : ghVerdict)(words.slice(1));
+      if (verdict === 'deny') result.denials.push(`${label} requires the human operator; only read-only az/gh observation is allowed`);
+      result.observation &&= verdict === 'observe';
+      continue;
+    }
+    if (words.slice(1).some(word => ['az','gh'].includes(commandName(word))) &&
+        (!cannotLaunch.has(name) || (name === 'rg' && words.some(word => word.startsWith('--pre'))))) {
+      result.denials.push(`az/gh launched through ${name} requires the human operator; run az/gh literally`);
+    }
+    result.observation &&= isReadOnlyDeploymentCommand(words.join(' '));
+  }
+  return result;
+}
+
 function decide(payload) {
   const name = payload?.toolName ?? payload?.tool_name;
   let args = payload?.toolArgs ?? payload?.tool_input;
@@ -138,8 +355,11 @@ function decide(payload) {
       paths.some(p => normalized.includes(p.replaceAll('\\','/')));
   };
   const reasons = [];
-  const readOnlyDeployment = isReadOnlyDeploymentCommand(command);
+  // A Codex patch carries file text, not a shell command; its target paths are checked below.
+  const classified = tool === 'apply_patch' ? {denials:[], observation:false} : classifyCommand(command);
+  const readOnlyDeployment = isReadOnlyDeploymentCommand(command) || (classified.observation && !/[<>]/.test(command));
   if (remotePublicationCommand(command)) reasons.push('Remote push/merge requires the human operator in v1');
+  reasons.push(...new Set(classified.denials));
   if (!readOnlyDeployment && /\b(?:argocd|kubectl|helm)\b[^;\n]*\b(?:sync|apply|create|delete|patch|edit|upgrade|install|rollback|set|scale|rollout|exec)\b/i.test(command)) reasons.push('Direct deployment mutation is not allowed; prepare GitOps proposals');
   if (targets.some(protectedPath) ||
       (!readOnlyDeployment && (/(?:\/|\s)(?:prod|production)(?:\/|\s)|values[-.]prod(?:uction)?\.ya?ml/i.test(command) ||

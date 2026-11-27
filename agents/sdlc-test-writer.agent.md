@@ -36,7 +36,7 @@ fails, not infrastructure/syntax failure or zero tests. For refactors capture a
 passing before-baseline; docs/config use meaningful static/relevant checks without
 fabricated RED. Record command, cwd, exit code, revision and redacted output hash.
 
-Use JUnit 5 unit/integration/API tests for Spring backend AC and Go `testing` (`go test`) for Go backend AC; never backend Cucumber or godog. Use playwright-bdd for frontend Gherkin, retaining the installed `@grafana/plugin-e2e` fixture through supported `test.extend` composition. Label mocks; they do not establish live BFF integration.
+Use JUnit 5 unit/integration/API tests for Spring backend AC and Go `testing` (`go test`) for Go backend AC; never backend Cucumber or godog. Use playwright-bdd for frontend Gherkin, retaining the installed `@grafana/plugin-e2e` fixture through supported `test.extend` composition. For non-Grafana web UIs with an assigned `playwright` check, write Playwright tests with the repository's existing configuration. Label mocks; they do not establish live BFF integration.
 
 Hand off frozen test/fixture/configuration hashes to the implementer. For a disputed assertion, compare approved intent and contract; correct tests only through a new explicit test-writer assignment, regenerate RED, and invalidate affected evidence through the parent. Never weaken expected behavior merely to fit implementation.
 

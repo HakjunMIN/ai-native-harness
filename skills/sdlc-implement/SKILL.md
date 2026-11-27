@@ -48,9 +48,16 @@ and coordinated ownership, not parallel independent edits to the same shared fil
 4. Resolve findings and rerun affected checks on final code. Review gets at most
    2 rounds per slice: round 2 is a delta review of the fix; an implementation-only
    fix needs fresh GREEN, not a new RED. Blockers left after round 2 become
-   NEEDS_HUMAN (accept with follow-ups, fix once more, descope). At three failed
+   NEEDS_HUMAN (accept with follow-ups, fix once more, descope). Contract-2 runs
+   with `residualFindings: follow-up` accept them as the agent when the reviewer
+   reports `critical: 0`: log a `D-n` row in `decisions.md` and record
+   `acceptance: {actor: "agent", decision, followUps}` with `round: 2`. At three failed
    attempts invoke bounded diagnosis; unresolved work becomes NEEDS_HUMAN.
-5. Record AC-to-check mapping, mode-specific evidence, final GREEN, reviews and
+5. Contract-2 runs: format only approved changed paths with the configured fix
+   command, commit, then run `quality-run.mjs run STATE --task N` in the slice's
+   assignment and bind the passing report as `slice.quality` (its `subjectHead` is
+   the slice revision). See [code quality](../sdlc/references/code-quality.md).
+6. Record AC-to-check mapping, mode-specific evidence, final GREEN, reviews and
    revision in `03-impl-log.md`. Mark done only with complete valid evidence.
    Sync progress on the parent for Jira light, child for Jira strict; local work
    has no Jira sync. Completion does not imply deployment.
@@ -61,9 +68,23 @@ need new RED. With hashed impact analysis, invalidate affected slices plus graph
 dependents; if impact is uncertain reset all. Preserved slices never waive final
 integrated checks.
 
+Contract-2 runs proceed on recommendations: log non-critical choices in
+`decisions.md`, reference them in `03-impl-log.md`, and ask only for the critical
+escalation list ([autonomous execution](../sdlc/references/protocol.md#autonomous-execution)).
+Stay inside the G2 proceed agreement: report finished slices and the next ready
+slice as progress instead of asking. A stop condition applies only when the slice
+cannot be completed without crossing it; log optional suggestions as follow-ups.
+On one, pause only the affected slice and return what changed, the decision
+needed and the recommendation.
+Active `slice-commit` and `local-integration` grants replace per-action questions.
+Diagnose CI and environment failures from read-only sources (`gh run view --log`,
+`gh pr checks`, `az … show|list`, `kubectl get`) before asking.
+
 The conductor alone updates shared state: audit each result, integrate worktree
 commits onto the integration branch with required commit authorization, resolve
 conflicts, and verify the new revision. Do not mark dependent slices ready before
 integration. Run applicable checks on the final combined code; G3 requires all
-slice revisions to be ancestors of its committed `subjectHead`. Do not push.
+slice revisions to be ancestors of its committed `subjectHead`. Contract-2 G3 also
+binds an integration `quality-run.mjs run STATE` report at that head as
+`gate.quality` and in `gate.evidence`. Do not push.
 Keep evidence updates separate from executable inputs, then return the verify handoff.

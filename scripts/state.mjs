@@ -4,9 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
-import { isLight, isLocal, policyErrors, verificationMode, renderTask, taskDefinitionErrors } from './workflow.mjs';
+import { executionPolicy, grantKinds, isLight, isLocal, policyErrors, preferencesErrors, verificationMode, renderTask, taskDefinitionErrors } from './workflow.mjs';
 import { dispatchPinned, readRunLock } from './harness.mjs';
 import { inspectDiscovery, renderDiscovery } from './discovery.mjs';
+import { qualityPolicyErrors, qualityReportErrors } from './quality.mjs';
 
 export const gates = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5a', 'G5b'];
 const phases = ['discover', 'discover', 'plan', 'implement', 'verify', 'release', 'release'];
@@ -70,7 +71,7 @@ function discoveryReview(state, root) {
   return {...report,sha256,errors:report.errors.map(error => `discovery: ${error}`)};
 }
 
-function readTaskPlan(state, root) {
+function readTaskPlan(state, root, contract) {
   const errors = evidenceErrors(state.taskPlan,root,'task plan');
   if (errors.length) return {tasks:[],errors};
   let plan;
@@ -80,9 +81,15 @@ function readTaskPlan(state, root) {
     return {tasks:[],errors:['task plan: matching parent and nonempty tasks required']};
   }
   if (!isDeepStrictEqual(plan.policy,state.policy)) errors.push('task plan policy must match the state policy');
+  if (state.policy?.quality !== undefined) errors.push(...qualityPolicyErrors(state.policy.quality,plan.tasks));
   if (state.policy && plan.format !== 'canonical-v1') errors.push('policy requires canonical-v1 task plan');
   if (isLight(state) && (plan.tasks.length !== 1 || plan.tasks[0]?.blockedBy?.length)) errors.push('light policy requires one independent outcome');
-  errors.push(...taskDefinitionErrors(plan.tasks));
+  errors.push(...taskDefinitionErrors(plan.tasks,{runContract:contract}));
+  if (contract === 2 && state.uiChange === true && object(state.policy?.verification) && state.policy.verification.e2e !== 'none' &&
+      !plan.tasks.some(t => object(t) && Array.isArray(t.acceptanceCriteria) && t.acceptanceCriteria.some(criterion =>
+        Array.isArray(criterion?.checks) && criterion.checks.some(check => ['playwright','playwright-bdd'].includes(check))))) {
+    errors.push('uiChange with E2E requires a playwright or playwright-bdd acceptance check');
+  }
   for (const t of plan.tasks) {
     if (!object(t)) continue;
     if (!isLight(state) || t.document !== undefined) {
@@ -98,10 +105,10 @@ function readTaskPlan(state, root) {
   return {tasks:plan.tasks.filter(object),errors};
 }
 
-function taskErrors(state, root) {
+function taskErrors(state, root, contract) {
   const approved = state.gates.G2?.status === 'passed';
   const errors = [];
-  const {tasks,errors:planErrors} = approved || state.taskPlan ? readTaskPlan(state,root) : {tasks:[],errors:[]};
+  const {tasks,errors:planErrors} = approved || state.taskPlan ? readTaskPlan(state,root,contract) : {tasks:[],errors:[]};
   errors.push(...planErrors);
   if (approved && (!Array.isArray(state.gates.G2.evidence) || !state.gates.G2.evidence.some(e => object(e) &&
       e.path === state.taskPlan?.path && e.sha256 === state.taskPlan?.sha256))) errors.push('G2: task plan must be bound in approval evidence');
@@ -164,7 +171,29 @@ function taskErrors(state, root) {
   return errors;
 }
 
-function reviewErrors(reviews, axes, root, label, policy, subjectHead) {
+// Decision IDs logged in the run's decisions.md table; a missing file has none.
+function decisionRows(root) {
+  try {
+    const base = realpathSync(root), file = realpathSync(resolve(base,'decisions.md'));
+    if (relative(base,file) !== 'decisions.md' || !statSync(file).isFile()) return new Set();
+    return new Set([...readFileSync(file,'utf8').matchAll(/^\|\s*(D-[1-9][0-9]*)\s*\|/gm)].map(match => match[1]));
+  } catch { return new Set(); }
+}
+
+function agentAcceptanceErrors(r, root, label, policy, contract) {
+  if (contract !== 2) return [`${label}: agent acceptance requires a contract-2 run`];
+  const a = r.acceptance, errors = [];
+  if (policy?.autonomy?.residualFindings !== 'follow-up') errors.push(`${label}: agent acceptance requires residualFindings follow-up`);
+  if (r.round !== 2) errors.push(`${label}: agent acceptance requires review round 2`);
+  if (r.critical !== 0) errors.push(`${label}: agent acceptance requires zero critical findings`);
+  if (!Number.isInteger(r.blocking) || r.blocking < 1) errors.push(`${label}: agent acceptance requires remaining blocking findings`);
+  if (!Array.isArray(a.followUps) || !a.followUps.length || !a.followUps.every(text)) errors.push(`${label}: agent acceptance requires follow-ups`);
+  if (typeof a.decision !== 'string' || !/^D-[1-9][0-9]*$/.test(a.decision)) errors.push(`${label}: agent acceptance requires a D-n decision`);
+  else if (!decisionRows(root).has(a.decision)) errors.push(`${label}: decision ${a.decision} is not recorded in decisions.md`);
+  return errors;
+}
+
+function reviewErrors(reviews, axes, root, label, policy, subjectHead, contract = 1) {
   if (!Array.isArray(reviews)) return [`${label}: reviews required`];
   const errors = [];
   for (const axis of axes) {
@@ -195,7 +224,13 @@ function reviewErrors(reviews, axes, root, label, policy, subjectHead) {
       const coverage = label === 'G4' ? ['spec','standards','security'] : ['spec','standards'];
       for (const area of coverage) if (!Array.isArray(r.coverage) || !r.coverage.includes(area)) errors.push(`${label}: review coverage missing ${area}`);
     }
-    if (r.acceptance !== undefined) {
+    if (contract === 2) {
+      if (r.round !== undefined && ![1,2].includes(r.round)) errors.push(`${label}: review round must be 1 or 2`);
+      if (r.critical !== undefined && (!Number.isInteger(r.critical) || r.critical < 0 || !Number.isInteger(r.blocking) ||
+          r.critical > r.blocking)) errors.push(`${label}: review critical must be an integer from 0 to blocking`);
+    }
+    if (object(r.acceptance) && r.acceptance.actor === 'agent') errors.push(...agentAcceptanceErrors(r,root,label,policy,contract));
+    else if (r.acceptance !== undefined) {
       const a = r.acceptance;
       if (!Number.isInteger(r.blocking) || r.blocking < 1 || !humanRecord(a) || !Array.isArray(a.followUps) ||
           !a.followUps.length || !a.followUps.every(text)) errors.push(`${label}: residual finding acceptance requires a human record and follow-ups`);
@@ -205,13 +240,63 @@ function reviewErrors(reviews, axes, root, label, policy, subjectHead) {
   return errors;
 }
 
+// Contract-2 data is valid only in contract-2 runs, which require each policy part once planning starts.
+function contractErrors(state, contract) {
+  const errors = [];
+  const planning = state.policy !== undefined || state.taskPlan != null || state.gates?.G2?.status === 'passed';
+  const G1 = state.gates?.G1, preferences = object(G1) && object(G1.approval) ? G1.approval.preferences : undefined;
+  const revocations = (Array.isArray(state.history) ? state.history : []).filter(event => object(event) && event.event === 'grants-revoked');
+  if (contract === 2) {
+    if (planning && state.policy?.quality?.version !== 1) errors.push('quality: this run requires an approved quality policy');
+    if (planning && state.policy?.verification === undefined) errors.push('verification: this run requires an approved verification policy');
+    if (planning && state.policy?.autonomy === undefined) errors.push('autonomy: this run requires an approved autonomy policy');
+    // G2 approves the plan's proceed agreement; the gate loop checks the bound hash.
+    const G2 = state.gates?.G2;
+    if (G2?.status === 'passed' && !(Array.isArray(G2.evidence) && G2.evidence.some(item => object(item) && item.path === '02-plan.md'))) {
+      errors.push('G2: 02-plan.md must be bound in approval evidence');
+    }
+    for (const event of revocations) {
+      if (!text(event.at) || Number.isNaN(Date.parse(event.at)) || !text(event.reference) || !Array.isArray(event.grants) ||
+          !event.grants.length || event.grants.some(grant => !grantKinds.includes(grant))) errors.push('grants-revoked: at, reference and known grants required');
+    }
+    if (G1?.status === 'passed') {
+      const problems = preferencesErrors(preferences);
+      errors.push(...problems.map(error => `G1: ${error}`));
+      if (!problems.length && state.uiChange !== preferences.uiChange) errors.push('uiChange must match the approved G1 preferences; re-approve G1 to change it');
+      // A stale policy kept after G1 invalidation is replaced by the next prepare, so only a current plan must match.
+      if (!problems.length && state.taskPlan != null && object(state.policy)) {
+        const expected = executionPolicy(preferences);
+        for (const part of ['verification','autonomy']) if (!isDeepStrictEqual(state.policy[part],expected[part])) {
+          errors.push(`policy.${part} must match the approved G1 preferences; re-approve G1 or prepare a new plan`);
+        }
+      }
+    }
+    return errors;
+  }
+  if (preferences !== undefined) errors.push('G1: contract-1 runs cannot carry execution preferences');
+  if (state.policy?.verification !== undefined) errors.push('verification: contract-1 runs cannot carry a verification policy');
+  if (state.policy?.autonomy !== undefined) errors.push('autonomy: contract-1 runs cannot carry an autonomy policy');
+  if (revocations.length) errors.push('grants-revoked: contract-1 runs have no standing grants');
+  if (state.policy?.quality !== undefined) errors.push('quality: contract-1 runs cannot carry a quality policy');
+  if ((Array.isArray(state.slices) && state.slices.some(slice => object(slice) && slice.quality !== undefined)) ||
+      ['G3','G4'].some(name => object(state.gates?.[name]) && state.gates[name].quality !== undefined)) {
+    errors.push('quality: contract-1 runs cannot carry quality reports');
+  }
+  return errors;
+}
+
+// Runs without a lock predate the marker and use contract 1.
+function lockedContract(state, root) {
+  if (!state.harness && !existsSync(resolve(root,'harness.lock.json'))) return 1;
+  return readRunLock(state,root).runContract ?? 1;
+}
+
 export function validateState(state, root, currentHead, {checkPhase = true} = {}) {
   if (!object(state)) return ['state must be an object'];
   const errors = [];
-  if (state.harness || existsSync(resolve(root,'harness.lock.json'))) {
-    try { readRunLock(state,root); }
-    catch (error) { errors.push(error.message); }
-  }
+  let contract = 1;
+  try { contract = lockedContract(state,root); }
+  catch (error) { errors.push(error.message); }
   if (state.schemaVersion !== 2) errors.push('schemaVersion must be 2; migrate legacy state using docs/operations.md before resuming');
   if (isLocal(state)) {
     if (!/^local-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state.ticket ?? '')) errors.push('invalid local ID');
@@ -231,8 +316,9 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
   if (!Array.isArray(state.history)) errors.push('history must be an array');
   if (!Array.isArray(state.slices)) errors.push('slices must be an array');
   if (state.policy !== undefined) errors.push(...policyErrors(state.policy,state.classification));
+  errors.push(...contractErrors(state,contract));
   if (state.impactAnalysis !== undefined) errors.push(...evidenceErrors(state.impactAnalysis,root,'impact analysis'));
-  errors.push(...taskErrors(state,root));
+  errors.push(...taskErrors(state,root,contract));
   if (![...phases,'publish','done'].includes(state.phase) || (checkPhase && state.phase !== nextPhase(state))) errors.push(`phase must be ${nextPhase(state)}`);
   for (const [index, name] of gates.entries()) {
     const gate = state.gates[name];
@@ -253,8 +339,13 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
     if (index >= 3) {
       if (!sha(gate.subjectHead) || (currentHead && currentHead !== gate.subjectHead)) errors.push(`${name}: source revision changed or missing`);
     }
-    if (name === 'G2' && (!isLight(state) || gate.reviews !== undefined)) errors.push(...reviewErrors(gate.reviews, ['plan'], root, name,state.policy));
-    if (name === 'G4') errors.push(...reviewErrors(gate.reviews, isLight(state) ? ['combined'] : ['final'], root, name,state.policy,gate.subjectHead));
+    if (name === 'G2' && (!isLight(state) || gate.reviews !== undefined)) errors.push(...reviewErrors(gate.reviews, ['plan'], root, name,state.policy,undefined,contract));
+    if (name === 'G4') errors.push(...reviewErrors(gate.reviews, isLight(state) ? ['combined'] : ['final'], root, name,state.policy,gate.subjectHead,contract));
+    if (['G3','G4'].includes(name) && state.policy?.quality !== undefined) {
+      errors.push(...qualityReportErrors(gate.quality,state.policy.quality,root,gate.subjectHead,'integration',evidenceErrors));
+      if (gate.quality !== undefined && !(Array.isArray(gate.evidence) && gate.evidence.some(item => object(item) &&
+          item.path === gate.quality?.path && item.sha256 === gate.quality?.sha256))) errors.push(`${name}: quality report must be bound in gate evidence`);
+    }
     if (name === 'G5b' && (!text(gate.deployment?.digest) || gate.deployment?.health !== 'Healthy' || gate.deployment?.sync !== 'Synced')) errors.push('G5b: observed production digest and health required');
   }
   if (state.gates.G3?.status === 'passed' && (!Array.isArray(state.slices) || !state.slices.length || state.slices.some(s => !object(s) || s.status !== 'done'))) errors.push('G3: nonempty completed slices required');
@@ -265,7 +356,8 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
       if (verificationMode(state) === 'behavior') errors.push(...evidenceErrors(slice.red, root, `slice ${slice.id} RED`));
       if (verificationMode(state) === 'refactor') errors.push(...evidenceErrors(slice.before, root, `slice ${slice.id} before`));
       errors.push(...evidenceErrors(slice.green, root, `slice ${slice.id} GREEN`));
-      errors.push(...reviewErrors(slice.reviews, isLight(state) ? ['combined'] : ['spec','standards'], root, `slice ${slice.id}`,state.policy,slice.subjectHead));
+      errors.push(...reviewErrors(slice.reviews, isLight(state) ? ['combined'] : ['spec','standards'], root, `slice ${slice.id}`,state.policy,slice.subjectHead,contract));
+      if (state.policy?.quality !== undefined) errors.push(...qualityReportErrors(slice.quality,state.policy.quality,root,slice.subjectHead,slice.id,evidenceErrors));
     }
   }
   if (state.outcome && !(state.outcome === 'spike-complete' && state.classification === 'spike' && state.gates.G1?.status === 'passed')) errors.push('invalid spike outcome');
@@ -429,7 +521,7 @@ function main() {
       const impactPath = realpathSync(resolve(root,values.impact));
       if (isAbsolute(values.impact) || relative(root,impactPath).startsWith('..')) throw new Error('impact evidence must remain inside ticket directory');
       const impact = {path:values.impact,sha256:digest(readFileSync(impactPath))};
-      const {tasks,errors} = readTaskPlan(state,root);
+      const {tasks,errors} = readTaskPlan(state,root,lockedContract(state,root));
       errors.push(...evidenceErrors(impact,root,'impact analysis'));
       if (errors.length) throw new Error(errors.join('\n'));
       selection = {sliceIds:values.slices.split(',').map(Number),tasks,impact};
@@ -470,7 +562,7 @@ function main() {
   }
   if (command === 'ready') {
     if (nextPhase(state) !== 'implement') throw new Error('ready requires implement phase and required publication');
-    const {tasks} = readTaskPlan(state,dirname(path));
+    const {tasks} = readTaskPlan(state,dirname(path),lockedContract(state,dirname(path)));
     const needsIntegration = state.slices.some(slice => slice.status === 'done' && slice.workspace);
     const repo = needsIntegration ? execFileSync('git',['rev-parse','--show-toplevel'],{cwd:dirname(path),encoding:'utf8'}).trim() : null;
     const revision = repo ? execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim() : null;

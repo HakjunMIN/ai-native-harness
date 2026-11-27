@@ -91,6 +91,7 @@ export function validatePackage(root) {
   }
   json('.claude-plugin/marketplace.json');
   checkPath('templates/project-AGENTS.md','installer template');
+  checkPath('templates/decisions.md','decision log template');
   for (const file of ['hooks/copilot.json','hooks/hooks.json','templates/state.json','templates/ai-native-sdlc.config.json']) json(file);
   for (const file of ['install.sh','install-shared.sh','hooks/session-start.sh','hooks/gate-guard.sh','scripts/validate.sh']) {
     checkPath(file,'executable');
@@ -100,6 +101,9 @@ export function validatePackage(root) {
   checkPath('hooks/node-runtime.sh','hook Node runtime');
   checkPath('scripts/harness.mjs','ticket harness revision runtime');
   checkPath('scripts/discovery.mjs','discovery approval validation');
+  checkPath('scripts/quality.mjs','code quality contract');
+  checkPath('scripts/quality-run.mjs','code quality runner');
+  json('templates/sub-task-plan.json');
   for (const file of ['README.md','README.en.md','docs/install.md','docs/compatibility.md','docs/operations.md','templates/handoff.md','templates/discovery.md']) {
     const body = read(file);
     links(file,body);

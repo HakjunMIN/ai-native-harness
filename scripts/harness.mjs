@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
+import { copyFileSync, cpSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
   realpathSync, renameSync, rmSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -145,12 +145,17 @@ function snapshot(repositoryRoot, source, expected) {
   return { root: destination, contentSha256: contents.contentSha256, commit: sourceCommit(root) };
 }
 
-export function pinRun(state, runRoot, repositoryRoot, source = runtimeRoot) {
+// Runs created through the current start commands record the workflow contract they follow; absent means contract 1.
+export const currentRunContract = 2;
+
+export function pinRun(state, runRoot, repositoryRoot, source = runtimeRoot, { runContract } = {}) {
   if (!ticketPattern.test(state.ticket ?? '')) throw new Error('Invalid ticket ID');
   if (state.harness || present(join(runRoot, lockName))) throw new Error('Run already has a harness lock');
+  if (![undefined, currentRunContract].includes(runContract)) throw new Error('Unsupported run contract');
   const captured = snapshot(realpathSync(repositoryRoot), source);
   const lock = { schemaVersion: 1, ticket: state.ticket, createdAt: new Date().toISOString(),
-    harness: { commit: captured.commit, contentSha256: captured.contentSha256 } };
+    harness: { commit: captured.commit, contentSha256: captured.contentSha256 },
+    ...(runContract !== undefined ? { runContract } : {}) };
   const body = serialize(lock);
   writeFileSync(join(runRoot, lockName), body, { flag: 'wx', mode: 0o600 });
   state.harness = { path: lockName, sha256: sha256(body) };
@@ -167,13 +172,19 @@ export function readRunLock(state, runRoot) {
   const lock = JSON.parse(body);
   if (lock.schemaVersion !== 1 || lock.ticket !== state.ticket || !ticketPattern.test(lock.ticket) ||
       !/^[a-f0-9]{64}$/.test(lock.harness?.contentSha256 ?? '') ||
-      !(lock.harness?.commit === null || /^[a-f0-9]{40,64}$/.test(lock.harness?.commit ?? ''))) {
+      !(lock.harness?.commit === null || /^[a-f0-9]{40,64}$/.test(lock.harness?.commit ?? '')) ||
+      ![undefined, currentRunContract].includes(lock.runContract)) {
     throw new Error('Invalid harness lock');
   }
   return lock;
 }
 
-function runContext(statePath) {
+export function runContract(state, runRoot) {
+  if (!state?.harness && !present(join(runRoot, lockName))) return 1;
+  return readRunLock(state, runRoot).runContract ?? 1;
+}
+
+export function runContext(statePath) {
   const path = resolve(statePath);
   if (basename(path) !== 'state.json') throw new Error('Expected docs/sdlc/<ID>/state.json');
   directory(dirname(path));
@@ -209,6 +220,7 @@ export function dispatchPinned(script, statePath, args = process.argv.slice(2)) 
   if (!state.harness && !present(join(dirname(resolve(statePath)), lockName))) return false;
   const selected = resolveRun(statePath);
   const target = join(selected.root, 'scripts', script);
+  if (!present(target)) throw new Error(`${script} is not part of this run's pinned harness revision; keep using that revision's workflow or upgrade the run`);
   if (realpathSync(target) === realpathSync(process.argv[1])) return false;
   const child = spawnSync(process.execPath, [target, ...args], { stdio: 'inherit' });
   if (child.error) throw child.error;
@@ -231,7 +243,7 @@ export function startJira(id, repositoryRoot = process.cwd()) {
     const stage = directory(join(stageParent, id), true);
     const state = JSON.parse(regularFile(join(runtimeRoot, 'templates/state.json')));
     state.ticket = id;
-    pinRun(state, stage, root);
+    pinRun(state, stage, root, runtimeRoot, { runContract: currentRunContract });
     writeFileSync(join(stage, 'state.json'), serialize(state), { flag: 'wx' });
     if (present(target)) throw new Error(`Run already exists: ${id}`);
     renameSync(stage, target);
@@ -275,7 +287,8 @@ export async function changeRevision(command, statePath, source, reason, confirm
   const updated = invalidate(state, 'G0', `Harness ${command}: ${reason}`);
   delete updated.policy;
   const lock = { schemaVersion: 1, ticket: state.ticket, createdAt: new Date().toISOString(),
-    harness: { commit: captured.commit, contentSha256: captured.contentSha256 } };
+    harness: { commit: captured.commit, contentSha256: captured.contentSha256 },
+    ...(previousLock?.runContract !== undefined ? { runContract: previousLock.runContract } : {}) };
   const body = serialize(lock);
   updated.harness = { path: lockName, sha256: sha256(body) };
   const archiveBody = serialize({ state, lock: previousLock });

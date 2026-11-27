@@ -17,6 +17,10 @@ by the conductor; do not mix that snapshot with currently installed skills.
   Legitimate expectation changes require contract evidence and independent review.
 - Production mutation remains human-owned. Local work grants no push, merge,
   deployment, installation or credential authority. Follow repository protections.
+- Look up environment facts before asking: repository files, `git`, read-only `gh`
+  (`pr|run|issue view`, `api` GET), `az … show|list|query`, `kubectl get` and
+  `helm get values`. Ask only to confirm a prefilled proposal and show each value's
+  source. The guard denies other `az`/`gh` commands; credentials stay human-owned.
 - Block only work that depends on a missing capability or decision. Explain the
   dependency; continue unrelated authorized work without claiming blocked checks passed.
 

@@ -285,10 +285,6 @@ function currentSessionEntry() {
     .find(item => sessionKey(item.session) === state.sessionKey) ?? null;
 }
 
-function currentSession() {
-  return currentSessionEntry()?.session ?? null;
-}
-
 function currentRun(workspace, session) {
   return session?.runId ? workspace?.runs.find(item => item.id === session.runId) ?? null : null;
 }
@@ -397,7 +393,7 @@ function renderCardVerification(run) {
 }
 
 function renderSessionCard(item) {
-  const { workspace, session, run } = item;
+  const { session, run } = item;
   const selected = sessionKey(session) === state.sessionKey;
   const attention = attentionType(session, run);
   const card = node('article', `session-card attention-${attention}${selected ? ' is-selected' : ''}`);

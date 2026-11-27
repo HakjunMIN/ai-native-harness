@@ -50,8 +50,9 @@ Return all three revision identities, digest, corresponding CI/chart/health evid
 
 **Never edit actual production desired-state**, including indirect production configuration. No alternate writes or emergency `kubectl patch` bypass.
 
-The v1 guard denies `git push`, `gh pr merge` and direct Helm/kubectl/ArgoCD
-mutations. It is neutral to local `git merge`, not an authorization to run it.
+The v1 guard denies `git push`, `gh pr merge`, direct Helm/kubectl/ArgoCD
+mutations and every non-observation `az`/`gh` command (see protocol); read CI and
+deployed state with `gh run view`, `az … show|list` and `kubectl get` first. It is neutral to local `git merge`, not an authorization to run it.
 Only the conductor may integrate reviewed source slices with explicit user
 authorization during implementation; this release skill never pushes, merges,
 deploys or syncs in any environment—even with urgent authorization.
