@@ -18,18 +18,83 @@ test('dashboard page exposes workspace, session grid, drawer, SDLC, and separate
   assert.ok(!html.includes('data-region="session-list"'), 'standalone session list is removed');
 });
 
-test('global diagnostics stay visible without a session while session warnings live in the drawer', async () => {
+test('session cards open Copilot sessions in VS Code chat and other hosts in their folder', async () => {
+  const app = await readAsset('app.js');
+  const { createVscodeWorkspaceUri, createVscodeSessionLink, createSessionResumeCommand } = await import(
+    `data:text/javascript;base64,${Buffer.from(app).toString('base64')}`
+  );
+
+  assert.deepEqual(
+    createVscodeSessionLink('copilot', '/Users/andy/AI Work', 'b439516d-9a53-45bf-b8dc-763e9e159552'),
+    {
+      href: 'vscode://file/Users/andy/AI%20Work?copilotCliSession=b439516d-9a53-45bf-b8dc-763e9e159552&windowId=_blank',
+      opensSession: true
+    }
+  );
+  assert.deepEqual(
+    createVscodeSessionLink('copilot', 'C:\\Users\\Andy\\proj', 'abc_123'),
+    { href: 'vscode://file/C:/Users/Andy/proj?copilotCliSession=abc_123&windowId=_blank', opensSession: true }
+  );
+  assert.deepEqual(
+    createVscodeSessionLink('copilot', '/work/app', 'bad.id'),
+    { href: 'vscode://file/work/app?windowId=_blank', opensSession: false }
+  );
+  for (const host of ['claude', 'codex']) {
+    assert.deepEqual(
+      createVscodeSessionLink(host, '/work/app', 'session-1'),
+      { href: 'vscode://file/work/app?windowId=_blank', opensSession: false }
+    );
+  }
+  assert.equal(createVscodeSessionLink('copilot', 'relative/app', 'abc'), null);
+  assert.ok(app.includes('VS Code에서 세션 열기'));
+  assert.ok(app.includes('VS Code 폴더 열기'));
+
+  assert.equal(
+    createVscodeWorkspaceUri('/Users/andy/AI Work/#one?'),
+    'vscode://file/Users/andy/AI%20Work/%23one%3F'
+  );
+  assert.equal(
+    createVscodeWorkspaceUri('C:\\Users\\Andy\\AI Work'),
+    'vscode://file/C:/Users/Andy/AI%20Work'
+  );
+  assert.equal(createVscodeWorkspaceUri('relative/workspace'), null);
+  assert.equal(createVscodeWorkspaceUri(''), null);
+
+  assert.equal(createSessionResumeCommand('copilot', 'copilot-123'), 'copilot --resume copilot-123');
+  assert.equal(createSessionResumeCommand('claude', 'claude-123'), 'claude --resume claude-123');
+  assert.equal(createSessionResumeCommand('codex', 'codex-123'), 'codex resume codex-123');
+  assert.equal(createSessionResumeCommand('unknown', 'session-123'), null);
+  assert.equal(createSessionResumeCommand('toString', 'session-123'), null);
+  assert.equal(createSessionResumeCommand('copilot', 'bad;command'), null);
+
+  assert.match(app, /createVscodeSessionLink\(session\.host, session\.cwd, session\.id\)/);
+  assert.match(app, /createSessionResumeCommand\(session\.host, session\.id\)/);
+  assert.ok(app.includes('명령 복사'));
+});
+
+test('fatal errors stay at the top while snapshot warnings collapse into a bottom-left toggle', async () => {
   const html = await readAsset('index.html');
   const drawer = html.slice(html.indexOf('<aside id="session-drawer"'), html.indexOf('</aside>\n    </main>'));
   const status = html.slice(html.indexOf('<section id="global-status"'), html.indexOf('<main'));
+  const alertsStart = html.indexOf('<aside id="snapshot-alerts"');
+  assert.ok(alertsStart > 0, 'snapshot alerts have their own region');
+  const alerts = html.slice(alertsStart, html.indexOf('</aside>', alertsStart));
   assert.ok(html.indexOf('</header>') < html.indexOf('<section id="global-status"'), 'status area follows the top bar');
+  assert.ok(status.includes('id="dashboard-error"'), 'fatal errors stay in the always-visible top area');
+  assert.ok(!status.includes('id="snapshot-warnings"'), 'snapshot warnings no longer push the page down');
+  assert.match(alerts, /<button id="snapshot-alerts-toggle"[^>]*aria-expanded="false"[^>]*aria-controls="snapshot-alerts-panel"/);
+  assert.match(alerts, /<div id="snapshot-alerts-panel"[^>]*hidden/);
+  assert.ok(alerts.includes('id="snapshot-warnings"'), 'warnings render inside the collapsed panel');
   for (const id of ['dashboard-error', 'snapshot-warnings']) {
-    assert.ok(status.includes(`id="${id}"`), `${id} is in the always-visible status area`);
     assert.ok(!drawer.includes(`id="${id}"`), `${id} is not hidden inside the session drawer`);
   }
   assert.ok(drawer.includes('id="session-warnings"'), 'the drawer shows the selected session warnings');
   const app = await readAsset('app.js');
   assert.match(app, /session\.warnings/, 'the drawer renders session.warnings');
+  assert.match(app, /snapshot-alerts-toggle/, 'the toggle is wired');
+
+  const css = await readAsset('styles.css');
+  assert.match(css, /\.snapshot-alerts\s*\{[^}]*position:\s*fixed;[^}]*left:[^}]*bottom:/s, 'alerts are pinned bottom-left');
 });
 
 test('session grid orders attention before recent activity', async () => {

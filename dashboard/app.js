@@ -40,12 +40,46 @@ const state = {
   associationRunId: null,
   refreshing: false,
   refreshIntervalMs: DEFAULT_REFRESH_INTERVAL_MS,
-  refreshTimer: null
+  refreshTimer: null,
+  snapshotAlertsOpen: false
 };
 const $ = id => document.getElementById(id);
 
 export function getDashboardRegion(documentRef, name) {
   return documentRef.querySelector(`[data-region="${name}"]`);
+}
+
+export function createVscodeWorkspaceUri(cwd) {
+  if (typeof cwd !== 'string' || !cwd || cwd.includes('\0')) return null;
+  const path = cwd.replaceAll('\\', '/');
+  const isWindowsDrivePath = /^[A-Za-z]:\//.test(path);
+  const isUncPath = path.startsWith('//') && !path.startsWith('///') &&
+    path.split('/').filter(Boolean).length >= 2;
+  if (!path.startsWith('/') && !isWindowsDrivePath) return null;
+  if (path.startsWith('//') && !isUncPath) return null;
+
+  const uriPath = isWindowsDrivePath ? `/${path}` : path;
+  const encodedPath = uriPath.split('/').map((segment, index) =>
+    index === 1 && /^[A-Za-z]:$/.test(segment) ? segment : encodeURIComponent(segment)
+  ).join('/');
+  return `vscode://file${encodedPath}`;
+}
+
+// VS Code imports a Copilot CLI session into chat only when its agent host can adopt it;
+// Claude and Codex CLI sessions have no import path, so their links open the folder only.
+export function createVscodeSessionLink(host, cwd, sessionId) {
+  const workspaceUri = createVscodeWorkspaceUri(cwd);
+  if (!workspaceUri) return null;
+  const opensSession = host === 'copilot' && typeof sessionId === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(sessionId);
+  const query = opensSession ? `copilotCliSession=${sessionId}&windowId=_blank` : 'windowId=_blank';
+  return { href: `${workspaceUri}?${query}`, opensSession };
+}
+
+export function createSessionResumeCommand(host, sessionId) {
+  const commands = { copilot: 'copilot --resume', claude: 'claude --resume', codex: 'codex resume' };
+  const prefix = Object.hasOwn(commands, host) ? commands[host] : null;
+  if (!prefix || typeof sessionId !== 'string' || !/^[A-Za-z0-9._-]+$/.test(sessionId)) return null;
+  return `${prefix} ${sessionId}`;
 }
 
 export function getRelatedIds(item) {
@@ -399,13 +433,51 @@ function renderSessionCard(item) {
       : attention === 'failed' ? '실패 기록 있음'
         : attention === 'unlinked' ? 'run 미연결' : '주의 사항 없음';
   card.append(node('span', 'session-card-attention-label', attentionLabel));
+
+  const actions = node('div', 'session-card-actions');
+  const vscodeLink = createVscodeSessionLink(session.host, session.cwd, session.id);
+  if (vscodeLink) {
+    const openInVscode = node('a', 'button button-quiet session-card-open-vscode',
+      vscodeLink.opensSession ? 'VS Code에서 세션 열기' : 'VS Code 폴더 열기');
+    openInVscode.href = vscodeLink.href;
+    openInVscode.setAttribute('aria-label', vscodeLink.opensSession
+      ? `VS Code 채팅에서 ${session.id} 세션 열기`
+      : `VS Code에서 ${session.cwd} 폴더 열기`);
+    openInVscode.title = vscodeLink.opensSession
+      ? 'VS Code 에이전트 호스트가 인식한 Copilot CLI 세션을 채팅으로 엽니다. 열리지 않으면 명령 복사로 터미널에서 이어 가세요.'
+      : 'VS Code는 이 CLI 세션을 가져오지 못해 폴더만 엽니다. 세션은 명령 복사로 터미널에서 이어 가세요.';
+    actions.append(openInVscode);
+  }
+  const resumeCommand = createSessionResumeCommand(session.host, session.id);
+  if (resumeCommand) {
+    const status = node('span', 'session-action-status');
+    status.hidden = true;
+    status.setAttribute('aria-live', 'polite');
+    const copyCommand = button('button button-quiet session-card-copy-command', '명령 복사', async () => {
+      try {
+        const clipboard = globalThis.navigator?.clipboard;
+        if (!clipboard?.writeText) throw new Error('이 브라우저에서 클립보드 복사를 지원하지 않습니다.');
+        await clipboard.writeText(resumeCommand);
+        status.hidden = false;
+        status.className = 'session-action-status';
+        setText(status, '이어 하기 명령을 복사했습니다.');
+      } catch (error) {
+        status.hidden = false;
+        status.className = 'session-action-status is-error';
+        setText(status, `복사 실패: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+    copyCommand.setAttribute('aria-label', `${session.host} 세션 이어 하기 명령 복사`);
+    actions.append(copyCommand, status);
+  }
   const details = button('button button-quiet session-card-details', '자세히보기', () => {
     openSession(session);
   });
   details.setAttribute('aria-label', `${session.id} 세션 자세히보기`);
   details.dataset.sessionHost = session.host;
   details.dataset.sessionId = session.id;
-  card.append(details);
+  actions.append(details);
+  card.append(actions);
   return card;
 }
 
@@ -621,20 +693,30 @@ function handleDrawerKeydown(event) {
   }
 }
 
-function renderWarnings(id, warnings) {
+function renderWarnings(id, warnings, limit = 4) {
   const list = $(id);
   list.replaceChildren();
-  for (const warning of warnings.slice(0, 4)) list.append(node('div', 'warning-item', warning));
+  for (const warning of warnings.slice(0, limit)) list.append(node('div', 'warning-item', warning));
   return list;
 }
 
-// Global diagnostics sit outside the drawer: they explain an empty grid with no session to open.
+// Fatal errors stay above the grid; snapshot warnings collapse bottom-left so they never push the grid down.
 function syncGlobalStatus() {
-  setHidden('global-status', $('dashboard-error').hidden && !$('snapshot-warnings').childElementCount);
+  setHidden('global-status', $('dashboard-error').hidden);
+}
+
+function setSnapshotAlertsOpen(open) {
+  state.snapshotAlertsOpen = open;
+  setHidden('snapshot-alerts-panel', !open);
+  $('snapshot-alerts-toggle').setAttribute('aria-expanded', String(open));
 }
 
 function renderSnapshotWarnings() {
-  renderWarnings('snapshot-warnings', state.snapshot?.warnings ?? []);
+  const warnings = state.snapshot?.warnings ?? [];
+  renderWarnings('snapshot-warnings', warnings, warnings.length);
+  setText($('snapshot-alerts-label'), `알림 ${warnings.length}건`);
+  setHidden('snapshot-alerts', warnings.length === 0);
+  setSnapshotAlertsOpen(warnings.length > 0 && state.snapshotAlertsOpen);
   syncGlobalStatus();
 }
 
@@ -1229,6 +1311,18 @@ function initialize() {
   });
   $('link-run-button').addEventListener('click', () => submitAssociation(false));
   $('unlink-run-button').addEventListener('click', () => submitAssociation(true));
+  $('snapshot-alerts-toggle').addEventListener('click', () => setSnapshotAlertsOpen(!state.snapshotAlertsOpen));
+  $('snapshot-alerts-close').addEventListener('click', () => {
+    setSnapshotAlertsOpen(false);
+    $('snapshot-alerts-toggle').focus();
+  });
+  $('snapshot-alerts').addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !state.snapshotAlertsOpen) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setSnapshotAlertsOpen(false);
+    $('snapshot-alerts-toggle').focus();
+  });
   window.addEventListener('keydown', handleDrawerKeydown);
   window.addEventListener('hashchange', applyLocationHash);
   window.addEventListener('popstate', applyLocationHash);

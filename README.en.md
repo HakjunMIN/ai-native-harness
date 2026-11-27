@@ -473,6 +473,18 @@ The page refreshes automatically every 60 seconds by default. The interval selec
 the header offers auto 10s, 30s, 1 min, 5 min, or manual, and the browser remembers your
 choice. The ↻ (refresh now) button reloads immediately in any mode.
 
+Each session card has a VS Code link and a **명령 복사** (copy command) button. For
+Copilot CLI sessions, **VS Code에서 세션 열기** (open session in VS Code) opens the
+workspace and imports the session into VS Code Chat. This works only for sessions the
+VS Code agent host can adopt: sessions created in VS Code, and CLI sessions it
+discovered while VS Code was running. Older CLI sessions fail with an import error in
+VS Code. VS Code cannot import Claude Code or Codex CLI sessions, so their link is
+**VS Code 폴더 열기** (open folder in VS Code) and opens only the workspace. The copy
+button copies `copilot --resume <id>`, `claude --resume <id>`, or `codex resume <id>`
+so you can continue the session in a terminal. Snapshot warnings, such as omitted
+older sessions, are collapsed into an **알림 N건** (N alerts) button at the bottom left;
+click it to read them. Errors that stop the dashboard from loading stay at the top.
+
 The same command works in a macOS terminal and in Windows PowerShell; stop it with
 `Ctrl+C`. Sessions are read from `.copilot`, `.claude`, and `.codex` in your home
 directory (`%USERPROFILE%\.copilot` and so on, on Windows). Manual links are saved to
