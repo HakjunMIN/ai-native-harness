@@ -10,7 +10,8 @@ Invoke `verification-gate`; dispatch `sdlc-verifier` with the approved test matr
 
 Include the Project baseline and approved exceptions in the verifier handoff.
 Apply [project governance](../sdlc/references/project-governance.md): compare
-applicable standards, ADRs and indexes with the reviewed baseline. Record rule
+applicable standards, ADRs, registered decisions and indexes with the reviewed
+baseline. Missing external evidence is not a successful comparison. Record rule
 compliance, drift impact, shared-policy approvals and exception validity in
 `04-verify-report.md`; missing comparison evidence remains unverified. Material
 requirement or plan changes return to G1/G2. Use run-local reports as gate evidence,

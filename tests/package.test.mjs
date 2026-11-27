@@ -238,6 +238,47 @@ test('SDLC stages and domain review share the project governance reference', () 
   assert.match(handoff, /## Project baseline/);
   assert.match(handoff, /<PLUGIN_ROOT>\/skills\/sdlc\/references\/project-governance\.md/);
 });
+test('external governance source registration', () => {
+  const governance = readFileSync('skills/sdlc/references/project-governance.md', 'utf8');
+  assert.match(governance, /^## External governance sources$/m);
+  assert.match(governance, /registration evidence/i);
+  for (const path of ['skills/sdlc-setup/SKILL.md', 'templates/project-AGENTS.md']) {
+    const body = readFileSync(path, 'utf8');
+    assert.match(body, /standards index/i, path);
+    assert.match(body, /external governance sources/i, path);
+    assert.match(body, /references\/project-governance\.md/, path);
+  }
+});
+test('standalone governance entrypoints', () => {
+  for (const entry of readdirSync('skills', {withFileTypes: true}).filter(entry => entry.isDirectory())) {
+    const body = readFileSync(`skills/${entry.name}/SKILL.md`, 'utf8');
+    assert.match(body, /\]\((?:\.\.\/sdlc\/)?references\/(?:principles|protocol)\.md\)/, entry.name);
+  }
+  for (const doc of ['principles', 'protocol']) {
+    assert.match(readFileSync(`skills/sdlc/references/${doc}.md`, 'utf8'), /\]\(project-governance\.md\)/, doc);
+  }
+});
+test('external decision baseline handoff', () => {
+  const handoff = readFileSync('templates/handoff.md', 'utf8').split('## Project baseline')[1].split('\n## ')[0];
+  assert.match(handoff, /external decision reference/i);
+  assert.match(handoff, /revision or content SHA256/i);
+  assert.match(handoff, /approval evidence/i);
+  assert.match(handoff, /UTC/);
+});
+test('external lookup does not reuse stale registration', () => {
+  const governance = readFileSync('skills/sdlc/references/project-governance.md', 'utf8');
+  assert.match(governance, /current owner-designated map revision/i);
+  assert.match(governance, /no longer registered/i);
+});
+test('durable external handoffs cover both audiences', () => {
+  for (const path of ['skills/sdlc-handoff/SKILL.md', 'templates/handoff.md']) {
+    assert.match(readFileSync(path, 'utf8'), /both repository readers and the receiving session/i, path);
+  }
+});
+test('project pointers defer external lookup to the locked procedure', () => {
+  const template = readFileSync('templates/project-AGENTS.md', 'utf8');
+  assert.match(template, /only if the ticket's locked procedure calls for it/i);
+});
 test('missing project governance blocks package validation', t => {
   const root = copy(t);
   rmSync(join(root, 'skills/sdlc/references/project-governance.md'));

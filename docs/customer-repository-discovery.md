@@ -146,7 +146,8 @@ ArgoCD `Synced`/`Healthy` 등의 증거를 기대한다. 비컨테이너·비Arg
 | Copilot CLI / Claude Code / Codex | 선택한 로컬 실행 호스트. 모두 도입할 필요는 없음 | 조직 사용 승인, 실제 역할/스킬/훅 로딩, 라이선스·인증 |
 | 승인된 모델과 로컬 서브에이전트 | 작성·검증·독립 리뷰 | 실제 모델 ID/계열·세션·라우팅·역할별 도구 |
 | GitHub UI/API 또는 기존 CLI | PR, 보호 규칙, 필수 CI, 승인 근거 조회 | 최소 권한; 읽기와 게시/머지 권한 분리 |
-| Atlassian Rovo MCP | Jira 경로를 사용할 때만 요청 조회·동기화·발행 | 승인된 읽기/쓰기, 프로젝트/전이/관계 ID; 탐색용 이슈 생성 금지 |
+| Atlassian Rovo MCP (Jira 티켓 경로) | 요청 조회·동기화·발행 | 승인된 읽기/쓰기, 프로젝트/전이/관계 ID; 탐색용 이슈 생성 금지 |
+| Confluence·Slack·Jira의 기존 읽기 도구 (선택) | 프로젝트 표준 색인에 등록한 범위 안에서 기존 결정 확인. Jira 티켓 접수·발행과 별개 | [프로젝트 거버넌스](../skills/sdlc/references/project-governance.md)에 따라 출처 등록 근거, 결정 소유자의 승인과 적용 범위, 독자별 공유 권한을 구분한다. 미등록 프로젝트는 저장소 표준만 사용한다. |
 | Gradle wrapper, JDK, JUnit 및 기존 통합 테스트 도구 | Spring BFF 빌드·단위·통합·API 검증 | 실제 task 구분, DB/서비스 fixture, 재현 가능한 결과 |
 | Go 툴체인, `go test`·`go vet`, 기존 lint 설정 | Go BFF·백엔드 빌드·단위·통합·API 검증 | `go.mod`의 `go`/`toolchain`과 CI 버전, `-race`·build tag·Docker 등 실제 실행 조건 |
 | 저장소의 JS 패키지 관리자, TypeScript, lint, Jest/RTL | FE 정적·컴포넌트 검사 | lockfile과 실제 scripts; 임의 도구 교체 금지 |

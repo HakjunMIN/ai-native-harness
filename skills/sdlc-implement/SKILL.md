@@ -22,7 +22,8 @@ then run `workspaces.mjs reconcile STATE` before `plan`/`start`; follow the
 Handoffs include policy, Jira/local ID, manifest/AC
 references, worktree path/branch/base, exact allowed paths and commands.
 
-Include the plan's Project baseline and approved exceptions in each handoff.
+Include the plan's applicable, audience-safe Project baseline and approved
+exceptions in each handoff, including registered external decisions.
 Follow [project governance](../sdlc/references/project-governance.md); compare
 relevant current documents with the baseline before implementation or resumption.
 Report material drift to the conductor for G1/G2 impact assessment; do not silently

@@ -11,7 +11,8 @@ and use `jira-sync` only for Jira-originated work. Dispatch `sdlc-release-engine
 with the handoff and production denylist when specialized work is needed.
 
 Apply [project governance](../sdlc/references/project-governance.md): confirm the
-verified Project baseline remains applicable and exceptions have not expired.
+verified Project baseline (including registered decisions) remains applicable
+and exceptions have not expired.
 Carry approved shared ADR/standard changes, migration obligations and exception
 owners/exit conditions into `05-release.md` and the production handoff. Material
 drift returns to the affected gate; release approval does not waive shared rules.

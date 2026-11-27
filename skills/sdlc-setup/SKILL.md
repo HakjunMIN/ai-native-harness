@@ -68,7 +68,10 @@ Read [protocol](../sdlc/references/protocol.md). No deployment or global config 
    any managed shared symlink. Record locations, index entrypoints and reading
    rules through an authorized project-only diff. Do not create empty standards
    or accepted decisions merely to finish setup; missing policy decisions remain
-   explicit questions.
+   explicit questions. For optional external governance sources, derive scoped
+   candidates from existing project links and propose owner confirmation in the
+   same setup review. Keep the map in or linked from the project standards index;
+   do not register an entire workspace by default or require a map for local work.
 9. Update existing domain context only when useful; use `domain-context` for
    consequential vocabulary gaps, not a mandatory empty glossary. Report setup diff and unresolved
    capabilities in Korean.

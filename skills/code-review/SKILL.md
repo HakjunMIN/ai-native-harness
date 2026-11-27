@@ -26,7 +26,7 @@ supplied approved policy and handoff, not mutable config or guessed model routin
    (auth/tenant boundaries, injection, secret exposure, dependency/runtime risks).
    A named security agent is optional; missing necessary expertise is a blocker.
    Apply [project governance](../sdlc/references/project-governance.md): inspect
-   relevant standards and accepted ADRs, compare them with the supplied Project
+   relevant standards, registered decisions and accepted ADRs, compare them with the supplied Project
    baseline, and report violations by document/section. Check shared-change
    approval, exception scope/expiry, and index/standard updates for replaced ADRs.
    Enforce accepted `review` rules by judgement; for `check` rules confirm the

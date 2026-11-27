@@ -37,6 +37,7 @@ Reference the plan's applicable standards and accepted project ADRs, including
 document paths/sections, baseline commits or uncommitted content hashes, and
 owners. Record none with a reason when no shared documents apply.
 
+- External decision reference (if applicable): <source ID, decision and scope, owner and approval evidence, UTC check time, remote revision or content SHA256; include only what both repository readers and the receiving session may see; otherwise state a nonspecific verification limit>
 - Shared changes: <approved project ADR/standard changes and owner approval evidence, or none>
 - Exceptions: <rule, scope, owner approval, expiry or exit condition, or none>
 - Drift: <comparison evidence and impact since the baseline; unresolved differences>

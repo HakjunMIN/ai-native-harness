@@ -16,6 +16,10 @@ and cross-feature ADRs live outside individual runs; feature plans reference the
 applicable baseline. On resume, assess shared-document drift before dependent
 work. State validation alone does not check that drift or grant project-policy
 approval. Preserve existing artifact paths and the run-local evidence boundary.
+Phase owners select the local and registered external rules for the affected scope.
+Give specialists the audience-safe baseline and exceptions rather than asking each
+to search independently. A specialist missing required evidence returns to the
+conductor, not a broader search or a different project's sources.
 
 ## State and routing
 

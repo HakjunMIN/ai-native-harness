@@ -47,6 +47,9 @@ drift evidence and pending migrations using
 without a baseline, carry the new comparison report rather than editing approved
 artifacts. The next session checks relevant shared-document changes before work;
 a matching state hash alone does not establish that project rules are unchanged.
+For registered decisions, the durable handoff must be safe for
+both repository readers and the receiving session. If either lacks permission,
+record only a nonspecific verification limitation, not the source or decision.
 
 New session: open this handoff and state, verify hashes and source revision,
 invoke `sdlc` with the Jira key or local ID. Never resume from “all green” prose alone.

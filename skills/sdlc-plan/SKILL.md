@@ -19,6 +19,8 @@ decisions in project ADRs and current shared rules in project standards. Keep
 feature-only decisions in the plan or a run-local ADR; routine choices need no ADR.
 Include a Project baseline section with applicable document paths/sections, actual
 baseline commits (content hashes for uncommitted inputs), status/owner and exceptions.
+Record registered external decisions in the baseline's external rows, with their
+approval evidence and original revision or content hash, never a made-up Git commit.
 Do not copy shared rules into every plan. Shared changes and exceptions need
 explicit project-owner approval before dependent G2 approval; feature G2 alone
 does not approve project policy. Include affected standards, overview and indexes
