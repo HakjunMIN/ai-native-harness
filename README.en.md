@@ -214,11 +214,26 @@ docs/
   sdlc/<ID>/               # state.json, harness.lock.json, 02-plan.md, and other task records
 ```
 
-The plan's `Project baseline` records referenced documents and baseline commits, and
+For repository documents, the plan's `Project baseline` records paths and commits, and
 later phases check changes since then. Shared changes and exceptions require their
 owner's approval; feature-level G2 approval cannot substitute for it. The installer
 does not create empty standards or ADRs. See
 [Project governance](skills/sdlc/references/project-governance.md).
+
+### Using decisions from Confluence, Slack, and Jira as project standards
+
+Keep the originals in place. In the project's standards index (e.g. `docs/standards/README.md`),
+record **where to look, which decisions apply, and who can approve them**.
+`sdlc-setup` follows existing documentation and links to suggest Confluence pages, Slack decision channels, and Jira projects.
+Register a source only after the project owner confirms its lookup scope, applicability, decision owner, and accepted approval record.
+Without registered sources, use repository standards only. See the [source registration format and approval criteria](skills/sdlc/references/project-governance.md#external-governance-sources).
+
+Both SDLC and standalone skills use read-only access within the current registered scope.
+For example, apply a release owner's approved pre-deployment check in Confluence without seeking approval again.
+A Slack suggestion to skip it or a Jira exception granted only for the previous release does not waive the check.
+In the SDLC plan's `Project baseline`, record the shareable decision reference, scope, approval evidence,
+UTC check time, and source revision (or content hash if unversioned). If required evidence is inaccessible
+or conflicts with a current standard, pause only the work that depends on it.
 
 ## Safety Boundaries
 
@@ -248,7 +263,7 @@ The linked guides retain their existing language.
 | [Ticket revisions](skills/sdlc/references/harness-revisions.md) | Per-ticket locks, caches, resumption, recovery, explicit version changes, `.gitattributes`, and inheritance. |
 | [Compatibility](docs/compatibility.md) | Host support and permission and hook limitations. |
 | [Customer repository discovery](docs/customer-repository-discovery.md) | Interview questions, artifact templates, tool and permission discovery, process mapping, and pilot criteria. |
-| [Project governance](skills/sdlc/references/project-governance.md) | Shared standards and ADRs, baseline versions, approvals, exceptions, promotion, supersession, and impact checks. |
+| [Project governance](skills/sdlc/references/project-governance.md) | Shared standards and ADRs, external decision sources, baseline versions, approvals, exceptions, promotion, supersession, and impact checks. |
 | [Sub task example](examples/ABC-123/README.md) | Plans, sub tasks, and evidence artifact structure. |
 | [Technical skills](skills/) | Independently usable stack-specific development, testing, and operational guidance. |
 | [Go Backend](skills/go-backend/SKILL.md) and [Go Testing](skills/go-testing/SKILL.md) | Go BFF/backend implementation and `go test` evidence. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang) is retrieved only as a non-authoritative checklist. |

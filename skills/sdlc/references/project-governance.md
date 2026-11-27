@@ -2,6 +2,8 @@
 description: "Project-wide standards and architecture decisions shared across SDLC runs"
 ---
 
+[한국어](project-governance.ko.md)
+
 # Project standards and decisions
 
 Keep project-wide rules separate from feature execution history. Use the target

@@ -197,10 +197,22 @@ docs/
   sdlc/<ID>/               # state.json, harness.lock.json, 02-plan.md 등 작업별 기록
 ```
 
-Plan의 `Project baseline`에 참조 문서와 기준 commit을 기록하고 이후 단계에서 변경을 확인합니다.
+저장소 문서는 계획의 `Project baseline`에 경로와 기준 커밋을 기록하고 이후 단계에서 변경을 확인합니다.
 공통 변경과 예외는 해당 소유자의 승인이 필요하며 기능 G2 승인으로 대신하지 않습니다. 설치기는
 빈 표준·ADR을 만들지 않습니다.
-[프로젝트 거버넌스](skills/sdlc/references/project-governance.md)
+[프로젝트 거버넌스](skills/sdlc/references/project-governance.ko.md)
+
+### Confluence·Slack·Jira의 결정을 프로젝트 표준으로 활용하기
+
+원문을 저장소에 복사하는 대신, 프로젝트 표준 색인(예: `docs/standards/README.md`)에 **어디서 누구의 어떤 결정을 확인할지** 기록합니다.
+`sdlc-setup`은 기존 문서와 링크에서 Confluence 페이지, Slack 결정 채널, Jira 프로젝트를 후보로 찾습니다.
+프로젝트 소유자가 조회 범위, 적용 대상, 결정 소유자와 인정할 승인 기록을 확인한 출처만 등록합니다.
+등록한 출처가 없으면 외부 조회 없이 저장소 표준만 사용합니다. [출처 등록 양식과 승인 판정 기준](skills/sdlc/references/project-governance.ko.md#외부-거버넌스-출처)
+
+SDLC와 단독 스킬 모두 현재 등록된 범위 안에서 원문을 읽기 전용으로 확인합니다.
+예를 들어 Confluence에서 릴리스 소유자가 승인한 배포 전 점검은 재승인 없이 적용하지만, Slack의 생략 제안이나 Jira에서 지난 릴리스에만 승인한 예외는 이번 배포에 적용하지 않습니다.
+SDLC 계획의 `Project baseline`에는 공유 가능한 결정 참조, 적용 범위, 승인 근거, 확인 시각(UTC), 원문 판본(없으면 내용 해시)을 남깁니다.
+필수 근거를 읽을 수 없거나 현행 표준과 충돌하면 그 결정에 의존하는 작업만 보류합니다.
 
 ## 안전 범위
 
@@ -224,7 +236,7 @@ dev/staging 프로모션, 실제 prod values 변경·머지와 ArgoCD sync는 �
 | [티켓 리비전 관리](skills/sdlc/references/harness-revisions.md) | 티켓별 lock, 캐시, 재개·복구·명시적 버전 전환, `.gitattributes`와 sub task 상속 |
 | [호환성](docs/compatibility.md) | 호스트별 지원 범위, 권한·훅의 한계 |
 | [고객 리포 적용 사전 탐색](docs/customer-repository-discovery.md) | 인터뷰 질문, 산출물 양식, 도구·권한 조사, 개발 프로세스 매핑과 파일럿 도입 기준 |
-| [프로젝트 거버넌스](skills/sdlc/references/project-governance.md) | 공통 표준·ADR, 기준 버전, 승인·예외·승격·대체와 변경 영향 확인 |
+| [프로젝트 거버넌스](skills/sdlc/references/project-governance.ko.md) | 공통 표준·ADR, 외부 결정 출처 등록, 기준 버전, 승인·예외·승격·대체와 변경 영향 확인 |
 | [sub task 예시](examples/ABC-123/README.md) | 계획·sub task·증거 산출물 구조 |
 | [기술 스킬](skills/) | 독립적으로 사용 가능한 스택별 개발·테스트·운영 지침 |
 | [Go Backend](skills/go-backend/SKILL.md) · [Go Testing](skills/go-testing/SKILL.md) | Go BFF·백엔드 구현과 `go test` 증거. [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang)은 비공식 체크리스트로만 조회합니다. |
