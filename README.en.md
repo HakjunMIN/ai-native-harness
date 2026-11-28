@@ -26,7 +26,7 @@ critical matters.
 | Contracts and boundaries first | Align domain terminology, API contracts, and test expectations. Preserve authentication, tenant, and product boundaries. |
 | Risk-based verification | Use light mode for a small, low-risk, single outcome. Use strict mode for high-risk changes, architectural changes, or multiple outcomes. |
 | Tests appropriate to the change | Use TDD (RED to GREEN) for behavior changes, before-and-after comparisons for refactoring, and relevant static checks for documentation and configuration. |
-| Independent review and separated roles | A model other than the author's reviews the work, with at most two rounds per review subject. Strict mode also separates test writing from implementation. |
+| Independent review and separated roles | A model other than the author's reviews the work, with at most two rounds per review subject. Work split into several sub tasks reviews only risk-mapped sub tasks individually and reviews the whole change once at the parent ticket. Strict mode also separates test writing from implementation. |
 | Evidence-based completion and traceability | Bind tests, reviews, and approvals to file hashes and code revisions. Revalidate evidence invalidated by changes. |
 | Human approval and operations | People approve requirements (G1), plans (G2), and operational changes (G5b). Agents cannot approve their own work or perform actual production changes. |
 
@@ -177,8 +177,20 @@ node .ai-native-sdlc/scripts/state.mjs progress docs/sdlc/ABC-123/state.json --t
 **A sub task is an execution unit with AC, scope, and dependencies; a Jira ticket is
 a remote issue.** Large requests become several sub tasks. A single sub task runs in
 the run worktree; independent parallel sub tasks run in separate Git worktrees and
-are verified after integration. See [progress inspection](docs/operations.md#진행-상황-조회)
-and the [Sub task contract](skills/sdlc-subtasks/references/sub-task-contract.md).
+are verified after integration.
+
+**Review happens once at the parent ticket, not again for every sub task.** Plans
+with several sub tasks prepared on 0.3.1 or later record `risks` for each sub task.
+Only sub tasks mapped to a planned risk, such as auth or tenant boundaries,
+destructive or schema changes, public compatibility or security impact, get spec
+and standards review before completion. The rest (`risks: []`) need their AC tests,
+quality checks and integration evidence, and the whole change gets one final review
+with security coverage at G4. The G2 plan review checks the risk mapping, and
+missing or undeclared risks are rejected when the plan is prepared. Single sub task
+plans and tickets already in progress keep their existing review rules. See the
+[review policy](skills/sdlc/references/protocol.md#review-policy-for-decomposed-contract-2-plans),
+[progress inspection](docs/operations.md#진행-상황-조회), and the
+[Sub task contract](skills/sdlc-subtasks/references/sub-task-contract.md).
 
 ### Per-Ticket Revisions and Run Worktrees
 

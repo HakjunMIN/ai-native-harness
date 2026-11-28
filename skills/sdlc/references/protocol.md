@@ -137,6 +137,30 @@ failed requests under `e2e/` in the run directory, labelled exploratory, for the
 verifier to audit. It supplements regression tests and never replaces them; a
 missing browser tool is a recorded limitation, not a pass.
 
+## Review policy for decomposed contract-2 plans
+
+Only a newly prepared contract-2 plan with multiple tasks receives
+`policy.sliceReview: "risk-mapped"`. Its canonical task definitions require a
+`risks` array. Every material plan-level risk must map to each affected task;
+unmapped, undeclared, duplicate or missing mappings fail preparation and state
+validation. The independent G2 plan reviewer verifies risk classification and
+coverage. Include auth/tenant boundaries, destructive or schema/data changes,
+public compatibility and security-sensitive effects when applicable. Do not
+reclassify a risk as standard to avoid an early review.
+
+For these plans, a task with one or more mapped risks still needs independent
+`spec` and `standards` reviews before it is done. A task with `risks: []` does
+not need a per-slice review; behavior/refactor/static evidence, module quality
+checks and source integration remain required. G4 still requires one independent
+final review of the complete integrated base-to-head change, all task ACs and
+cross-task effects, with `spec`, `standards` and `security` coverage. The usual
+reviewer identity, finding, evidence, revision and delta-round requirements
+apply.
+
+Single-task plans and plans whose approved policy omits `sliceReview` retain
+their existing review axes. This preserves current and pinned runs; never add
+the field to an approved plan or infer new review policy from mutable config.
+
 ## Evidence and review records
 
 Write actual sanitized evidence, then hash with `state.mjs hash FILE`. References
@@ -204,9 +228,11 @@ so it does not need `allowHumanReview`. Contract-2 records also carry `round`
 (1 or 2) and `critical` (0..`blocking`) from the reviewer's verbatim output, and may
 use agent acceptance (see [autonomous execution](#autonomous-execution)).
 
-Strict axes are `plan` at G2, `spec` and `standards` per slice, `final` at G4.
-Light uses `combined` per slice and at G4. Split author scopes must be unique and
-all pass. Review completion is not gate approval. Schema validation checks shape
+Strict axes are `plan` at G2, `spec` and `standards` per slice when the approved
+policy requires them, and `final` at G4. Light uses `combined` per slice and at
+G4. Risk-mapped contract-2 plans do not require a slice review for tasks with an
+empty risk list; G4 remains required. Split author scopes must be unique and all
+pass. Review completion is not gate approval. Schema validation checks shape
 and hashes, not the truth of provenance, independence, logs or human identity.
 
 Completed slices have positive `id`, `status: "done"`, `attempts`, `subjectHead`,

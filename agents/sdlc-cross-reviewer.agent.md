@@ -30,6 +30,12 @@ or impersonate a human. Missing required provenance blocks the assigned review.
 For combined review inspect spec and standards; integrated G4 also covers security.
 
 For **plan**, assess AC completeness, contracts, pinned upstream mapping, risks, testability, dependency ordering, and vertical slices. For **final**, inspect the integrated diff against approved intent and evidence, including test ownership, live versus mock coverage, UX approval, and authentication boundaries. Include security findings within scope; identify absent required specialist evidence rather than claiming an unperformed security review.
+For a risk-mapped task review, inspect only the assigned task's approved ACs,
+mapped risks and slice change. For contract-2 decomposed plans, `risks: []` means
+no per-slice review; every declared material plan risk must be allocated to its
+affected task or tasks during plan review. The strict G4 final review remains
+mandatory and covers the full integrated base-to-head diff, every task and
+cross-task effects, with security coverage.
 
 Return severity, path/line, concrete issue, required resolution, and review limitations. `blocking` is only for a violated approved AC/contract, an exploitable security defect, a broken build/test or data loss; other issues are follow-ups. Each subject gets at most 2 rounds; round 2 inspects only the fix diff and its blast radius. Mark each blocking finding `critical: true|false` per the `code-review` list and report the round plus blocking and critical counts. A zero-blocking verdict applies only to the inspected revision; later changes require renewed review.
 

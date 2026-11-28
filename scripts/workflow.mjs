@@ -65,6 +65,7 @@ export function policyErrors(policy, classification) {
   if (policy.profile === 'light' && policy.risks?.length) errors.push('light policy cannot include high-risk changes');
   if (policy.requireDifferentFamily && policy.allowHumanReview) errors.push('different-family policy cannot substitute human review');
   if (policy.changeKind !== 'behavior' && !text(policy.verificationReason)) errors.push('non-behavior policy requires verificationReason');
+  if (policy.sliceReview !== undefined && policy.sliceReview !== 'risk-mapped') errors.push('invalid slice review policy');
   if (policy.quality !== undefined) errors.push(...qualityPolicyErrors(policy.quality));
   if (policy.verification !== undefined) errors.push(...verificationPolicyErrors(policy.verification));
   if (policy.autonomy !== undefined && (!object(policy.autonomy) || Object.keys(policy.autonomy).length !== 1 ||
@@ -97,7 +98,11 @@ export function createPolicy(config, classification, draft, {runContract = 1, pr
     requireDifferentModel:config.review?.requireDifferentModel ?? true,
     allowHumanReview:requireDifferentFamily ? false : config.review?.allowHumanReview ?? false,
     ...(draft.changeKind !== 'behavior' ? {verificationReason:draft.verificationReason} : {}),
-    ...(runContract === 2 ? {quality:createQualityPolicy(config,draft),...executionPolicy(preferences)} : {})
+    ...(runContract === 2 ? {
+      ...(draft.tasks.length > 1 ? {sliceReview:'risk-mapped'} : {}),
+      quality:createQualityPolicy(config,draft),
+      ...executionPolicy(preferences)
+    } : {})
   };
   const errors = policyErrors(policy,classification);
   if (errors.length) throw new Error(errors.join('\n'));
@@ -108,12 +113,22 @@ export const isLight = state => state?.policy?.profile === 'light';
 export const isLocal = state => state?.intake?.kind === 'local';
 export const verificationMode = state => state.policy?.changeKind ?? 'behavior';
 
-export function taskDefinitionErrors(tasks, {runContract = 1} = {}) {
+export function taskDefinitionErrors(tasks, {runContract = 1, sliceReview, risks} = {}) {
   if (!Array.isArray(tasks) || !tasks.length) return ['nonempty tasks required'];
   const errors = [], ids = new Map();
   const list = value => Array.isArray(value) && value.length > 0 && value.every(text);
   // Generic (non-Grafana, non-BDD) Playwright is a contract-2 check kind.
   const checks = ['junit','jest','playwright-bdd','go','chart','manual','static','playwright'];
+  if (sliceReview !== undefined && (runContract !== 2 || sliceReview !== 'risk-mapped')) {
+    errors.push('slice review policy requires contract 2 and risk-mapped');
+  }
+  const declaredRisks = new Set(Array.isArray(risks) ? risks : []);
+  const mappedRisks = new Set();
+  if (sliceReview === 'risk-mapped') {
+    if (!Array.isArray(risks) || risks.some(risk => !text(risk)) || declaredRisks.size !== risks.length) {
+      errors.push('risk-mapped review requires unique, nonempty plan risks');
+    }
+  }
   for (const task of tasks) {
     if (!object(task) || !Number.isInteger(task.id) || task.id < 1) { errors.push('invalid task id'); continue; }
     if (ids.has(task.id)) errors.push(`duplicate task id ${task.id}`);
@@ -122,6 +137,15 @@ export function taskDefinitionErrors(tasks, {runContract = 1} = {}) {
     if (task.details !== undefined && !text(task.details)) errors.push(`task ${task.id}: details must be text`);
     if (!Array.isArray(task.blockedBy) || task.blockedBy.some(id => !Number.isInteger(id)) ||
         new Set(task.blockedBy).size !== task.blockedBy.length) errors.push(`task ${task.id}: invalid dependencies`);
+    if (sliceReview === 'risk-mapped') {
+      if (!Array.isArray(task.risks) || task.risks.some(risk => !text(risk)) ||
+          new Set(Array.isArray(task.risks) ? task.risks : []).size !== task.risks?.length) {
+        errors.push(`task ${task.id}: risk-mapped review requires a unique risks array`);
+      } else for (const risk of task.risks) {
+        if (!declaredRisks.has(risk)) errors.push(`task ${task.id}: risk "${risk}" is not declared in the plan`);
+        mappedRisks.add(risk);
+      }
+    }
     const acIds = new Set();
     if (!Array.isArray(task.acceptanceCriteria) || !task.acceptanceCriteria.length) errors.push(`task ${task.id}: acceptance criteria required`);
     else for (const criterion of task.acceptanceCriteria) {
@@ -130,6 +154,9 @@ export function taskDefinitionErrors(tasks, {runContract = 1} = {}) {
       if (runContract !== 2 && Array.isArray(criterion?.checks) && criterion.checks.includes('playwright')) errors.push(`task ${task.id}: playwright check requires a contract-2 run`);
       if (object(criterion)) acIds.add(criterion.id);
     }
+  }
+  if (sliceReview === 'risk-mapped') {
+    for (const risk of declaredRisks) if (!mappedRisks.has(risk)) errors.push(`plan risk "${risk}" must be mapped to a task`);
   }
   const visiting = new Set(), visited = new Set();
   function visit(id) {
@@ -156,6 +183,7 @@ export function renderTask(task, parent) {
     '## Scope', items(task.scope), '## Non-goals', items(task.nonGoals),
     '## Acceptance criteria', ...task.acceptanceCriteria.map(criterion =>
       `- ${criterion.id} → ${criterion.requirement}: ${criterion.text} (${criterion.checks.join(', ')})`),
+    ...(task.risks !== undefined ? ['## Risks', Array.isArray(task.risks) && task.risks.length ? items(task.risks) : 'None'] : []),
     '## Dependencies', task.blockedBy.length ? task.blockedBy.join(', ') : 'None',
     '## References and verification', task.details ?? 'Use the approved acceptance criteria and scoped handoff.'
   ].join('\n\n')+'\n';

@@ -43,9 +43,13 @@ axe, keyboard/manual accessibility, Grafana design-system and heuristic review b
 diff, not an automatic `--update-snapshots`. Backend-only checks may mark UI N/A
 with a scope reason; blocked UI infrastructure is not N/A.
 
-Review the complete base-to-head diff under the approved policy. Strict/legacy
-requires independent final review; light uses independent combined review.
-Both cover spec, standards and security. Different-family review is recommended
+Review the complete base-to-head diff under the approved policy. Every plan
+requires one independent integrated G4 review: strict/legacy uses the final axis,
+light uses combined. Both cover spec, standards and security. For new
+risk-mapped contract-2 decomposed plans, verify that each risk-mapped slice had
+its required spec/standards review and standard slices were not assigned costly
+slice reviews; the G4 review still covers every slice and cross-task effect.
+Single-task and older plans retain their slice reviews. Different-family review is recommended
 for new policies, not required when `requireDifferentFamily` is false; same-model
 independent sessions qualify. Enforce explicit true or legacy family requirements
 and the approved human-review flag. Reuse light slice review only when its

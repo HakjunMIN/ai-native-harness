@@ -38,8 +38,11 @@ Separate mock E2E from real Grafana → BFF → query-service integration. Check
 For SigNoz pipeline/migration scope load `signoz-oss`; for explicit ClickStack evaluation or an existing in-scope pipeline load `clickstack`; for Mimir/Prometheus metrics load `mimir-oss` and `prometheus-query-api`. Verify correlated signals, schema/time semantics, tenant isolation, query parity and mode-specific restore evidence. Connectivity or receiver health alone is not integration success.
 
 Missing infrastructure blocks only checks that require it, never counts as pass.
-Missing human decisions are `NEEDS_HUMAN`. Request policy-required combined or
-spec/standards/final review with security coverage from the parent. Do not
+Missing human decisions are `NEEDS_HUMAN`. Request the policy-required reviews
+from the parent. For a new risk-mapped contract-2 plan, confirm that only
+risk-mapped slices have independent spec/standards reviews and that G4 has one
+independent final review of the full integrated change with security coverage.
+Legacy and single-task policies keep their existing review requirements. Do not
 impersonate a reviewer or substitute approval for a required independent inspection.
 
 Use runtime defaults or verified user routing and report actual identity. No cloud/nested delegation, git push, merge, deploy, production edits, test fixes, or self-approval.

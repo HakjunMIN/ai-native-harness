@@ -12,6 +12,7 @@
       "nonGoals": [
         "<excluded behavior>"
       ],
+      "risks": [],
       "blockedBy": [],
       "acceptanceCriteria": [
         {

@@ -40,7 +40,7 @@ export function prepareTasks(statePath, config, draft) {
   if (errors.length) throw new Error(errors.join('\n'));
   const contract = runContract(state,root);
   const policy = createPolicy(config,state.classification,draft,{runContract:contract,preferences:state.gates.G1.approval?.preferences});
-  const definitionErrors = taskDefinitionErrors(draft.tasks,{runContract:contract});
+  const definitionErrors = taskDefinitionErrors(draft.tasks,{runContract:contract,sliceReview:policy.sliceReview,risks:policy.risks});
   if (definitionErrors.length) throw new Error(definitionErrors.join('\n'));
   if (policy.profile === 'light' && (draft.tasks.length !== 1 || draft.tasks[0].blockedBy.length)) throw new Error('light policy requires one independent outcome; use strict for decomposed work');
   const tasks = draft.tasks.map(task => {

@@ -2,6 +2,37 @@
 
 ## [Unreleased]
 
+## [0.3.1]
+
+Released on `main` on 2026-11-28 as one squashed commit on top of `2ed93dc`;
+tagged `0.3.1`.
+
+- Parent-ticket review for decomposed work: `tasks.mjs prepare` adds
+  `policy.sliceReview: "risk-mapped"` to new contract-2 plans with more than one
+  task. Each task then declares a `risks` array (`[]` for standard-risk work);
+  every plan-level risk must map to at least one task, and missing, duplicate,
+  undeclared or unmapped risks fail prepare and state validation. Generated task
+  documents show the mapped risks.
+- Only a task with mapped risks needs independent slice `spec` and `standards`
+  reviews before it is done. A standard-risk task completes and unblocks its
+  dependents with its RED/GREEN (or before/static) evidence and module quality
+  report alone. G2 plan review, human G2 approval and the G4 final review of the
+  integrated diff with `security` coverage are unchanged.
+- Planner, implementer, reviewer and verifier guidance, the sub task template,
+  the protocol and both READMEs describe the risk mapping and review routing.
+
+Compatibility and consumer actions:
+
+- Reinstall to use the new policy for new plans. Single-task plans, contract-1
+  runs and plans prepared before 0.3.1 (no `sliceReview`) keep per-slice reviews.
+  Runs already in progress keep their pinned snapshot; no lock, state schema or
+  run contract version changed. Contract-1 state rejects `sliceReview`.
+- To use the new policy in an active run, follow the existing explicit upgrade,
+  invalidation and G2 reapproval procedure; it is never added to an approved plan.
+- Rollback: reinstall `0.3.0`. Its CLI dispatches 0.3.1-pinned runs to their
+  snapshot, but its dashboard validates runs in process with 0.3.0 rules and
+  reports standard-risk slices without slice reviews as missing reviews.
+
 ## [0.3.0]
 
 Released on `main` on 2026-11-27 as one squashed commit on top of `df1411c`;
@@ -138,5 +169,5 @@ Compatibility and consumer actions:
 
 ## Current manifest baseline
 
-The package and three plugin manifests currently declare `0.3.0`. This records
+The package and three plugin manifests currently declare `0.3.1`. This records
 the release candidate baseline; it does not assert that a release was published.

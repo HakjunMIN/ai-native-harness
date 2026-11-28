@@ -84,7 +84,9 @@ function readTaskPlan(state, root, contract) {
   if (state.policy?.quality !== undefined) errors.push(...qualityPolicyErrors(state.policy.quality,plan.tasks));
   if (state.policy && plan.format !== 'canonical-v1') errors.push('policy requires canonical-v1 task plan');
   if (isLight(state) && (plan.tasks.length !== 1 || plan.tasks[0]?.blockedBy?.length)) errors.push('light policy requires one independent outcome');
-  errors.push(...taskDefinitionErrors(plan.tasks,{runContract:contract}));
+  errors.push(...taskDefinitionErrors(plan.tasks,{
+    runContract:contract,sliceReview:state.policy?.sliceReview,risks:state.policy?.risks
+  }));
   if (contract === 2 && state.uiChange === true && object(state.policy?.verification) && state.policy.verification.e2e !== 'none' &&
       !plan.tasks.some(t => object(t) && Array.isArray(t.acceptanceCriteria) && t.acceptanceCriteria.some(criterion =>
         Array.isArray(criterion?.checks) && criterion.checks.some(check => ['playwright','playwright-bdd'].includes(check))))) {
@@ -141,7 +143,7 @@ function taskErrors(state, root, contract) {
     }
   }
   if (approved && (ids.size !== tasks.length || tasks.some(t => !ids.has(t.id)))) errors.push('slices must map every approved task exactly');
-  if (!Array.isArray(state.publications)) return [...errors,'publications must be an array'];
+  if (!Array.isArray(state.publications)) return {errors:[...errors,'publications must be an array'],tasks};
   const remoteKeys = new Set(), receiptIds = new Set();
   for (const p of state.publications) {
     if (!object(p) || !Number.isInteger(p.id) || p.id < 1) { errors.push('invalid publication'); continue; }
@@ -168,7 +170,7 @@ function taskErrors(state, root, contract) {
         p.blockedBy.length !== expected.length || new Set(p.blockedBy).size !== p.blockedBy.length ||
         p.blockedBy.some(k => !expected.includes(k))) errors.push(`publication ${p.id}: blocking links do not match task plan`);
   }
-  return errors;
+  return {errors,tasks};
 }
 
 // Decision IDs logged in the run's decisions.md table; a missing file has none.
@@ -276,6 +278,7 @@ function contractErrors(state, contract) {
   if (preferences !== undefined) errors.push('G1: contract-1 runs cannot carry execution preferences');
   if (state.policy?.verification !== undefined) errors.push('verification: contract-1 runs cannot carry a verification policy');
   if (state.policy?.autonomy !== undefined) errors.push('autonomy: contract-1 runs cannot carry an autonomy policy');
+  if (state.policy?.sliceReview !== undefined) errors.push('slice review: contract-1 runs cannot carry a review policy');
   if (revocations.length) errors.push('grants-revoked: contract-1 runs have no standing grants');
   if (state.policy?.quality !== undefined) errors.push('quality: contract-1 runs cannot carry a quality policy');
   if ((Array.isArray(state.slices) && state.slices.some(slice => object(slice) && slice.quality !== undefined)) ||
@@ -318,7 +321,8 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
   if (state.policy !== undefined) errors.push(...policyErrors(state.policy,state.classification));
   errors.push(...contractErrors(state,contract));
   if (state.impactAnalysis !== undefined) errors.push(...evidenceErrors(state.impactAnalysis,root,'impact analysis'));
-  errors.push(...taskErrors(state,root,contract));
+  const taskResult = taskErrors(state,root,contract);
+  errors.push(...taskResult.errors);
   if (![...phases,'publish','done'].includes(state.phase) || (checkPhase && state.phase !== nextPhase(state))) errors.push(`phase must be ${nextPhase(state)}`);
   for (const [index, name] of gates.entries()) {
     const gate = state.gates[name];
@@ -356,7 +360,13 @@ export function validateState(state, root, currentHead, {checkPhase = true} = {}
       if (verificationMode(state) === 'behavior') errors.push(...evidenceErrors(slice.red, root, `slice ${slice.id} RED`));
       if (verificationMode(state) === 'refactor') errors.push(...evidenceErrors(slice.before, root, `slice ${slice.id} before`));
       errors.push(...evidenceErrors(slice.green, root, `slice ${slice.id} GREEN`));
-      errors.push(...reviewErrors(slice.reviews, isLight(state) ? ['combined'] : ['spec','standards'], root, `slice ${slice.id}`,state.policy,slice.subjectHead,contract));
+      const task = taskResult.tasks.find(item => item.id === slice.id);
+      const riskMappedReview = contract === 2 && state.policy?.sliceReview === 'risk-mapped';
+      const axes = riskMappedReview && Array.isArray(task?.risks)
+        ? task.risks.length ? ['spec','standards'] : []
+        : isLight(state) ? ['combined'] : ['spec','standards'];
+      errors.push(...reviewErrors(riskMappedReview && axes.length === 0 ? slice.reviews ?? [] : slice.reviews,
+        axes,root,`slice ${slice.id}`,state.policy,slice.subjectHead,contract));
       if (state.policy?.quality !== undefined) errors.push(...qualityReportErrors(slice.quality,state.policy.quality,root,slice.subjectHead,slice.id,evidenceErrors));
     }
   }

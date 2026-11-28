@@ -74,6 +74,7 @@ test('prepare derives the verification policy from G1 preferences, never from th
   const prepared = prepare(defaults, draft(['static'], { verification: { e2e: 'none' } }));
   assert.equal(prepared.status, 0, prepared.stderr);
   assert.deepEqual(defaults.state.policy.verification, { e2e: 'full' });
+  assert.equal(defaults.state.policy.sliceReview, undefined);
   assert.equal(errors(defaults), '');
 
   const waived = approvedRun(t, { uiChange: false, e2e: 'none', reason: 'Documentation only' });
@@ -139,6 +140,110 @@ test('prepare derives the autonomy policy from G1 preferences', t => {
   assert.match(errors(human), /policy.autonomy must match the approved G1 preferences/);
   delete human.state.policy.autonomy;
   assert.match(errors(human), /autonomy: this run requires an approved autonomy policy/);
+});
+
+test('contract-2 decomposed work reviews high-risk slices and keeps one integrated final review', t => {
+  const f = approvedRun(t, { uiChange: false, e2e: 'none' });
+  f.state.classification = 'architectural';
+  writeFileSync(f.file, JSON.stringify(f.state));
+  const definition = draft(['static']);
+  definition.risks = ['tenant boundary'];
+  definition.tasks = [
+    {...definition.tasks[0], id: 1, title: 'Enforce tenant boundary', risks: ['tenant boundary']},
+    {...definition.tasks[0], id: 2, title: 'Expose tenant result', risks: [], blockedBy: [1]}
+  ];
+  definition.quality.modules[0].tasks = [1, 2];
+  assert.equal(prepare(f, definition).status, 0);
+  assert.equal(f.state.policy.sliceReview, 'risk-mapped');
+  const manifest = json(join(f.run, f.state.taskPlan.path));
+  assert.deepEqual(manifest.tasks.map(task => task.risks), [['tenant boundary'], []]);
+  assert.match(readFileSync(join(f.run, manifest.tasks[0].document.path), 'utf8'), /## Risks\n\n- tenant boundary/);
+
+  const planApproval = planEvidence(f.run);
+  const planReview = {axis: 'plan', reviewerType: 'model', authorModel: 'planner', authorFamily: 'openai',
+    authorSession: 'planner-session', reviewerModel: 'critic', reviewerFamily: 'openai',
+    reviewerSession: 'review-session', blocking: 0, evidence: planApproval};
+  f.state.gates.G2 = {status: 'passed', evidence: [f.state.taskPlan, planApproval], approval, reviews: [planReview]};
+  const sliceReview = axis => ({...planReview, axis, subjectHead: 'a'.repeat(40)});
+  f.state.slices = [
+    {id: 1, status: 'done', attempts: 1, red: f.state.intake.request, green: f.state.intake.request,
+      subjectHead: 'a'.repeat(40), reviews: ['spec', 'standards'].map(sliceReview)},
+    {id: 2, status: 'done', attempts: 1, red: f.state.intake.request, green: f.state.intake.request,
+      subjectHead: 'a'.repeat(40)}
+  ];
+  f.state.gates.G3 = {status: 'passed', evidence: [f.state.intake.request], subjectHead: 'a'.repeat(40)};
+  f.state.gates.G4 = {status: 'passed', evidence: [f.state.intake.request], subjectHead: 'a'.repeat(40)};
+  f.state.phase = 'release';
+  assert.match(errors(f), /G4: reviews required/);
+  f.state.gates.G4.reviews = [{...sliceReview('final'), coverage: ['spec', 'standards', 'security']}];
+  assert.equal(errors(f), '');
+
+  f.state.slices[1] = {id: 2, status: 'pending'};
+  f.state.gates.G3.status = 'pending';
+  f.state.gates.G4.status = 'pending';
+  f.state.phase = 'implement';
+  writeFileSync(f.file, JSON.stringify(f.state));
+  const ready = spawnSync(process.execPath, [resolve('scripts/state.mjs'), 'ready', f.file], {encoding: 'utf8'});
+  assert.equal(ready.status, 0, ready.stderr);
+  assert.deepEqual(JSON.parse(ready.stdout), [{id: 2, key: 'local-contract'}]);
+
+  f.state.slices[0].reviews = [];
+  writeFileSync(f.file, JSON.stringify(f.state));
+  const blocked = spawnSync(process.execPath, [resolve('scripts/state.mjs'), 'ready', f.file], {encoding: 'utf8'});
+  assert.notEqual(blocked.status, 0);
+  assert.match(blocked.stderr, /slice 1: spec review required/);
+});
+
+test('contract-2 planning rejects missing, undeclared and unmapped task risks', t => {
+  const cases = [
+    {risks: ['tenant boundary'], taskRisks: []},
+    {risks: ['tenant boundary'], taskRisks: undefined},
+    {risks: ['tenant boundary'], taskRisks: ['unlisted risk']},
+    {risks: ['tenant boundary', 'tenant boundary'], taskRisks: ['tenant boundary']},
+    {risks: ['tenant boundary'], taskRisks: ['tenant boundary', 'tenant boundary']},
+  ];
+  for (const {risks, taskRisks} of cases) {
+    const f = approvedRun(t, {uiChange: false, e2e: 'none'});
+    f.state.classification = 'architectural';
+    writeFileSync(f.file, JSON.stringify(f.state));
+    const definition = draft(['static']);
+    definition.risks = risks;
+    definition.tasks.push({...definition.tasks[0], id: 2, risks: []});
+    definition.quality.modules[0].tasks = [1, 2];
+    if (taskRisks === undefined) delete definition.tasks[0].risks;
+    else definition.tasks[0].risks = taskRisks;
+    const result = prepare(f, definition);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /risk-mapped review|must be mapped to a task|not declared in the plan/);
+    assert.equal(f.state.taskPlan, null);
+  }
+});
+
+test('contract-2 plans without the new review policy keep strict per-slice review', t => {
+  const f = approvedRun(t, {uiChange: false, e2e: 'none'});
+  f.state.classification = 'architectural';
+  writeFileSync(f.file, JSON.stringify(f.state));
+  const definition = draft(['static']);
+  definition.tasks[0].risks = [];
+  definition.tasks.push({...definition.tasks[0], id: 2});
+  definition.quality.modules[0].tasks = [1, 2];
+  assert.equal(prepare(f, definition).status, 0);
+
+  const manifest = json(join(f.run, f.state.taskPlan.path));
+  delete manifest.policy.sliceReview;
+  const manifestBody = JSON.stringify(manifest);
+  writeFileSync(join(f.run, f.state.taskPlan.path), manifestBody);
+  f.state.policy = manifest.policy;
+  f.state.taskPlan.sha256 = digest(manifestBody);
+  const planApproval = planEvidence(f.run);
+  f.state.gates.G2 = {status: 'passed', evidence: [f.state.taskPlan, planApproval], approval,
+    reviews: [{axis: 'plan', reviewerType: 'model', authorModel: 'planner', authorFamily: 'openai',
+      authorSession: 'planner-session', reviewerModel: 'critic', reviewerFamily: 'openai',
+      reviewerSession: 'review-session', blocking: 0, evidence: planApproval}]};
+  f.state.slices = [1, 2].map(id => ({id, status: 'done', attempts: 1,
+    red: f.state.intake.request, green: f.state.intake.request, subjectHead: 'a'.repeat(40), reviews: []}));
+  f.state.phase = 'implement';
+  assert.match(errors(f), /slice 1: spec review required/);
 });
 
 test('contract-2 G2 binds the hashed plan that holds the proceed agreement', t => {

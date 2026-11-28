@@ -43,6 +43,14 @@ The plan includes:
 | Quality | per module lint, format-check and typecheck command or non-applicability reason |
 | UX | chosen variant, real Grafana evidence, accessibility/visual checks |
 | Release | immutable artifact, chart changes, compatibility, rollback and human-owned prod step |
+
+For a contract-2 plan with multiple sub tasks, allocate every material plan risk
+to all affected task `risks` arrays; use `[]` for standard-risk tasks. The
+independent strict plan review validates this classification and traceability.
+`tasks.mjs prepare` rejects missing or inconsistent mappings. A mapped risk
+requires independent slice spec/standards review before completion; routine
+slices retain task tests and quality checks but no per-slice AI review. Single-task
+plans keep their existing review behavior.
 | Proceed agreement | contract-2: continue scope, plan-specific stop conditions added to the critical list, separate approvals ([autonomous execution](../sdlc/references/protocol.md#autonomous-execution)) |
 
 After the design, use `sdlc-subtasks` draft mode. Write one authoring definition and

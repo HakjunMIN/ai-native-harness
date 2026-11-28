@@ -25,6 +25,12 @@ kind, test kinds and blockers. The parent runs `tasks.mjs prepare` to generate
 manifest/detailed views and snapshot policy; never manually maintain AC copies.
 Light keeps one parent-only outcome. Keep exact paths in later handoffs. Never publish tickets;
 G2 must review/approve both the design and ticket breakdown first.
+For a contract-2 plan with multiple tasks, put every material plan risk on each
+affected task's `risks` array (use `[]` for standard-risk tasks). The independent
+plan reviewer verifies classification and mapping; prepare rejects missing,
+duplicate, undeclared or unmapped risks. Risks include auth/tenant boundaries,
+destructive or schema/data changes, public compatibility and security-sensitive
+effects. Do not mark a task standard merely to avoid its pre-integration review.
 
 Preserve Grafana → BFF (Spring or Go) → query-service; never design direct BFF-to-ClickHouse access or browser SQL. Frontend E2E uses playwright-bdd; backend AC uses JUnit 5 for Spring or Go `testing` for Go modules, never Cucumber or godog.
 

@@ -38,15 +38,18 @@ and coordinated ownership, not parallel independent edits to the same shared fil
    Strict/legacy: separate test-writer and production implementer; the latter
    cannot change frozen tests/fixtures/skips. Neither mode permits weakening
    expectations to manufacture success. Contract changes return to G2/G1.
-3. Audit the diff. Light requires one independent combined spec/standards review;
-   use an independent model session or evidenced human review as policy permits.
-   Strict/legacy retains separate spec and standards reviews. Dispatch reviewers
-   with the configured role model; new policies require a reviewer model different
-   from the author model (`requireDifferentModel`), same family allowed. Different-family
+3. Audit the diff and obtain only the approved slice review. Light and legacy
+   keep their existing independent review. For new decomposed contract-2 plans,
+   dispatch independent spec/standards review only for tasks with mapped risks;
+   standard-risk tasks still need their AC tests and module quality evidence.
+   Never relabel a risk to avoid review. The full integrated candidate still
+   receives one independent final review at G4. Dispatch reviewers with the
+   configured role model; new policies require a reviewer model different from
+   the author model (`requireDifferentModel`), same family allowed. Different-family
    review is recommended, required only for explicit `requireDifferentFamily: true`
    or legacy records without policy; human review needs policy permission.
    Record real provenance, scope, subject revision and blocking findings.
-4. Resolve findings and rerun affected checks on final code. Review gets at most
+4. Resolve findings and rerun affected checks on final code. Each required review gets at most
    2 rounds per slice: round 2 is a delta review of the fix; an implementation-only
    fix needs fresh GREEN, not a new RED. Blockers left after round 2 become
    NEEDS_HUMAN (accept with follow-ups, fix once more, descope). Contract-2 runs

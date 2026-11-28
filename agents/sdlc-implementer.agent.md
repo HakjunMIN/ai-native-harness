@@ -34,9 +34,13 @@ Match the assignment to its local ID, Jira parent (light) or published child
 hashes. Preserve AC IDs in the result. The parent verifies blocker completion;
 do not expand the assignment or pick unrelated work from Jira.
 
-Return evidence for the parent. Obtain independent combined review in light or
-separate spec/standards reviews in strict; follow the supplied family/human policy.
-No self-review. After three failed attempts escalate to bounded diagnosis.
+Return evidence for the parent. Obtain the policy-required slice review: light
+and legacy plans keep their existing review; for new decomposed contract-2 plans,
+only tasks mapped to risks need independent spec/standards reviews before done.
+Standard-risk tasks still require their assigned tests and quality evidence. G4
+independently reviews the complete integrated change. Follow the supplied
+family/human policy. No self-review. After three failed attempts escalate to
+bounded diagnosis.
 
 Use runtime defaults or the parent's verified user model mapping; report actual identity. No shared state writes, cloud/nested delegation, git push, merge, deploy, production desired-state edits, or self-approval.
 

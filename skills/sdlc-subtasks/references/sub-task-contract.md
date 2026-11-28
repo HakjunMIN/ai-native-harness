@@ -48,7 +48,14 @@ It contains changeKind, risks, tasks and (for non-behavior work) verificationRea
 Contract-2 runs also include `quality.modules` assessing lint, format-check and
 typecheck for every task; see [code quality](../../sdlc/references/code-quality.md).
 Each sub task requires stable positive id, title, goal, nonempty scope/nonGoals,
-blockedBy IDs and acceptanceCriteria. Each AC has a locally unique id, parent
+blockedBy IDs and acceptanceCriteria. New decomposed contract-2 plans also
+require a `risks` array per task (empty when standard-risk); every material
+plan-level risk must map to each affected task, and unmapped risks fail prepare.
+Mapped-risk slices retain independent spec/standards review. Standard-risk
+slices use their AC tests and module quality checks without per-slice AI review;
+the strict plan review validates risk allocation and G4 still reviews the full
+integrated change. Single-task and older plans keep existing review behavior.
+Each AC has a locally unique id, parent
 requirement reference, observable text and checks. Supported kinds: junit, jest,
 playwright-bdd, go, chart, manual, static; contract-2 runs add `playwright` for
 non-Grafana web UIs. A contract-2 UI change with E2E needs at least one
@@ -173,7 +180,8 @@ commands from current code. Reconcile in-progress work instead of redispatching.
 The conductor audits semantic dependencies before parallel assignments.
 
 `done` requires attempts, change-appropriate verification, policy-required reviews
-and a source revision integrated onto the main candidate even before G3. Behavior
+(including risk-mapped slice reviews when enabled) and a source revision integrated
+onto the main candidate even before G3. Behavior
 needs RED/GREEN; refactor needs before/GREEN; docs/config need meaningful GREEN/static
 checks. Final G3 validates the whole candidate. Jira status alone cannot satisfy a blocker.
 

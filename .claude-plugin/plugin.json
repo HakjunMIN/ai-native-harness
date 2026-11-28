@@ -1,6 +1,6 @@
 {
   "name": "ai-native-sdlc",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Local request or Jira-to-release skills with human approval gates",
   "author": { "name": "ai-native-sdlc contributors" }
 }
