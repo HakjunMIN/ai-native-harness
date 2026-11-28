@@ -4,8 +4,8 @@
 
 ## [0.3.1]
 
-Released on `main` on 2026-11-28 as one squashed commit on top of `2ed93dc`;
-tagged `0.3.1`.
+Released on `main` on 2026-11-28 on top of `2ed93dc`. Tag `0.3.1` includes
+the parent-ticket review change and the follow-up installation upgrade guide.
 
 - Parent-ticket review for decomposed work: `tasks.mjs prepare` adds
   `policy.sliceReview: "risk-mapped"` to new contract-2 plans with more than one
@@ -20,6 +20,10 @@ tagged `0.3.1`.
   integrated diff with `security` coverage are unchanged.
 - Planner, implementer, reviewer and verifier guidance, the sub task template,
   the protocol and both READMEs describe the risk mapping and review routing.
+- Both READMEs explain existing-installation upgrades in three steps: refresh
+  the installation, check local guidance and host discovery, and optionally
+  switch active runs. The guide preserves the legacy-run compatibility warning,
+  and the installation reference includes the Copilot plugin update command.
 
 Compatibility and consumer actions:
 
