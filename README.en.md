@@ -105,6 +105,46 @@ See [Installation](docs/install.md) for running without piping a remote script,
 options, updates, conflicts, and host checks, and [Compatibility](docs/compatibility.md)
 for permission and hook limitations.
 
+### Upgrading an Existing Installation
+
+**Rerun the command you installed with against the same targets.** An upgrade has two
+steps: refreshing the installation and, optionally, switching work in progress.
+
+1. **Refresh the installation**
+   - Shared installation: list every linked repository. The installer updates the shared
+     clone with `git pull --ff-only` and stops on local changes or a different branch or
+     remote.
+   - Copy installation: replaces the managed files in `.ai-native-sdlc/` with the new
+     version. It stops instead of overwriting a managed file you edited.
+   - Copilot plugin: `copilot plugin update ai-native-sdlc@ai-native-sdlc-marketplace`
+2. **Check after refreshing**
+   - A copy installation does not update an existing `AGENTS.md`. Compare it with
+     `.ai-native-sdlc/templates/project-AGENTS.md`, named in the installer warning, and
+     merge the changes yourself. In a shared installation a linked `AGENTS.md` updates
+     automatically.
+   - Restart the CLI and check skills, agents, and hooks. For version-specific actions see
+     `Compatibility and consumer actions` in the [CHANGELOG](CHANGELOG.md).
+3. **Switch work in progress (optional)**
+   Existing tickets keep the revision they started with, so you can finish them as they
+   are. Switching to the new version is explicit, as below, and requires passing G0 and
+   every later gate again. Completed runs cannot be switched. Run this in Bash from
+   the target service repository root, replacing `<ID>` with the actual task ID.
+
+   ```bash
+   HARNESS="$(cd .ai-native-sdlc && pwd -P)" &&
+   node "$HARNESS/scripts/harness.mjs" upgrade \
+     ".worktrees/sdlc/<ID>/integration/docs/sdlc/<ID>/state.json" \
+     --reason "Reverify under the updated workflow" --confirm
+   ```
+
+   `$HARNESS` resolves to the real harness path for both copy and shared installations.
+   Work started with 0.2.0 or earlier does not gain the 0.3.0-only rules (code quality
+   contract, G2 proceed agreement, and others) when switched; start a new run if you need
+   them. See [Ticket revisions](skills/sdlc/references/harness-revisions.md#explicit-adoption-and-upgrades).
+
+For switching installation modes (copy ↔ shared), pinning a version, and conflicts, see
+[Installation](docs/install.md#업데이트충돌기존-설치).
+
 ## Getting Started
 
 Run **`sdlc-setup` once** in the target repository. It reads the repository, CI, and

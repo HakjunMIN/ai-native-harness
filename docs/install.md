@@ -213,6 +213,9 @@ copilot plugin marketplace add HakjunMIN/ai-native-harness
 copilot plugin install ai-native-sdlc@ai-native-sdlc-marketplace
 ```
 
+이미 설치한 Copilot 플러그인은 `copilot plugin update ai-native-sdlc@ai-native-sdlc-marketplace`로
+갱신합니다.
+
 Claude Code는 `claude --plugin-dir /absolute/path/to/ai-native-harness` 또는
 마켓플레이스 등록 후 `/plugin install ai-native-sdlc@ai-native-sdlc-marketplace`를
 사용할 수 있습니다. 스킬은 `/ai-native-sdlc:sdlc-setup`처럼 호출합니다.

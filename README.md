@@ -99,6 +99,45 @@ curl -fsSL 'https://raw.githubusercontent.com/HakjunMIN/ai-native-harness/main/i
 원격 스크립트를 직접 실행하지 않는 방법, 옵션, 업데이트·충돌 처리와 호스트별 확인은
 [설치 안내](docs/install.md)를, 권한·훅의 한계는 [호환성](docs/compatibility.md)을 참고하세요.
 
+### 기존 설치 업그레이드
+
+**설치할 때 사용한 명령을 같은 대상에 다시 실행합니다.** 업그레이드는 설치 갱신과
+진행 중인 작업 전환의 두 단계이며, 전환은 선택입니다.
+
+1. **설치 갱신**
+   - 공유 설치: 연결된 리포를 모두 지정합니다. 공유 클론을 `git pull --ff-only`로 갱신하며
+     로컬 변경, 다른 브랜치나 원격이 있으면 중단합니다.
+   - 복사 설치: `.ai-native-sdlc/`의 관리 파일을 새 버전으로 교체합니다. 직접 수정한 관리
+     파일이 있으면 덮어쓰지 않고 중단합니다.
+   - Copilot 플러그인: `copilot plugin update ai-native-sdlc@ai-native-sdlc-marketplace`
+2. **갱신 후 확인**
+   - 복사 설치는 기존 `AGENTS.md`를 갱신하지 않습니다. 설치기 경고에 나온
+     `.ai-native-sdlc/templates/project-AGENTS.md`와 비교해 변경분을 직접 반영하세요.
+     공유 설치에서 `AGENTS.md`가 링크라면 자동으로 반영됩니다.
+   - CLI를 재시작하고 스킬·에이전트·훅을 확인합니다. 버전별 조치는
+     [CHANGELOG](CHANGELOG.md)의 `Compatibility and consumer actions`를 참고하세요.
+3. **진행 중인 작업 전환 (선택)**
+   기존 티켓은 시작할 때의 리비전을 계속 사용하므로 그대로 마무리해도 됩니다. 새 버전으로
+   전환하려면 아래처럼 명시적으로 실행하며, G0와 이후 게이트를 다시 통과해야 합니다.
+   완료된 run은 전환할 수 없습니다. 대상 서비스 리포 루트의 Bash에서 실행하며,
+   `<ID>`는 실제 작업 ID로 바꿉니다.
+
+   ```bash
+   HARNESS="$(cd .ai-native-sdlc && pwd -P)" &&
+   node "$HARNESS/scripts/harness.mjs" upgrade \
+     ".worktrees/sdlc/<ID>/integration/docs/sdlc/<ID>/state.json" \
+     --reason "새 워크플로로 재검증" --confirm
+   ```
+
+   `$HARNESS`는 복사 설치와 공유 설치 모두 실제 하네스 경로로 설정됩니다.
+   0.2.0 이하에서 시작한 작업은 전환해도 0.3.0 전용 규칙(품질 계약, G2 진행 합의 등)이
+   적용되지 않으므로, 필요하면 새 작업을 시작하세요.
+   자세한 내용은 [티켓 리비전](skills/sdlc/references/harness-revisions.md#explicit-adoption-and-upgrades)을
+   참고하세요.
+
+설치 방식 전환(복사↔공유), 버전 고정, 충돌 처리는
+[설치 안내](docs/install.md#업데이트충돌기존-설치)를 참고하세요.
+
 ## 시작
 
 대상 저장소에서 **최초 한 번 `sdlc-setup`**을 실행합니다. 저장소·CI·배포 대상은 `gh`·`az`·
